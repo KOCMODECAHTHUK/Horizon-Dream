@@ -11,7 +11,6 @@
 	var/busy = FALSE
 	var/hacked = FALSE
 	var/disabled = FALSE
-	var/shocked = FALSE
 	var/obj/machinery/computer/rdconsole/linked_console
 	var/obj/item/loaded_item = null //the item loaded inside the machine (currently only used by experimentor and destructive analyzer)
 
@@ -37,17 +36,7 @@
 	else
 		return FALSE
 
-/obj/machinery/rnd/attack_hand(mob/user)
-	if(shocked)
-		if(shock(user,50))
-			return
-	if(panel_open)
-		wires.interact(user)
-
 /obj/machinery/rnd/attackby(obj/item/O, mob/user, params)
-	if (shocked)
-		if(shock(user,50))
-			return TRUE
 	if (default_deconstruction_screwdriver(user, "[initial(icon_state)]_t", initial(icon_state), O))
 		if(linked_console)
 			disconnect_console()
