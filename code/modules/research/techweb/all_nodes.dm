@@ -147,6 +147,15 @@
 	research_costs = list(TECHWEB_POINT_TYPE_GENERIC = 5000)
 	export_price = 5000
 
+/datum/techweb_node/anomaly
+	id = "anomaly_research"
+	display_name = "Anomaly Research"
+	description = "Unlock the potential of the mysterious anomalies that appear on station."
+	prereq_ids = list("adv_engi", "practical_bluespace")
+	design_ids = list("reactive_armour")
+	research_cost = 2500
+	export_price = 5000
+
 /datum/techweb_node/high_efficiency
 	id = "high_efficiency"
 	display_name = "High Efficiency Parts"
