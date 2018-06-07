@@ -9,6 +9,8 @@
 	use_power = IDLE_POWER_USE
 	var/busy = FALSE
 	var/hacked = FALSE
+	var/console_link = TRUE		//allow console link.
+	var/requires_console = TRUE
 	var/disabled = FALSE
 	var/obj/machinery/computer/rdconsole/linked_console
 	var/obj/item/loaded_item = null //the item loaded inside the machine (currently only used by experimentor and destructive analyzer)
@@ -42,6 +44,9 @@
 		return
 	if(default_deconstruction_crowbar(O))
 		return
+	if(panel_open && is_wire_tool(O))
+		wires.interact(user)
+		return TRUE
 	if(is_refillable() && O.is_drainable())
 		return FALSE //inserting reagents into the machine
 	if(Insert_Item(O, user))
@@ -61,27 +66,26 @@
 /obj/machinery/rnd/proc/is_insertion_ready(mob/user)
 	if(panel_open)
 		to_chat(user, "<span class='warning'>You can't load [src] while it's opened!</span>")
-		return
-	if (disabled)
-		return
-	if (!linked_console) // Try to auto-connect to new RnD consoles nearby.
-		if(!linked_console)
-			to_chat(user, "<span class='warning'>[src] must be linked to an R&D console first!</span>")
-			return
-	if (busy)
+		return FALSE
+	if(disabled)
+		to_chat(user, "<span class='warning'>The insertion belts of [src] won't engage!</span>")
+		return FALSE
+	if(requires_console && !linked_console)
+		to_chat(user, "<span class='warning'>[src] must be linked to an R&D console first!</span>")
+		return FALSE
+	if(busy)
 		to_chat(user, "<span class='warning'>[src] is busy right now.</span>")
-		return
+		return FALSE
 	if(stat & BROKEN)
 		to_chat(user, "<span class='warning'>[src] is broken.</span>")
-		return
+		return FALSE
 	if(stat & NOPOWER)
 		to_chat(user, "<span class='warning'>[src] has no power.</span>")
-		return
+		return FALSE
 	if(loaded_item)
 		to_chat(user, "<span class='warning'>[src] is already loaded.</span>")
-		return
+		return FALSE
 	return TRUE
-
 
 //we eject the loaded item when deconstructing the machine
 /obj/machinery/rnd/on_deconstruction()
