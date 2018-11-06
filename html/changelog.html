@@ -55,6 +55,58 @@
 		
 		-->
 		<div class="commit sansserif">
+			<h2 class="date">04 November 2018</h2>
+			<h3 class="author">Denton updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="tweak">Most upgradeable machines now show their upgrade status when examined while standing right next to them.</li>
+				<li class="tweak">Added examine messages to teleporter stations that hint at their multitool/wirecutter interactions.</li>
+				<li class="tweak">Renamed teleporter stations from `station` to `teleporter station`.</li>
+				<li class="code_imp">Changed the teleporter hub `accurate` var to `accuracy`; the old name misled people into thinking that it was a boolean.</li>
+			</ul>
+			<h3 class="author">Iamgoofball updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="bugfix">Thirty year old boomers can now sip their monster safely as God intended.</li>
+				<li class="bugfix">Even if it's 9 in the morning on a Saturday.</li>
+				<li class="bugfix">Even if your kid's trying to sleep because they were up all night shitposting.</li>
+				<li class="bugfix">Yep. Times were good back then.</li>
+			</ul>
+			<h3 class="author">Mickyan updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="rscadd">Added various new moodlets</li>
+				<li class="rscadd">Most notably, the Laughter chemical and breathing small quantities of N2O can improve mood</li>
+				<li class="rscadd">Psicodine: a new chemical that can restore sanity levels to normal and temporarily suppress phobias</li>
+				<li class="rscadd">Happiness: a homemade drug that supposedly gives a feeling of total bliss and.. emptiness? That can't be healthy... watch out for side effects.</li>
+				<li class="bugfix">The suffocation moodlet now triggers correctly</li>
+				<li class="bugfix">The drunk moodlet now clears as soon as the drunkenness wears off</li>
+			</ul>
+			<h3 class="author">MrDoomBringer updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="soundadd">Supplypods sound a bit nicer as the land now.</li>
+				<li class="admin">admins can now adjust the animation duration for centcom-launched supplypods</li>
+				<li class="admin">admins can adjust any sounds that are played as the supplypod lands</li>
+			</ul>
+			<h3 class="author">ShizCalev updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="bugfix">Fixed x-ray cameras going invisible when in use by a camera monitor.</li>
+				<li class="bugfix">Fixed cameras having the incorrect icon when an xray module is installed after construction.</li>
+				<li class="bugfix">Fixed cameras not having the correct name when proximity sensors are installed after construction.</li>
+				<li class="bugfix">Fixed camera assemblies not passing their upgrades to a camera during construction.</li>
+				<li class="bugfix">Fixed camera assemblies consuming your entire stack of plasma sheets when upgrading it with EMP shielding instead of just 1 sheet.</li>
+				<li class="bugfix">Fixed upgrades within a camera assembly disappearing into bluespace when wrenched.</li>
+				<li class="bugfix">Fixed upgraded cameras having their internal upgrades deleted while still functioning not updating the camera's attributes (mostly for admins.)</li>
+				<li class="tweak">Welding/unwelding a camera assembly to/from a wall now consumes 3 fuel.</li>
+				<li class="tweak">Deconstructing a camera assembly with upgrades within it will now give you a prompt on what you'd like to remove.</li>
+				<li class="tweak">Added examination text to cameras and camera assemblies to detail their current construction status and upgrades.</li>
+				<li class="bugfix">Covering your mouth when you cough/sneeze can now help stop the spread of germs.</li>
+				<li class="bugfix">Using your SecHUD just adjust wanted status of a mob while not adjacent to them will no longer give you a useless out of range warning.</li>
+				<li class="bugfix">Trying to strip or equip a mob while while not in range will now close the inventory menu.</li>
+				<li class="bugfix">Trying to strip a non-human carbon mob while handcuffed/not in range will no longer give you duplicate warnings.</li>
+			</ul>
+			<h3 class="author">Skoglol updated:</h3>
+			<ul class="changes bgimages16">
+				<li class="bugfix">Borg ion thrusters now stop draining charge when you can move without them.</li>
+			</ul>
+
 			<h2 class="date">03 November 2018</h2>
 			<h3 class="author">ShizCalev updated:</h3>
 			<ul class="changes bgimages16">
@@ -1588,54 +1640,6 @@
 			<ul class="changes bgimages16">
 				<li class="bugfix">Chemicals should no longer vanish for some reactions.</li>
 				<li class="tweak">Health sensor's 'detect death' mode now triggers on death rather than extreme unwellness.</li>
-			</ul>
-
-			<h2 class="date">04 September 2018</h2>
-			<h3 class="author">Denton updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="spellcheck">Mech construction messages no longer incorrectly mention high-tier stock parts.</li>
-				<li class="tweak">Added a nanite lab to Deltastation! It's at the old EXPERIMENTOR lab.</li>
-				<li class="tweak">Delta: Moved the Xenobiology disposals bin to be less obstructive. Added two sets of insulated gloves to Engineering.</li>
-				<li class="bugfix">Delta: Fixed scientists not having maintenance access near the circuitry lab and toxins launch chamber.</li>
-			</ul>
-			<h3 class="author">Shdorsh updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="code_imp">Made all the extinguishers use less sleep and spawn procs</li>
-			</ul>
-
-			<h2 class="date">03 September 2018</h2>
-			<h3 class="author">Cdey78 (Ported by Floyd / Qustinnus) updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="imageadd">AI can now think</li>
-				<li class="imageadd">New OOC emote: :thinking:!</li>
-			</ul>
-			<h3 class="author">Naksu updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="admin">a new admin secret has been added to create a customized portal storm</li>
-			</ul>
-			<h3 class="author">Shdorsh updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="tweak">Makes it possible to create circuits that can get an item loaded into them while they are in an assembly and the assembly is open.</li>
-				<li class="code_imp">Optimized electronic assemblies also.</li>
-				<li class="bugfix">A bug pertaining putting batteries in assemblies</li>
-			</ul>
-			<h3 class="author">Skoglol updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Eggplant and egg-plant seeds now have different names and plant names.</li>
-			</ul>
-			<h3 class="author">XDTM updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="bugfix">Fixed nanite cloud storage not allowing uploads.</li>
-			</ul>
-			<h3 class="author">octareenroon91 updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="admin">Supermatter more likely to log fingerprintslast when it consumes any object.</li>
-			</ul>
-
-			<h2 class="date">02 September 2018</h2>
-			<h3 class="author">Denton updated:</h3>
-			<ul class="changes bgimages16">
-				<li class="spellcheck">Fixed species type names that show up on health scanners.</li>
 			</ul>
 		</div>
 
