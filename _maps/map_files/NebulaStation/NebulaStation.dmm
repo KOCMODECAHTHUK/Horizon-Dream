@@ -30879,7 +30879,7 @@
 /obj/machinery/airalarm/directional/north,
 /obj/structure/cable,
 /obj/machinery/power/apc/auto_name/directional/east,
-/obj/item/fish_feed,
+/obj/item/reagent_containers/cup/fish_feed,
 /turf/open/floor/wood/parquet,
 /area/station/medical/psychology)
 "eCE" = (
