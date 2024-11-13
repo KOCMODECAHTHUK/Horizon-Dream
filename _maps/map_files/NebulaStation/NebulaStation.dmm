@@ -141111,7 +141111,7 @@
 /area/station/hallway/primary/central)
 "uYT" = (
 /obj/machinery/mecha_part_fabricator{
-	dir = 1
+	drop_direction = 1
 	},
 /obj/effect/turf_decal/delivery,
 /turf/open/floor/iron/dark,
