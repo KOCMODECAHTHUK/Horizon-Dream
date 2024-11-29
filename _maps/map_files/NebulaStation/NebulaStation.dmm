@@ -23929,6 +23929,13 @@
 /obj/effect/turf_decal/delivery,
 /turf/open/floor/iron/dark,
 /area/station/command/teleporter)
+"dAP" = (
+/obj/effect/turf_decal/delivery,
+/obj/machinery/mecha_part_fabricator{
+	drop_direction = 1
+	},
+/turf/open/floor/iron/dark,
+/area/station/science/robotics/lab)
 "dAT" = (
 /obj/effect/spawner/random/entertainment/toy_figure{
 	pixel_y = 37;
@@ -141153,7 +141160,7 @@
 /area/station/hallway/primary/central)
 "uYT" = (
 /obj/machinery/mecha_part_fabricator{
-	dir = 1
+	drop_direction = 1
 	},
 /obj/effect/turf_decal/delivery,
 /turf/open/floor/iron/dark,
@@ -263701,7 +263708,7 @@ juD
 iZk
 vqW
 jyY
-uYT
+dAP
 xGM
 mVH
 xGM
