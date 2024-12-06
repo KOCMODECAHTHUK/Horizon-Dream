@@ -63650,6 +63650,7 @@
 	dir = 8
 	},
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
+/obj/machinery/firealarm/directional/north,
 /turf/open/floor/iron/dark/side{
 	dir = 8
 	},
@@ -81361,6 +81362,7 @@
 	dir = 5
 	},
 /obj/structure/marker_beacon/lime,
+/obj/machinery/firealarm/directional/south,
 /turf/open/floor/iron/white,
 /area/station/hallway/primary/fore)
 "mcX" = (
