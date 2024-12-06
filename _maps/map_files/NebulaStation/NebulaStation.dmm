@@ -423,7 +423,7 @@
 "adt" = (
 /obj/machinery/defibrillator_mount/directional/south,
 /obj/structure/table/glass,
-/obj/item/surgery_tray/full,
+/obj/effect/spawner/surgery_tray/full,
 /obj/effect/turf_decal/box/white/corners{
 	dir = 4
 	},
@@ -545,7 +545,7 @@
 	id = "cmoprivacy2";
 	req_access = list("cmo")
 	},
-/obj/item/surgery_tray/full,
+/obj/effect/spawner/surgery_tray/full,
 /turf/open/floor/iron/white/herringbone,
 /area/station/command/heads_quarters/cmo)
 "aer" = (
@@ -56574,7 +56574,7 @@
 "isM" = (
 /obj/machinery/defibrillator_mount/directional/south,
 /obj/structure/table/glass,
-/obj/item/surgery_tray/full,
+/obj/effect/spawner/surgery_tray/full,
 /obj/effect/turf_decal/box/white/corners{
 	dir = 1
 	},
@@ -62233,7 +62233,7 @@
 /obj/structure/table/reinforced,
 /obj/effect/turf_decal/trimline/red/corner,
 /obj/effect/turf_decal/siding/thinplating_new/dark/corner,
-/obj/item/surgery_tray/full,
+/obj/effect/spawner/surgery_tray/full,
 /turf/open/floor/iron/dark/side{
 	dir = 9
 	},
@@ -62788,7 +62788,7 @@
 /obj/structure/table/glass,
 /obj/structure/window/reinforced/spawner/directional/north,
 /obj/machinery/digital_clock/directional/east,
-/obj/item/surgery_tray/full,
+/obj/effect/spawner/surgery_tray/full,
 /turf/open/floor/iron/dark/small,
 /area/station/science/robotics/augments)
 "jqo" = (
@@ -64543,7 +64543,7 @@
 /area/station/engineering/supermatter/room/upper)
 "jBX" = (
 /obj/structure/table/reinforced,
-/obj/item/surgery_tray/full/morgue,
+/obj/effect/spawner/surgery_tray/full/morgue,
 /obj/effect/turf_decal/siding/dark/corner{
 	dir = 8
 	},
@@ -120903,7 +120903,7 @@
 /area/station/maintenance/fore/lesser)
 "rUg" = (
 /obj/structure/table/reinforced,
-/obj/item/surgery_tray/full,
+/obj/effect/spawner/surgery_tray/full,
 /obj/machinery/status_display/ai/directional/east,
 /obj/effect/turf_decal/trimline/dark_red/filled/corner{
 	dir = 1
