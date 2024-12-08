@@ -85750,7 +85750,7 @@
 /area/space/nearstation)
 "mLK" = (
 /obj/structure/rack,
-/obj/item/crowbar/large/heavy,
+/obj/item/crowbar/large,
 /obj/item/wirecutters,
 /obj/item/wrench,
 /obj/effect/turf_decal/siding/thinplating_new/dark{
