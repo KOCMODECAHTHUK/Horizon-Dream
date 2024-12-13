@@ -10569,6 +10569,9 @@
 "bDU" = (
 /obj/structure/rack,
 /obj/item/gun/energy/ionrifle,
+/obj/item/gun/ballistic/automatic/battle_rifle{
+	pixel_y = 3
+	},
 /obj/item/clothing/suit/hooded/ablative,
 /obj/item/gun/energy/temperature/security,
 /obj/effect/turf_decal/bot/right,
@@ -113586,7 +113589,7 @@
 /turf/open/floor/engine/n2,
 /area/station/engineering/atmos)
 "qOe" = (
-/obj/item/ammo_casing/a357/spent{
+/obj/item/ammo_casing/c357/spent{
 	pixel_y = 6;
 	pixel_x = 9
 	},
