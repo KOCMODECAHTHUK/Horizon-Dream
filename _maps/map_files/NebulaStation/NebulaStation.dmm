@@ -92160,7 +92160,8 @@
 /area/station/security/checkpoint/science)
 "nKF" = (
 /obj/item/toy/katana{
-	icon_state = "supermatter_sword"
+	icon_state = "supermatter_sword";
+	icon_angle = -45
 	},
 /obj/structure/ladder,
 /turf/open/floor/plating,
