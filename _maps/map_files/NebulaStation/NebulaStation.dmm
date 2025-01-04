@@ -20962,7 +20962,6 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/structure/disposalpipe/segment,
-/obj/structure/disposalpipe/segment,
 /turf/open/floor/iron/dark,
 /area/station/science/ordnance)
 "dfi" = (
@@ -54629,7 +54628,6 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/structure/disposalpipe/segment,
-/obj/structure/disposalpipe/segment,
 /turf/open/floor/iron/dark,
 /area/station/security/checkpoint/science)
 "idQ" = (
@@ -71667,7 +71665,6 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/structure/disposalpipe/segment,
-/obj/structure/disposalpipe/segment,
 /turf/open/floor/iron/dark/textured,
 /area/station/security/checkpoint/science)
 "kCl" = (
@@ -76507,7 +76504,6 @@
 /obj/effect/mapping_helpers/requests_console/assistance,
 /obj/machinery/computer/records/security/laptop,
 /obj/machinery/light/directional/north,
-/obj/structure/disposalpipe/segment,
 /obj/structure/disposalpipe/segment,
 /turf/open/floor/iron/dark/textured,
 /area/station/security/checkpoint/science)
@@ -81462,9 +81458,6 @@
 /turf/open/floor/iron/white/textured_large,
 /area/station/maintenance/department/medical)
 "mdT" = (
-/obj/structure/disposalpipe/segment{
-	dir = 4
-	},
 /obj/structure/disposalpipe/segment{
 	dir = 4
 	},
@@ -92099,7 +92092,6 @@
 "nKp" = (
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
-/obj/structure/disposalpipe/segment,
 /obj/structure/disposalpipe/segment,
 /turf/open/floor/iron/stairs/medium{
 	color = "#3d3e42"
@@ -118788,7 +118780,6 @@
 /area/station/service/chapel/funeral)
 "rDY" = (
 /obj/structure/disposalpipe/segment,
-/obj/structure/disposalpipe/segment,
 /turf/closed/wall,
 /area/station/maintenance/fore/greater)
 "rEc" = (
@@ -144660,7 +144651,6 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/structure/disposalpipe/segment,
-/obj/structure/disposalpipe/segment,
 /turf/open/floor/iron/dark,
 /area/station/security/checkpoint/science)
 "vwB" = (
@@ -158808,9 +158798,6 @@
 /turf/open/floor/wood/large,
 /area/station/commons/dorms)
 "xHh" = (
-/obj/structure/disposalpipe/segment{
-	dir = 9
-	},
 /obj/structure/disposalpipe/segment{
 	dir = 9
 	},
