@@ -22823,7 +22823,7 @@
 /turf/open/floor/iron/white,
 /area/station/science/lower)
 "dsQ" = (
-/obj/machinery/computer/station_alert{
+/obj/machinery/computer/station_alert/station_only{
 	dir = 1
 	},
 /obj/effect/turf_decal/bot,
@@ -36262,7 +36262,7 @@
 /turf/open/floor/stone,
 /area/station/hallway/secondary/service)
 "fsZ" = (
-/obj/machinery/computer/atmos_alert{
+/obj/machinery/computer/atmos_alert/station_only{
 	dir = 1
 	},
 /obj/effect/turf_decal/bot,
@@ -54030,7 +54030,7 @@
 /area/station/security/prison)
 "hZu" = (
 /obj/effect/turf_decal/bot,
-/obj/machinery/computer/station_alert{
+/obj/machinery/computer/station_alert/station_only{
 	dir = 8
 	},
 /turf/open/floor/iron/dark/textured_large,
@@ -59546,7 +59546,7 @@
 /turf/open/floor/plating,
 /area/station/maintenance/port/fore)
 "iPp" = (
-/obj/machinery/computer/station_alert{
+/obj/machinery/computer/station_alert/station_only{
 	dir = 8
 	},
 /obj/effect/turf_decal/tile/yellow/half/contrasted{
@@ -76866,7 +76866,7 @@
 /turf/open/floor/iron/dark/herringbone,
 /area/station/commons/dorms)
 "lrn" = (
-/obj/machinery/computer/station_alert{
+/obj/machinery/computer/station_alert/station_only{
 	dir = 1
 	},
 /obj/effect/turf_decal/bot,
@@ -82316,7 +82316,7 @@
 /turf/open/floor/iron/dark/textured,
 /area/station/command)
 "mkJ" = (
-/obj/machinery/computer/station_alert,
+/obj/machinery/computer/station_alert/station_only,
 /obj/machinery/button/door/directional/north{
 	pixel_x = 6;
 	id = "atmoslock";
@@ -83845,7 +83845,7 @@
 "mxq" = (
 /obj/effect/turf_decal/bot,
 /obj/structure/extinguisher_cabinet/directional/south,
-/obj/machinery/computer/atmos_alert{
+/obj/machinery/computer/atmos_alert/station_only{
 	dir = 8
 	},
 /turf/open/floor/iron/dark/textured_large,
@@ -92413,7 +92413,7 @@
 /turf/open/floor/iron/dark,
 /area/station/service/hydroponics)
 "nNh" = (
-/obj/machinery/computer/station_alert,
+/obj/machinery/computer/station_alert/station_only,
 /obj/effect/turf_decal/siding/thinplating_new/dark{
 	dir = 5
 	},
@@ -96599,7 +96599,7 @@
 /turf/open/floor/iron/dark,
 /area/station/engineering/supermatter/room/upper)
 "ork" = (
-/obj/machinery/computer/station_alert{
+/obj/machinery/computer/station_alert/station_only{
 	dir = 1
 	},
 /obj/effect/turf_decal/bot{
@@ -100376,7 +100376,7 @@
 /turf/open/floor/iron/dark/textured,
 /area/station/service/library/lounge)
 "oSD" = (
-/obj/machinery/computer/station_alert{
+/obj/machinery/computer/station_alert/station_only{
 	dir = 1
 	},
 /obj/structure/sign/poster/official/random/directional/south,
@@ -114345,7 +114345,7 @@
 /obj/effect/turf_decal/trimline/dark/corner{
 	dir = 8
 	},
-/obj/machinery/computer/station_alert,
+/obj/machinery/computer/station_alert/station_only,
 /turf/open/floor/iron/dark/textured_corner{
 	dir = 8
 	},
@@ -121555,7 +121555,7 @@
 /turf/open/floor/iron/white/smooth_large,
 /area/station/medical/treatment_center)
 "rZz" = (
-/obj/machinery/computer/atmos_alert{
+/obj/machinery/computer/atmos_alert/station_only{
 	dir = 1
 	},
 /obj/effect/turf_decal/bot{
@@ -124249,7 +124249,7 @@
 /turf/open/floor/iron/white/small,
 /area/station/science/server)
 "swL" = (
-/obj/machinery/computer/atmos_alert{
+/obj/machinery/computer/atmos_alert/station_only{
 	dir = 1
 	},
 /obj/machinery/button/door/directional/south{
@@ -142332,7 +142332,7 @@
 /area/station/science/ordnance/storage)
 "vgI" = (
 /obj/machinery/atmospherics/pipe/smart/simple/scrubbers/visible,
-/obj/machinery/computer/station_alert{
+/obj/machinery/computer/station_alert/station_only{
 	dir = 4
 	},
 /obj/effect/turf_decal/bot,
@@ -142860,7 +142860,7 @@
 /turf/open/floor/iron/dark,
 /area/station/construction/mining/aux_base)
 "vjH" = (
-/obj/machinery/computer/atmos_alert{
+/obj/machinery/computer/atmos_alert/station_only{
 	dir = 8
 	},
 /obj/effect/turf_decal/tile/yellow/anticorner/contrasted{
@@ -159217,7 +159217,7 @@
 /area/space/nearstation)
 "xJQ" = (
 /obj/machinery/atmospherics/pipe/smart/simple/scrubbers/visible,
-/obj/machinery/computer/atmos_alert{
+/obj/machinery/computer/atmos_alert/station_only{
 	dir = 4
 	},
 /obj/effect/turf_decal/bot,
