@@ -81457,12 +81457,6 @@
 /obj/item/reagent_containers/cup/rag,
 /turf/open/floor/iron/white/textured_large,
 /area/station/maintenance/department/medical)
-"mdT" = (
-/obj/structure/disposalpipe/segment{
-	dir = 4
-	},
-/turf/closed/wall,
-/area/station/maintenance/fore/lesser)
 "mec" = (
 /obj/effect/turf_decal/siding/wood{
 	dir = 6
@@ -118778,10 +118772,6 @@
 /obj/effect/turf_decal/siding/thinplating_new/dark/corner,
 /turf/open/floor/iron/dark/herringbone,
 /area/station/service/chapel/funeral)
-"rDY" = (
-/obj/structure/disposalpipe/segment,
-/turf/closed/wall,
-/area/station/maintenance/fore/greater)
 "rEc" = (
 /obj/effect/turf_decal/stripes/line{
 	dir = 5
@@ -196595,7 +196585,7 @@ fQE
 cUZ
 xGl
 pjP
-mdT
+iEt
 xnA
 pQW
 hAK
@@ -266242,7 +266232,7 @@ bzt
 jkE
 nLg
 cij
-rDY
+bYy
 loK
 kCi
 nKp
