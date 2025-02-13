@@ -141023,8 +141023,11 @@
 "uXN" = (
 /obj/structure/table/reinforced/rglass,
 /obj/item/storage/box/monkeycubes{
-	pixel_y = 0;
+	pixel_y = 10;
 	pixel_x = 0
+	},
+/obj/item/flesh_shears{
+	pixel_y = -5
 	},
 /turf/open/floor/iron/dark/textured,
 /area/station/science/genetics)
