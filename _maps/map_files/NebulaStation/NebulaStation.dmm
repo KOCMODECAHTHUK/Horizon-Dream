@@ -1078,25 +1078,6 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /turf/open/floor/iron/dark/small,
 /area/station/hallway/secondary/command)
-"aiw" = (
-/obj/structure/table/glass,
-/obj/structure/sign/poster/official/help_others/directional/north,
-/obj/item/storage/medkit/regular,
-/obj/item/storage/medkit/brute{
-	pixel_x = 3;
-	pixel_y = 3
-	},
-/obj/item/storage/medkit/brute,
-/obj/item/storage/medkit/brute{
-	pixel_x = -3;
-	pixel_y = -3
-	},
-/obj/machinery/door/window/left/directional/south{
-	name = "First-Aid Supplies";
-	req_access = list("medical")
-	},
-/turf/open/floor/iron/dark,
-/area/station/medical/storage)
 "aiy" = (
 /obj/structure/flora/bush/fullgrass/style_random,
 /obj/structure/flora/grass/jungle/a/style_random,
@@ -23213,18 +23194,6 @@
 	dir = 5
 	},
 /area/station/engineering/atmos/project)
-"dvA" = (
-/obj/machinery/door/airlock/command{
-	name = "E.V.A. Storage"
-	},
-/obj/effect/turf_decal/tile/dark_blue/fourcorners,
-/obj/machinery/door/firedoor,
-/obj/effect/mapping_helpers/airlock/access/any/command/eva,
-/obj/structure/cable,
-/obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
-/obj/structure/disposalpipe/segment,
-/turf/open/floor/iron/dark/textured,
-/area/station/ai_monitored/command/storage/eva)
 "dvF" = (
 /obj/effect/turf_decal/siding/wood/end{
 	dir = 1
@@ -50789,6 +50758,26 @@
 	dir = 9
 	},
 /area/station/security/prison)
+"hAb" = (
+/obj/structure/table/glass,
+/obj/structure/sign/poster/official/help_others/directional/north,
+/obj/item/storage/medkit/regular,
+/obj/item/storage/medkit/brute{
+	pixel_x = 3;
+	pixel_y = 3
+	},
+/obj/item/storage/medkit/brute,
+/obj/item/storage/medkit/brute{
+	pixel_x = -3;
+	pixel_y = -3
+	},
+/obj/machinery/door/window/left/directional/south{
+	name = "First-Aid Supplies";
+	req_access = list("medical")
+	},
+/obj/effect/mapping_helpers/airlock/red_alert_access,
+/turf/open/floor/iron/dark,
+/area/station/medical/storage)
 "hAd" = (
 /obj/effect/spawner/structure/window,
 /turf/open/floor/plating,
@@ -54391,6 +54380,18 @@
 	dir = 1
 	},
 /area/station/engineering/atmos/project)
+"ibw" = (
+/obj/machinery/door/airlock/command{
+	name = "E.V.A. Storage"
+	},
+/obj/effect/turf_decal/tile/dark_blue/fourcorners,
+/obj/machinery/door/firedoor,
+/obj/effect/mapping_helpers/airlock/access/any/command/eva,
+/obj/effect/landmark/navigate_destination,
+/obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
+/obj/effect/mapping_helpers/airlock/red_alert_access,
+/turf/open/floor/iron/dark/textured,
+/area/station/ai_monitored/command/storage/eva)
 "iby" = (
 /obj/effect/decal/cleanable/dirt,
 /obj/effect/mapping_helpers/broken_floor,
@@ -89462,6 +89463,19 @@
 	},
 /turf/open/floor/iron/dark,
 /area/station/engineering/atmos)
+"npS" = (
+/obj/machinery/door/airlock/command{
+	name = "E.V.A. Storage"
+	},
+/obj/effect/turf_decal/tile/dark_blue/fourcorners,
+/obj/machinery/door/firedoor,
+/obj/effect/mapping_helpers/airlock/access/any/command/eva,
+/obj/structure/cable,
+/obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
+/obj/structure/disposalpipe/segment,
+/obj/effect/mapping_helpers/airlock/red_alert_access,
+/turf/open/floor/iron/dark/textured,
+/area/station/ai_monitored/command/storage/eva)
 "npV" = (
 /obj/machinery/portable_atmospherics/canister/oxygen,
 /obj/effect/turf_decal/bot_white,
@@ -90608,6 +90622,17 @@
 	dir = 8
 	},
 /area/station/security/brig/lower)
+"nzh" = (
+/obj/structure/table/reinforced/rglass,
+/obj/item/storage/box/monkeycubes{
+	pixel_y = 10;
+	pixel_x = 0
+	},
+/obj/item/flesh_shears{
+	pixel_y = -5
+	},
+/turf/open/floor/iron/dark/textured,
+/area/station/science/genetics)
 "nzi" = (
 /obj/structure/railing/corner{
 	dir = 4
@@ -127078,17 +127103,6 @@
 /obj/structure/bookcase/random/reference,
 /turf/open/floor/iron/dark,
 /area/station/security/breakroom)
-"sTF" = (
-/obj/machinery/door/airlock/command{
-	name = "E.V.A. Storage"
-	},
-/obj/effect/turf_decal/tile/dark_blue/fourcorners,
-/obj/machinery/door/firedoor,
-/obj/effect/mapping_helpers/airlock/access/any/command/eva,
-/obj/effect/landmark/navigate_destination,
-/obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
-/turf/open/floor/iron/dark/textured,
-/area/station/ai_monitored/command/storage/eva)
 "sTG" = (
 /obj/item/banner/command/mundane,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
@@ -141020,17 +141034,6 @@
 	},
 /turf/open/floor/iron/dark/textured,
 /area/station/ai_monitored/security/armory)
-"uXN" = (
-/obj/structure/table/reinforced/rglass,
-/obj/item/storage/box/monkeycubes{
-	pixel_y = 10;
-	pixel_x = 0
-	},
-/obj/item/flesh_shears{
-	pixel_y = -5
-	},
-/turf/open/floor/iron/dark/textured,
-/area/station/science/genetics)
 "uXR" = (
 /obj/effect/turf_decal/siding/wood/corner,
 /obj/effect/turf_decal/siding/wood{
@@ -158872,29 +158875,6 @@
 	},
 /turf/open/floor/iron/dark/textured,
 /area/station/engineering/engine_smes)
-"xHz" = (
-/obj/structure/table/glass,
-/obj/effect/turf_decal/siding/dark{
-	dir = 6
-	},
-/obj/machinery/door/window/right/directional/south{
-	name = "First Aid Supplies";
-	req_access = list("medical")
-	},
-/obj/machinery/digital_clock/directional/north,
-/obj/item/storage/medkit/regular,
-/obj/item/storage/medkit/toxin{
-	pixel_x = 3;
-	pixel_y = 3
-	},
-/obj/item/storage/medkit/toxin,
-/obj/item/storage/medkit/toxin{
-	pixel_x = -3;
-	pixel_y = -3
-	},
-/obj/machinery/light/directional/north,
-/turf/open/floor/iron/dark,
-/area/station/medical/storage)
 "xHC" = (
 /obj/effect/turf_decal/siding/wood{
 	dir = 6
@@ -159306,6 +159286,30 @@
 /obj/effect/decal/cleanable/dirt/dust,
 /turf/open/floor/engine/hull/reinforced,
 /area/space/nearstation)
+"xKk" = (
+/obj/structure/table/glass,
+/obj/effect/turf_decal/siding/dark{
+	dir = 6
+	},
+/obj/machinery/door/window/right/directional/south{
+	name = "First Aid Supplies";
+	req_access = list("medical")
+	},
+/obj/machinery/digital_clock/directional/north,
+/obj/item/storage/medkit/regular,
+/obj/item/storage/medkit/toxin{
+	pixel_x = 3;
+	pixel_y = 3
+	},
+/obj/item/storage/medkit/toxin,
+/obj/item/storage/medkit/toxin{
+	pixel_x = -3;
+	pixel_y = -3
+	},
+/obj/machinery/light/directional/north,
+/obj/effect/mapping_helpers/airlock/red_alert_access,
+/turf/open/floor/iron/dark,
+/area/station/medical/storage)
 "xKl" = (
 /obj/structure/railing/corner/end/flip{
 	dir = 8
@@ -255460,7 +255464,7 @@ lfg
 qDD
 nZD
 kLa
-aiw
+hAb
 nJX
 eww
 mKj
@@ -255717,7 +255721,7 @@ kLa
 kLa
 kLa
 kLa
-xHz
+xKk
 nJX
 eww
 tJb
@@ -263170,7 +263174,7 @@ ybp
 mQH
 lLq
 ovo
-uXN
+nzh
 gBq
 wLX
 pxd
@@ -279404,7 +279408,7 @@ aZM
 xMF
 caQ
 sss
-sTF
+ibw
 ans
 fKQ
 aiq
@@ -280946,7 +280950,7 @@ aZM
 bAt
 dVu
 lBi
-dvA
+npS
 cvK
 lYI
 nuK
