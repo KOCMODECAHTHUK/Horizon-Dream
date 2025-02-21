@@ -4202,18 +4202,6 @@
 /obj/structure/hedge,
 /turf/open/floor/iron/dark/diagonal,
 /area/station/service/chapel/funeral)
-"aHq" = (
-/obj/effect/turf_decal/siding/wood{
-	dir = 10
-	},
-/obj/machinery/light_switch/directional/west,
-/obj/machinery/disposal/bin,
-/obj/structure/disposalpipe/trunk{
-	dir = 4
-	},
-/obj/item/radio/intercom/directional/south,
-/turf/open/floor/wood/large,
-/area/station/command/heads_quarters/captain)
 "aHy" = (
 /obj/effect/turf_decal/siding/thinplating_new/dark{
 	dir = 4
@@ -7213,23 +7201,6 @@
 /obj/machinery/door/firedoor/heavy,
 /turf/open/floor/plating,
 /area/station/science/ordnance/storage)
-"bdU" = (
-/obj/effect/turf_decal/siding/wood{
-	dir = 8
-	},
-/obj/structure/table/reinforced/rglass,
-/obj/machinery/recharger{
-	pixel_y = 3;
-	pixel_x = -6
-	},
-/obj/item/reagent_containers/cup/glass/flask/gold{
-	pixel_y = 2;
-	pixel_x = 6
-	},
-/obj/machinery/light/directional/west,
-/obj/structure/secure_safe/directional/west,
-/turf/open/floor/wood/large,
-/area/station/command/heads_quarters/captain)
 "bee" = (
 /obj/effect/turf_decal/siding/dark{
 	dir = 8
@@ -16427,6 +16398,30 @@
 /obj/machinery/light/directional/north,
 /turf/open/floor/iron/dark,
 /area/station/medical/virology)
+"cxP" = (
+/obj/structure/table/glass,
+/obj/effect/turf_decal/siding/dark{
+	dir = 6
+	},
+/obj/machinery/door/window/right/directional/south{
+	name = "First Aid Supplies";
+	req_access = list("medical")
+	},
+/obj/machinery/digital_clock/directional/north,
+/obj/item/storage/medkit/regular,
+/obj/item/storage/medkit/toxin{
+	pixel_x = 3;
+	pixel_y = 3
+	},
+/obj/item/storage/medkit/toxin,
+/obj/item/storage/medkit/toxin{
+	pixel_x = -3;
+	pixel_y = -3
+	},
+/obj/machinery/light/directional/north,
+/obj/effect/mapping_helpers/airlock/red_alert_access,
+/turf/open/floor/iron/dark,
+/area/station/medical/storage)
 "cxS" = (
 /obj/machinery/atmospherics/components/unary/vent_scrubber/on{
 	dir = 8
@@ -36365,6 +36360,26 @@
 /obj/effect/spawner/random/trash/graffiti,
 /turf/open/floor/plating,
 /area/station/maintenance/fore/lesser)
+"fuB" = (
+/obj/structure/table/reinforced/rglass,
+/obj/item/paper_bin{
+	pixel_x = -5;
+	pixel_y = 4
+	},
+/obj/item/pen/fountain/captain{
+	pixel_x = -5;
+	pixel_y = 4
+	},
+/obj/item/toy/figure/captain{
+	pixel_y = 13;
+	pixel_x = 6
+	},
+/obj/machinery/recharger{
+	pixel_y = 3;
+	pixel_x = 7
+	},
+/turf/open/floor/carpet/royalblue,
+/area/station/command/heads_quarters/captain)
 "fuD" = (
 /obj/machinery/door/poddoor/preopen{
 	id = "projectlock";
@@ -46807,6 +46822,19 @@
 	},
 /turf/open/floor/iron/white/small,
 /area/station/science/research)
+"gWt" = (
+/obj/machinery/door/airlock/command{
+	name = "E.V.A. Storage"
+	},
+/obj/effect/turf_decal/tile/dark_blue/fourcorners,
+/obj/machinery/door/firedoor,
+/obj/effect/mapping_helpers/airlock/access/any/command/eva,
+/obj/structure/cable,
+/obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
+/obj/structure/disposalpipe/segment,
+/obj/effect/mapping_helpers/airlock/red_alert_access,
+/turf/open/floor/iron/dark/textured,
+/area/station/ai_monitored/command/storage/eva)
 "gWz" = (
 /obj/effect/turf_decal/siding/dark{
 	dir = 9
@@ -50758,26 +50786,6 @@
 	dir = 9
 	},
 /area/station/security/prison)
-"hAb" = (
-/obj/structure/table/glass,
-/obj/structure/sign/poster/official/help_others/directional/north,
-/obj/item/storage/medkit/regular,
-/obj/item/storage/medkit/brute{
-	pixel_x = 3;
-	pixel_y = 3
-	},
-/obj/item/storage/medkit/brute,
-/obj/item/storage/medkit/brute{
-	pixel_x = -3;
-	pixel_y = -3
-	},
-/obj/machinery/door/window/left/directional/south{
-	name = "First-Aid Supplies";
-	req_access = list("medical")
-	},
-/obj/effect/mapping_helpers/airlock/red_alert_access,
-/turf/open/floor/iron/dark,
-/area/station/medical/storage)
 "hAd" = (
 /obj/effect/spawner/structure/window,
 /turf/open/floor/plating,
@@ -54380,18 +54388,6 @@
 	dir = 1
 	},
 /area/station/engineering/atmos/project)
-"ibw" = (
-/obj/machinery/door/airlock/command{
-	name = "E.V.A. Storage"
-	},
-/obj/effect/turf_decal/tile/dark_blue/fourcorners,
-/obj/machinery/door/firedoor,
-/obj/effect/mapping_helpers/airlock/access/any/command/eva,
-/obj/effect/landmark/navigate_destination,
-/obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
-/obj/effect/mapping_helpers/airlock/red_alert_access,
-/turf/open/floor/iron/dark/textured,
-/area/station/ai_monitored/command/storage/eva)
 "iby" = (
 /obj/effect/decal/cleanable/dirt,
 /obj/effect/mapping_helpers/broken_floor,
@@ -55951,15 +55947,6 @@
 	},
 /turf/open/floor/iron,
 /area/station/maintenance/port/fore)
-"iok" = (
-/obj/effect/turf_decal/siding/wood{
-	dir = 4
-	},
-/obj/structure/chair/office/light{
-	dir = 8
-	},
-/turf/open/floor/wood/large,
-/area/station/command/heads_quarters/captain)
 "iol" = (
 /obj/structure/table/reinforced/rglass,
 /obj/item/food/salad/fruit{
@@ -64383,6 +64370,22 @@
 	},
 /turf/open/floor/iron/dark,
 /area/station/cargo/sorting)
+"jBr" = (
+/obj/structure/table/reinforced/rglass,
+/obj/item/storage/fancy/cigarettes/cigars/havana{
+	pixel_y = 8
+	},
+/obj/item/lighter{
+	pixel_y = -15;
+	pixel_x = -4
+	},
+/obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
+/obj/item/reagent_containers/cup/glass/flask/gold{
+	pixel_y = -13;
+	pixel_x = 6
+	},
+/turf/open/floor/carpet/royalblue,
+/area/station/command/heads_quarters/captain)
 "jBy" = (
 /obj/effect/spawner/structure/window/reinforced,
 /obj/machinery/door/poddoor/shutters/preopen{
@@ -74121,6 +74124,18 @@
 	},
 /turf/open/floor/plating,
 /area/station/maintenance/disposal)
+"kUS" = (
+/obj/effect/turf_decal/siding/wood{
+	dir = 10
+	},
+/obj/machinery/disposal/bin,
+/obj/structure/disposalpipe/trunk{
+	dir = 4
+	},
+/obj/item/radio/intercom/directional/south,
+/obj/structure/secure_safe/directional/west,
+/turf/open/floor/wood/large,
+/area/station/command/heads_quarters/captain)
 "kVd" = (
 /obj/effect/turf_decal/stripes/line{
 	dir = 1
@@ -75959,6 +75974,18 @@
 	},
 /turf/open/floor/iron/dark/small,
 /area/station/engineering/atmos/hfr_room)
+"lkP" = (
+/obj/machinery/door/airlock/command{
+	name = "E.V.A. Storage"
+	},
+/obj/effect/turf_decal/tile/dark_blue/fourcorners,
+/obj/machinery/door/firedoor,
+/obj/effect/mapping_helpers/airlock/access/any/command/eva,
+/obj/effect/landmark/navigate_destination,
+/obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
+/obj/effect/mapping_helpers/airlock/red_alert_access,
+/turf/open/floor/iron/dark/textured,
+/area/station/ai_monitored/command/storage/eva)
 "lkQ" = (
 /obj/structure/sign/warning/secure_area/directional/south,
 /obj/effect/decal/cleanable/vomit/nebula,
@@ -82833,6 +82860,31 @@
 	},
 /turf/open/floor/iron/dark/smooth_half,
 /area/station/security/eva)
+"mpv" = (
+/obj/effect/turf_decal/siding/wood{
+	dir = 1
+	},
+/obj/effect/turf_decal/siding/wood/corner{
+	dir = 8
+	},
+/obj/machinery/button/door/directional/north{
+	id = "capoffice";
+	name = "Privacy Control";
+	pixel_y = 26;
+	req_access = list("captain");
+	pixel_x = -7
+	},
+/obj/machinery/light/directional/north,
+/obj/machinery/camera/autoname/directional/north,
+/obj/machinery/keycard_auth/wall_mounted/directional/north{
+	pixel_x = 6
+	},
+/obj/machinery/light_switch/directional/north{
+	pixel_y = 36;
+	pixel_x = -7
+	},
+/turf/open/floor/wood/large,
+/area/station/command/heads_quarters/captain)
 "mpz" = (
 /obj/item/ammo_casing{
 	pixel_x = -6;
@@ -89463,19 +89515,6 @@
 	},
 /turf/open/floor/iron/dark,
 /area/station/engineering/atmos)
-"npS" = (
-/obj/machinery/door/airlock/command{
-	name = "E.V.A. Storage"
-	},
-/obj/effect/turf_decal/tile/dark_blue/fourcorners,
-/obj/machinery/door/firedoor,
-/obj/effect/mapping_helpers/airlock/access/any/command/eva,
-/obj/structure/cable,
-/obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
-/obj/structure/disposalpipe/segment,
-/obj/effect/mapping_helpers/airlock/red_alert_access,
-/turf/open/floor/iron/dark/textured,
-/area/station/ai_monitored/command/storage/eva)
 "npV" = (
 /obj/machinery/portable_atmospherics/canister/oxygen,
 /obj/effect/turf_decal/bot_white,
@@ -90622,17 +90661,6 @@
 	dir = 8
 	},
 /area/station/security/brig/lower)
-"nzh" = (
-/obj/structure/table/reinforced/rglass,
-/obj/item/storage/box/monkeycubes{
-	pixel_y = 10;
-	pixel_x = 0
-	},
-/obj/item/flesh_shears{
-	pixel_y = -5
-	},
-/turf/open/floor/iron/dark/textured,
-/area/station/science/genetics)
 "nzi" = (
 /obj/structure/railing/corner{
 	dir = 4
@@ -90945,6 +90973,17 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /turf/open/floor/wood/large,
 /area/station/service/theater)
+"nBa" = (
+/obj/effect/turf_decal/siding/wood{
+	dir = 4
+	},
+/obj/machinery/greenscreen_camera{
+	dir = 8;
+	pixel_y = 4;
+	pixel_x = -4
+	},
+/turf/open/floor/wood/large,
+/area/station/command/heads_quarters/captain)
 "nBd" = (
 /obj/effect/turf_decal/tile/purple/half/contrasted{
 	dir = 8
@@ -94204,6 +94243,26 @@
 /obj/structure/extinguisher_cabinet/directional/south,
 /turf/open/floor/iron/dark/small,
 /area/station/service/theater)
+"oaw" = (
+/obj/structure/table/glass,
+/obj/structure/sign/poster/official/help_others/directional/north,
+/obj/item/storage/medkit/regular,
+/obj/item/storage/medkit/brute{
+	pixel_x = 3;
+	pixel_y = 3
+	},
+/obj/item/storage/medkit/brute,
+/obj/item/storage/medkit/brute{
+	pixel_x = -3;
+	pixel_y = -3
+	},
+/obj/machinery/door/window/left/directional/south{
+	name = "First-Aid Supplies";
+	req_access = list("medical")
+	},
+/obj/effect/mapping_helpers/airlock/red_alert_access,
+/turf/open/floor/iron/dark,
+/area/station/medical/storage)
 "oay" = (
 /obj/effect/turf_decal/siding/wideplating_new/dark,
 /obj/structure/railing{
@@ -136828,18 +136887,6 @@
 	},
 /turf/open/floor/iron/dark,
 /area/station/security/office)
-"uqU" = (
-/obj/structure/table/reinforced/rglass,
-/obj/item/storage/fancy/cigarettes/cigars/havana{
-	pixel_y = 8
-	},
-/obj/item/lighter{
-	pixel_y = -15;
-	pixel_x = 1
-	},
-/obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
-/turf/open/floor/carpet/royalblue,
-/area/station/command/heads_quarters/captain)
 "urf" = (
 /obj/effect/turf_decal/stripes/line{
 	dir = 10
@@ -141034,6 +141081,17 @@
 	},
 /turf/open/floor/iron/dark/textured,
 /area/station/ai_monitored/security/armory)
+"uXN" = (
+/obj/structure/table/reinforced/rglass,
+/obj/item/storage/box/monkeycubes{
+	pixel_y = 10;
+	pixel_x = 0
+	},
+/obj/item/flesh_shears{
+	pixel_y = -5
+	},
+/turf/open/floor/iron/dark/textured,
+/area/station/science/genetics)
 "uXR" = (
 /obj/effect/turf_decal/siding/wood/corner,
 /obj/effect/turf_decal/siding/wood{
@@ -146016,6 +146074,14 @@
 	},
 /turf/open/floor/carpet/red,
 /area/station/service/library/upper)
+"vHM" = (
+/obj/machinery/light/directional/west,
+/obj/structure/sign/poster/greenscreen/directional/west,
+/obj/effect/turf_decal/siding/wood{
+	dir = 8
+	},
+/turf/open/floor/wood/large,
+/area/station/command/heads_quarters/captain)
 "vHR" = (
 /obj/effect/turf_decal/stripes/corner{
 	dir = 4
@@ -151892,22 +151958,6 @@
 /obj/structure/disposalpipe/segment,
 /turf/open/floor/iron/dark/textured,
 /area/station/science/ordnance/storage)
-"wEk" = (
-/obj/structure/table/reinforced/rglass,
-/obj/item/paper_bin{
-	pixel_x = -5;
-	pixel_y = 4
-	},
-/obj/item/pen/fountain/captain{
-	pixel_x = -5;
-	pixel_y = 4
-	},
-/obj/item/toy/figure/captain{
-	pixel_y = 3;
-	pixel_x = 6
-	},
-/turf/open/floor/carpet/royalblue,
-/area/station/command/heads_quarters/captain)
 "wEl" = (
 /obj/structure/chair/sofa/right,
 /obj/item/newspaper,
@@ -157750,27 +157800,6 @@
 /obj/machinery/firealarm/directional/south,
 /turf/open/floor/grass,
 /area/station/security/prison/garden)
-"xyJ" = (
-/obj/effect/turf_decal/siding/wood{
-	dir = 1
-	},
-/obj/effect/turf_decal/siding/wood/corner{
-	dir = 8
-	},
-/obj/machinery/button/door/directional/north{
-	id = "capoffice";
-	name = "Privacy Control";
-	pixel_y = 26;
-	req_access = list("captain");
-	pixel_x = -7
-	},
-/obj/machinery/light/directional/north,
-/obj/machinery/camera/autoname/directional/north,
-/obj/machinery/keycard_auth/wall_mounted/directional/north{
-	pixel_x = 6
-	},
-/turf/open/floor/wood/large,
-/area/station/command/heads_quarters/captain)
 "xyK" = (
 /obj/effect/mapping_helpers/airlock/access/all/medical/general,
 /obj/structure/cable,
@@ -159286,30 +159315,6 @@
 /obj/effect/decal/cleanable/dirt/dust,
 /turf/open/floor/engine/hull/reinforced,
 /area/space/nearstation)
-"xKk" = (
-/obj/structure/table/glass,
-/obj/effect/turf_decal/siding/dark{
-	dir = 6
-	},
-/obj/machinery/door/window/right/directional/south{
-	name = "First Aid Supplies";
-	req_access = list("medical")
-	},
-/obj/machinery/digital_clock/directional/north,
-/obj/item/storage/medkit/regular,
-/obj/item/storage/medkit/toxin{
-	pixel_x = 3;
-	pixel_y = 3
-	},
-/obj/item/storage/medkit/toxin,
-/obj/item/storage/medkit/toxin{
-	pixel_x = -3;
-	pixel_y = -3
-	},
-/obj/machinery/light/directional/north,
-/obj/effect/mapping_helpers/airlock/red_alert_access,
-/turf/open/floor/iron/dark,
-/area/station/medical/storage)
 "xKl" = (
 /obj/structure/railing/corner/end/flip{
 	dir = 8
@@ -208736,7 +208741,7 @@ hkO
 kNu
 xUj
 doo
-wEk
+fuB
 vNk
 hkD
 sIZ
@@ -208990,7 +208995,7 @@ wBq
 wBq
 wBq
 wBq
-xyJ
+mpv
 szi
 isA
 szi
@@ -209253,8 +209258,8 @@ qRh
 kfA
 ngm
 rKa
-bdU
-aHq
+vHM
+kUS
 wBq
 wBq
 gym
@@ -209505,12 +209510,12 @@ baE
 kfA
 sir
 rjQ
-uqU
+jBr
 sxZ
 nRL
 qCb
 kZT
-iok
+nBa
 bUG
 pem
 wBq
@@ -255464,7 +255469,7 @@ lfg
 qDD
 nZD
 kLa
-hAb
+oaw
 nJX
 eww
 mKj
@@ -255721,7 +255726,7 @@ kLa
 kLa
 kLa
 kLa
-xKk
+cxP
 nJX
 eww
 tJb
@@ -263174,7 +263179,7 @@ ybp
 mQH
 lLq
 ovo
-nzh
+uXN
 gBq
 wLX
 pxd
@@ -279408,7 +279413,7 @@ aZM
 xMF
 caQ
 sss
-ibw
+lkP
 ans
 fKQ
 aiq
@@ -280950,7 +280955,7 @@ aZM
 bAt
 dVu
 lBi
-npS
+gWt
 cvK
 lYI
 nuK
