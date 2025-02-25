@@ -24824,6 +24824,7 @@
 /obj/structure/cable,
 /obj/structure/curtain,
 /obj/effect/turf_decal/weather/snow,
+/obj/structure/plasticflaps/kitchen,
 /turf/open/floor/iron/kitchen_coldroom/freezerfloor,
 /area/station/medical/coldroom)
 "dIN" = (
@@ -25150,6 +25151,7 @@
 /obj/machinery/door/airlock/freezer{
 	name = "Freezer"
 	},
+/obj/structure/plasticflaps/kitchen,
 /turf/open/floor/iron/dark,
 /area/station/service/kitchen/coldroom)
 "dMg" = (
@@ -30314,6 +30316,7 @@
 	name = "Medbay Maintenance"
 	},
 /obj/effect/mapping_helpers/airlock/access/all/medical/surgery,
+/obj/structure/plasticflaps/kitchen,
 /turf/open/floor/plating,
 /area/station/maintenance/port/fore)
 "eyr" = (
@@ -40489,6 +40492,7 @@
 "fZB" = (
 /obj/machinery/atmospherics/pipe/smart/manifold4w/cyan/visible,
 /obj/structure/cable,
+/obj/structure/plasticflaps/kitchen,
 /turf/open/floor/glass/reinforced,
 /area/station/engineering/supermatter/room/upper)
 "fZK" = (
@@ -57575,6 +57579,7 @@
 /obj/machinery/atmospherics/pipe/layer_manifold/supply/hidden{
 	dir = 4
 	},
+/obj/structure/plasticflaps/kitchen,
 /turf/open/floor/plating,
 /area/station/maintenance/port/fore)
 "iAX" = (
@@ -69595,7 +69600,8 @@
 /obj/item/tank/internals/anesthetic,
 /obj/machinery/light/small/directional/south,
 /obj/effect/turf_decal/weather/snow,
-/obj/machinery/light_switch/directional/east,
+/obj/machinery/airalarm/directional/south,
+/obj/effect/mapping_helpers/airalarm/tlv_cold_room,
 /turf/open/floor/iron/kitchen_coldroom/freezerfloor,
 /area/station/medical/coldroom)
 "koc" = (
@@ -100029,6 +100035,7 @@
 	},
 /obj/machinery/atmospherics/pipe/smart/manifold4w/general/hidden,
 /obj/effect/mapping_helpers/airlock/access/all/science/rd,
+/obj/structure/plasticflaps/kitchen,
 /turf/open/floor/iron/dark,
 /area/station/science/server)
 "oQc" = (
@@ -106567,8 +106574,8 @@
 	dir = 9
 	},
 /obj/machinery/iv_drip,
-/obj/structure/sign/poster/official/random/directional/north,
 /obj/effect/turf_decal/weather/snow,
+/obj/machinery/light_switch/directional/west,
 /turf/open/floor/iron/kitchen_coldroom/freezerfloor,
 /area/station/medical/coldroom)
 "pKX" = (
@@ -107733,6 +107740,7 @@
 	},
 /obj/machinery/atmospherics/pipe/smart/manifold4w/cyan/visible,
 /obj/effect/mapping_helpers/airlock/access/all/science/xenobio,
+/obj/structure/plasticflaps/kitchen,
 /turf/open/floor/iron/dark,
 /area/station/science/xenobiology)
 "pTz" = (
@@ -135157,6 +135165,12 @@
 	},
 /turf/open/floor/iron/dark,
 /area/station/science/cytology)
+"uax" = (
+/obj/structure/cable,
+/obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
+/obj/structure/sign/poster/official/safety_internals/directional/east,
+/turf/open/floor/plating,
+/area/station/maintenance/port/fore)
 "uaz" = (
 /obj/effect/decal/cleanable/dirt,
 /obj/structure/cable,
@@ -158956,6 +158970,7 @@
 	dir = 8
 	},
 /obj/structure/cable,
+/obj/structure/plasticflaps/kitchen,
 /turf/open/floor/iron/dark/textured,
 /area/station/tcommsat/computer)
 "xIb" = (
@@ -259606,7 +259621,7 @@ aWl
 oPA
 hCZ
 iae
-ktw
+uax
 rdE
 ktw
 wBm
