@@ -11659,7 +11659,6 @@
 /obj/structure/cable,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /obj/item/kirbyplants/random,
-/obj/machinery/camera/autoname/directional/east,
 /turf/open/floor/iron/dark/diagonal,
 /area/station/cargo/breakroom)
 "bMt" = (
@@ -22344,9 +22343,6 @@
 /obj/item/kirbyplants/random,
 /obj/structure/disposalpipe/segment{
 	dir = 9
-	},
-/obj/machinery/camera/autoname/directional/east{
-	network = list("ss13","rd")
 	},
 /turf/open/floor/iron/dark/diagonal,
 /area/station/science/breakroom)
@@ -71437,7 +71433,6 @@
 "kAF" = (
 /obj/machinery/newscaster/directional/west,
 /obj/effect/turf_decal/siding/dark/corner,
-/obj/machinery/camera/autoname/directional/west,
 /obj/effect/turf_decal/siding/brown{
 	dir = 9
 	},
@@ -71472,7 +71467,6 @@
 	dir = 10
 	},
 /obj/item/kirbyplants/organic/plant18,
-/obj/machinery/camera/autoname/directional/west,
 /turf/open/floor/wood/parquet,
 /area/station/cargo/mining_breakroom)
 "kAT" = (
@@ -76618,9 +76612,6 @@
 /obj/machinery/newscaster/directional/south,
 /obj/effect/turf_decal/siding/dark/corner{
 	dir = 1
-	},
-/obj/machinery/camera/autoname/directional/east{
-	network = list("ss13","medbay")
 	},
 /turf/open/floor/iron/dark,
 /area/station/medical/break_room)
@@ -95477,9 +95468,6 @@
 /obj/structure/sign/clock/directional/north,
 /obj/item/dice/d20,
 /obj/structure/disposalpipe/segment,
-/obj/machinery/camera/autoname/directional/north{
-	network = list("ss13","rd","medbay")
-	},
 /turf/open/floor/wood/tile,
 /area/station/science/breakroom)
 "oiJ" = (
@@ -96638,9 +96626,6 @@
 /obj/item/kirbyplants/random,
 /obj/structure/disposalpipe/segment{
 	dir = 5
-	},
-/obj/machinery/camera/autoname/directional/west{
-	network = list("ss13","medbay")
 	},
 /turf/open/floor/iron/dark/diagonal,
 /area/station/medical/break_room)
@@ -124413,9 +124398,6 @@
 /obj/machinery/newscaster/directional/south,
 /obj/effect/turf_decal/siding/dark/corner{
 	dir = 4
-	},
-/obj/machinery/camera/autoname/directional/west{
-	network = list("ss13","rd")
 	},
 /turf/open/floor/iron/dark,
 /area/station/science/breakroom)
