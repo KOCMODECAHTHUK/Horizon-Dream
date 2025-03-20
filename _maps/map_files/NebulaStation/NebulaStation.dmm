@@ -7991,7 +7991,6 @@
 "blI" = (
 /obj/structure/guncase/shotgun{
 	anchored = 1;
-	can_be_unanchored = 1;
 	open = 0
 	},
 /obj/item/gun/ballistic/shotgun/doublebarrel,
@@ -47611,7 +47610,6 @@
 /obj/item/storage/bag/xeno,
 /obj/structure/closet{
 	anchored = 1;
-	can_be_unanchored = 1;
 	name = "Cold protection gear"
 	},
 /turf/open/floor/iron/dark,
@@ -137565,7 +137563,6 @@
 /obj/structure/window/reinforced/spawner/directional/west,
 /obj/structure/closet{
 	anchored = 1;
-	can_be_unanchored = 1;
 	name = "Cold protection gear"
 	},
 /obj/effect/turf_decal/tile/purple/fourcorners,
