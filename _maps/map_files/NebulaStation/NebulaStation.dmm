@@ -86172,6 +86172,8 @@
 /obj/effect/turf_decal/trimline/dark/corner{
 	dir = 1
 	},
+/obj/structure/rack,
+/obj/effect/spawner/random/techstorage/custom_shuttle,
 /turf/open/floor/iron/dark/textured,
 /area/station/engineering/storage/tech)
 "mOS" = (
