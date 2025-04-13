@@ -69761,14 +69761,11 @@
 /obj/structure/rack,
 /obj/item/storage/box/bodybags,
 /obj/item/clothing/gloves/latex,
-/obj/item/clothing/mask/breath/medical{
-	pixel_y = -2;
-	pixel_x = -2
-	},
 /obj/item/tank/internals/anesthetic,
 /obj/item/healthanalyzer,
 /obj/item/clothing/mask/surgical,
 /obj/machinery/light_switch/directional/south,
+/obj/item/clothing/mask/muzzle/breath,
 /turf/open/floor/iron/dark/small,
 /area/station/science/robotics/augments)
 "koS" = (
@@ -72301,6 +72298,7 @@
 /obj/machinery/power/apc/auto_name/directional/east,
 /obj/structure/cable,
 /obj/machinery/airalarm/directional/south,
+/obj/effect/mapping_helpers/airalarm/surgery,
 /turf/open/floor/iron/dark/small,
 /area/station/science/robotics/augments)
 "kFG" = (
@@ -97817,6 +97815,7 @@
 	dir = 8
 	},
 /obj/structure/railing,
+/obj/effect/mapping_helpers/airalarm/surgery,
 /turf/open/floor/iron/white/smooth_edge{
 	dir = 4
 	},
@@ -159971,19 +159970,17 @@
 /obj/item/tank/internals/anesthetic{
 	pixel_x = -3
 	},
-/obj/item/clothing/mask/breath/medical{
-	pixel_y = -3
-	},
-/obj/item/clothing/mask/breath/medical,
-/obj/item/clothing/mask/breath/medical{
-	pixel_y = 3
-	},
 /obj/structure/rack,
 /obj/effect/turf_decal/siding{
 	dir = 1
 	},
 /obj/effect/turf_decal/trimline/dark/filled/line{
 	dir = 1
+	},
+/obj/item/clothing/mask/muzzle/breath,
+/obj/item/clothing/mask/muzzle/breath,
+/obj/item/clothing/mask/muzzle/breath{
+	pixel_y = -4
 	},
 /turf/open/floor/iron/showroomfloor,
 /area/station/medical/surgery/theatre)
