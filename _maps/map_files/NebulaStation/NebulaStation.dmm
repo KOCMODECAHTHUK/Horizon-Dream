@@ -4675,7 +4675,7 @@
 /turf/open/floor/iron/dark,
 /area/station/medical/morgue)
 "aKP" = (
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/effect/turf_decal/bot,
 /obj/structure/sign/calendar/directional/north,
 /turf/open/floor/iron/dark/textured_large,
@@ -7007,7 +7007,7 @@
 	},
 /area/station/engineering/atmos/storage)
 "bcE" = (
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/effect/turf_decal/bot_white,
 /turf/open/floor/iron/dark/textured,
 /area/station/security/office)
@@ -7500,7 +7500,7 @@
 	dir = 1
 	},
 /obj/effect/turf_decal/siding/wood,
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/item/radio/intercom/directional/north,
 /turf/open/floor/wood/large,
 /area/station/security/detectives_office)
@@ -28971,7 +28971,7 @@
 /obj/effect/turf_decal/siding/wood{
 	dir = 4
 	},
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/machinery/camera/autoname/directional/east,
 /turf/open/floor/wood/large,
 /area/station/service/lawoffice)
@@ -29266,7 +29266,7 @@
 /obj/effect/turf_decal/siding/wood/corner{
 	dir = 8
 	},
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /turf/open/floor/wood/large,
 /area/station/service/library)
 "eqr" = (
@@ -32839,7 +32839,7 @@
 /turf/open/floor/iron/dark,
 /area/station/cargo/storage)
 "eSx" = (
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/machinery/power/apc/auto_name/directional/north,
 /obj/structure/cable,
 /turf/open/floor/iron/dark,
@@ -34560,7 +34560,7 @@
 /area/station/maintenance/port/aft)
 "ffC" = (
 /obj/effect/turf_decal/siding/wood/end,
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /turf/open/floor/wood/large,
 /area/station/service/chapel/office)
 "ffE" = (
@@ -45012,7 +45012,7 @@
 /turf/open/floor/iron/dark/textured,
 /area/station/commons/fitness/recreation)
 "gIo" = (
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/effect/turf_decal/siding/wood{
 	dir = 5
 	},
@@ -50172,7 +50172,7 @@
 	dir = 10
 	},
 /obj/machinery/firealarm/directional/south,
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /turf/open/floor/iron/dark,
 /area/station/cargo/office)
 "hvR" = (
@@ -70355,7 +70355,7 @@
 /turf/open/floor/iron/dark,
 /area/station/hallway/primary/port)
 "ksS" = (
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/structure/sign/flag/ssc/directional/south,
 /turf/open/floor/iron/dark,
 /area/station/command/meeting_room)
@@ -75154,7 +75154,7 @@
 	dir = 4
 	},
 /obj/machinery/light_switch/directional/west,
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /turf/open/floor/iron/dark,
 /area/station/command)
 "lfg" = (
@@ -82252,7 +82252,7 @@
 /obj/effect/turf_decal/siding/wood{
 	dir = 6
 	},
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /turf/open/floor/wood/large,
 /area/station/command/heads_quarters/ce)
 "mkx" = (
@@ -84896,7 +84896,7 @@
 /obj/effect/turf_decal/siding/thinplating_new/dark/corner{
 	dir = 4
 	},
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/machinery/camera/autoname/directional/south,
 /turf/open/floor/iron/dark/diagonal,
 /area/station/engineering/lobby)
@@ -100077,7 +100077,7 @@
 /obj/effect/turf_decal/siding/wood/corner{
 	dir = 4
 	},
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /turf/open/floor/wood/large,
 /area/station/service/library/upper)
 "oQA" = (
@@ -123745,7 +123745,7 @@
 /obj/effect/turf_decal/siding/wood{
 	dir = 9
 	},
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/item/toy/figure/hos{
 	pixel_y = 12;
 	pixel_x = 3
@@ -140760,9 +140760,7 @@
 /turf/open/floor/iron/dark,
 /area/station/hallway/secondary/service)
 "uVy" = (
-/obj/machinery/photocopier{
-	pixel_y = 4
-	},
+/obj/machinery/photocopier/prebuilt,
 /obj/effect/turf_decal/siding/wood{
 	dir = 5
 	},
@@ -142808,9 +142806,7 @@
 	},
 /obj/effect/turf_decal/trimline/white/line,
 /obj/structure/table/reinforced/rglass,
-/obj/machinery/photocopier{
-	pixel_y = 4
-	},
+/obj/machinery/photocopier/prebuilt,
 /turf/open/floor/iron/dark/textured_large,
 /area/station/hallway/secondary/service)
 "viP" = (
@@ -151066,9 +151062,7 @@
 /turf/open/floor/plating,
 /area/station/maintenance/department/science)
 "wwD" = (
-/obj/machinery/photocopier{
-	pixel_y = 3
-	},
+/obj/machinery/photocopier/prebuilt,
 /obj/machinery/newscaster/directional/north,
 /turf/open/floor/wood/large,
 /area/station/service/library/upper)
@@ -151894,7 +151888,7 @@
 /turf/open/misc/asteroid/airless,
 /area/space/nearstation)
 "wCZ" = (
-/obj/machinery/photocopier,
+/obj/machinery/photocopier/prebuilt,
 /obj/effect/turf_decal/siding/wood{
 	dir = 6
 	},
@@ -157693,9 +157687,7 @@
 	},
 /obj/machinery/airalarm/directional/east,
 /obj/structure/table/glass,
-/obj/machinery/photocopier{
-	pixel_y = 5
-	},
+/obj/machinery/photocopier/prebuilt,
 /turf/open/floor/iron/white,
 /area/station/science/research)
 "xxU" = (
