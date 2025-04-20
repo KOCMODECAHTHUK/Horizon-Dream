@@ -83279,13 +83279,22 @@
 "msw" = (
 /obj/structure/table/reinforced,
 /obj/item/storage/toolbox/mechanical{
-	pixel_y = 14
+	pixel_y = 11;
+	pixel_x = -2
 	},
 /obj/item/storage/toolbox/electrical{
-	pixel_y = 7
+	pixel_y = 7;
+	pixel_x = 3
 	},
-/obj/item/storage/toolbox/artistic,
+/obj/item/storage/toolbox/artistic{
+	pixel_x = -2;
+	pixel_y = 3
+	},
 /obj/structure/window/spawner/directional/south,
+/obj/item/storage/toolbox/crafter{
+	pixel_x = 3;
+	pixel_y = -1
+	},
 /turf/open/floor/iron/dark,
 /area/station/commons/storage/primary)
 "msy" = (
@@ -94407,14 +94416,19 @@
 /turf/open/floor/iron,
 /area/station/maintenance/port/central)
 "obU" = (
-/obj/item/chisel,
-/obj/item/storage/toolbox/artistic,
 /obj/structure/rack,
-/obj/item/storage/crayons,
 /obj/effect/turf_decal/siding/wood{
 	dir = 6
 	},
 /obj/machinery/camera/autoname/directional/east,
+/obj/item/storage/toolbox/artistic{
+	pixel_x = -1;
+	pixel_y = 2
+	},
+/obj/item/storage/toolbox/crafter{
+	pixel_x = 3;
+	pixel_y = -3
+	},
 /turf/open/floor/wood/large,
 /area/station/security/prison/rec)
 "obV" = (
