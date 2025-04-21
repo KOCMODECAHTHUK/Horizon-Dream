@@ -26336,7 +26336,7 @@
 /obj/item/clothing/shoes/ducky_shoes{
 	name = "Quackins"
 	},
-/turf/open/water/beach,
+/turf/open/water/deep_beach,
 /area/station/commons/fitness/recreation/pool)
 "dVo" = (
 /obj/effect/decal/cleanable/dirt,
@@ -102617,6 +102617,9 @@
 	},
 /turf/open/floor/iron/dark,
 /area/station/command)
+"piz" = (
+/turf/open/water/deep_beach,
+/area/station/commons/fitness/recreation/pool)
 "piB" = (
 /obj/effect/decal/cleanable/insectguts,
 /obj/structure/sign/poster/contraband/random/directional/east,
@@ -151288,6 +151291,10 @@
 "wyi" = (
 /turf/open/floor/iron/stairs/medium,
 /area/station/medical/surgery/theatre)
+"wyj" = (
+/obj/effect/landmark/start/hangover,
+/turf/open/water/deep_beach,
+/area/station/commons/fitness/recreation/pool)
 "wyl" = (
 /obj/effect/turf_decal/trimline/dark/corner{
 	dir = 4
@@ -178956,8 +178963,8 @@ udR
 ffS
 oUH
 sot
-kIf
-kIf
+piz
+piz
 kIf
 oUL
 jUz
@@ -179213,8 +179220,8 @@ uCt
 ffS
 uwg
 skZ
-kIf
-sot
+piz
+wyj
 kIf
 coE
 uKc
@@ -179471,7 +179478,7 @@ ffS
 iId
 kIf
 dVi
-kIf
+piz
 kIf
 mUi
 xer
