@@ -17449,8 +17449,8 @@
 /turf/open/floor/carpet/red,
 /area/station/maintenance/department/bridge)
 "cFQ" = (
-/obj/effect/spawner/random/trash/grille_or_waste,
 /obj/structure/sign/warning/biohazard,
+/obj/effect/spawner/random/structure/grille,
 /turf/open/space/openspace,
 /area/space/nearstation)
 "cFS" = (
