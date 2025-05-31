@@ -23394,8 +23394,6 @@
 	id_tag = "MedbayFoyer";
 	name = "Medbay"
 	},
-/obj/effect/mapping_helpers/airlock/unres,
-/obj/effect/mapping_helpers/airlock/access/all/medical/general,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /turf/open/floor/iron/white,
@@ -37274,12 +37272,8 @@
 /obj/machinery/door/airlock/medical{
 	name = "Psychology Lobby"
 	},
-/obj/effect/mapping_helpers/airlock/unres{
-	dir = 4
-	},
 /obj/effect/turf_decal/tile/blue/fourcorners,
 /obj/machinery/door/firedoor,
-/obj/effect/mapping_helpers/airlock/access/all/medical/general,
 /obj/structure/cable,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
@@ -39686,18 +39680,19 @@
 /turf/open/floor/plating,
 /area/station/command)
 "fTB" = (
-/obj/machinery/door/airlock/medical/glass{
-	id_tag = "MedbayFoyerDown";
-	name = "Medbay"
-	},
 /obj/machinery/door/firedoor,
-/obj/effect/mapping_helpers/airlock/unres,
-/obj/effect/turf_decal/tile/blue/fourcorners,
-/obj/effect/mapping_helpers/airlock/access/all/medical/general,
 /obj/machinery/door/poddoor/shutters/preopen{
 	id = "medbay"
 	},
-/turf/open/floor/iron/white,
+/obj/effect/turf_decal/stripes/line{
+	dir = 1
+	},
+/obj/effect/turf_decal/trimline/blue/warning{
+	dir = 1
+	},
+/obj/effect/turf_decal/trimline/blue/warning,
+/obj/effect/turf_decal/stripes/line,
+/turf/open/floor/iron/dark/textured,
 /area/station/medical/medbay/lobby)
 "fTC" = (
 /obj/effect/turf_decal/siding/thinplating_new/dark/end,
@@ -48790,8 +48785,6 @@
 	id_tag = "MedbayFoyer";
 	name = "Medbay"
 	},
-/obj/effect/mapping_helpers/airlock/unres,
-/obj/effect/mapping_helpers/airlock/access/all/medical/general,
 /turf/open/floor/iron/white,
 /area/station/medical/medbay/central)
 "hjS" = (
@@ -60002,10 +59995,6 @@
 /obj/machinery/door/airlock/medical/glass{
 	id_tag = "MedbayFoyer";
 	name = "Medbay"
-	},
-/obj/effect/mapping_helpers/airlock/access/all/medical/general,
-/obj/effect/mapping_helpers/airlock/unres{
-	dir = 1
 	},
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
@@ -106044,20 +106033,21 @@
 /area/station/ai_monitored/aisat/exterior)
 "pGU" = (
 /obj/machinery/door/firedoor,
-/obj/effect/mapping_helpers/airlock/unres,
-/obj/effect/turf_decal/tile/blue/fourcorners,
-/obj/effect/mapping_helpers/airlock/access/all/medical/general,
 /obj/machinery/door/poddoor/shutters/preopen{
 	id = "medbay"
-	},
-/obj/machinery/door/airlock/medical/glass{
-	id_tag = "MedbayFoyerDown";
-	name = "Medbay"
 	},
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /obj/structure/disposalpipe/segment,
-/turf/open/floor/iron/white,
+/obj/effect/turf_decal/stripes/line{
+	dir = 1
+	},
+/obj/effect/turf_decal/trimline/blue/warning{
+	dir = 1
+	},
+/obj/effect/turf_decal/trimline/blue/warning,
+/obj/effect/turf_decal/stripes/line,
+/turf/open/floor/iron/dark/textured,
 /area/station/medical/medbay/lobby)
 "pHa" = (
 /obj/structure/table/reinforced,
@@ -139386,19 +139376,6 @@
 /obj/machinery/computer/security/telescreen/minisat/directional/east,
 /turf/open/floor/iron/dark/textured_large,
 /area/station/ai_monitored/turret_protected/aisat_interior)
-"uKT" = (
-/obj/machinery/door/firedoor,
-/obj/effect/turf_decal/tile/blue/fourcorners,
-/obj/machinery/door/airlock/medical/glass{
-	id_tag = "MedbayFoyer";
-	name = "Medbay"
-	},
-/obj/effect/mapping_helpers/airlock/access/all/medical/general,
-/obj/effect/mapping_helpers/airlock/unres{
-	dir = 1
-	},
-/turf/open/floor/iron/white,
-/area/station/medical/medbay/central)
 "uKZ" = (
 /obj/effect/turf_decal/siding/thinplating_new/dark{
 	dir = 1
@@ -140240,20 +140217,18 @@
 /area/station/maintenance/fore/greater)
 "uRb" = (
 /obj/machinery/door/firedoor,
-/obj/effect/mapping_helpers/airlock/unres{
-	dir = 1
-	},
-/obj/effect/turf_decal/tile/blue/fourcorners,
-/obj/machinery/door/airlock/medical/glass{
-	id_tag = "MedbayFoyerUp";
-	name = "Medbay"
-	},
-/obj/effect/mapping_helpers/airlock/access/all/medical/general,
 /obj/machinery/door/poddoor/shutters/preopen{
 	id = "medbay";
 	dir = 1
 	},
-/turf/open/floor/iron/white,
+/obj/effect/turf_decal/stripes/line{
+	dir = 1
+	},
+/obj/effect/turf_decal/trimline/blue/warning{
+	dir = 1
+	},
+/obj/effect/turf_decal/trimline/blue/warning,
+/turf/open/floor/iron/dark/textured,
 /area/station/medical/medbay/lobby)
 "uRf" = (
 /obj/effect/turf_decal/siding/dark{
@@ -155593,22 +155568,20 @@
 /area/station/engineering/break_room)
 "xhY" = (
 /obj/machinery/door/firedoor,
-/obj/effect/mapping_helpers/airlock/unres{
-	dir = 1
-	},
-/obj/effect/turf_decal/tile/blue/fourcorners,
-/obj/effect/mapping_helpers/airlock/access/all/medical/general,
 /obj/machinery/door/poddoor/shutters/preopen{
 	id = "medbay";
 	dir = 1
 	},
-/obj/machinery/door/airlock/medical/glass{
-	id_tag = "MedbayFoyerUp";
-	name = "Medbay"
-	},
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
-/turf/open/floor/iron/white,
+/obj/effect/turf_decal/stripes/line{
+	dir = 1
+	},
+/obj/effect/turf_decal/trimline/blue/warning{
+	dir = 1
+	},
+/obj/effect/turf_decal/trimline/blue/warning,
+/turf/open/floor/iron/dark/textured,
 /area/station/medical/medbay/lobby)
 "xhZ" = (
 /obj/effect/turf_decal/siding/wood/end{
@@ -257300,7 +257273,7 @@ uNV
 mnh
 wfx
 yjJ
-uKT
+hjP
 sGo
 rOK
 oBt
