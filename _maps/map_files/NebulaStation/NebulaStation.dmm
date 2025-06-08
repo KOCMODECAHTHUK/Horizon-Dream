@@ -19757,7 +19757,7 @@
 /turf/open/floor/carpet,
 /area/station/medical/psychology)
 "cWV" = (
-/obj/machinery/computer/scan_consolenew,
+/obj/machinery/computer/dna_console,
 /obj/effect/turf_decal/bot,
 /turf/open/floor/iron/dark/textured,
 /area/station/science/genetics)
@@ -77461,7 +77461,7 @@
 	},
 /area/station/commons/toilet/restrooms)
 "luw" = (
-/obj/machinery/computer/scan_consolenew{
+/obj/machinery/computer/dna_console{
 	dir = 1
 	},
 /obj/effect/turf_decal/bot,
@@ -143425,7 +143425,7 @@
 /turf/open/floor/iron/dark/textured_half,
 /area/station/engineering/atmos)
 "vme" = (
-/obj/machinery/computer/scan_consolenew{
+/obj/machinery/computer/dna_console{
 	dir = 4
 	},
 /obj/effect/turf_decal/bot,
