@@ -69916,7 +69916,7 @@
 /obj/item/healthanalyzer,
 /obj/item/clothing/mask/surgical,
 /obj/machinery/light_switch/directional/south,
-/obj/item/clothing/mask/muzzle/breath,
+/obj/item/clothing/mask/breath/muzzle,
 /turf/open/floor/iron/dark/small,
 /area/station/science/robotics/augments)
 "koS" = (
@@ -159976,9 +159976,9 @@
 /obj/effect/turf_decal/trimline/dark/filled/line{
 	dir = 1
 	},
-/obj/item/clothing/mask/muzzle/breath,
-/obj/item/clothing/mask/muzzle/breath,
-/obj/item/clothing/mask/muzzle/breath{
+/obj/item/clothing/mask/breath/muzzle,
+/obj/item/clothing/mask/breath/muzzle,
+/obj/item/clothing/mask/breath/muzzle{
 	pixel_y = -4
 	},
 /turf/open/floor/iron/showroomfloor,
