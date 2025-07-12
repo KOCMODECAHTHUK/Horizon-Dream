@@ -46565,9 +46565,6 @@
 	pixel_y = 5
 	},
 /obj/item/airlock_painter/decal,
-/obj/item/airlock_painter/decal/tile{
-	pixel_y = -6
-	},
 /obj/effect/turf_decal/trimline/dark/line,
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /turf/open/floor/iron/dark,
