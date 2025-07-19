@@ -4510,12 +4510,8 @@
 /obj/effect/turf_decal/trimline/dark_blue/filled/corner{
 	dir = 8
 	},
-/obj/item/kirbyplants/organic/plant22,
-/obj/effect/turf_decal/stripes/corner{
-	dir = 1
-	},
 /obj/effect/turf_decal/stripes/corner,
-/obj/machinery/airalarm/directional/east,
+/obj/machinery/firealarm/directional/east,
 /turf/open/floor/iron/dark,
 /area/station/hallway/secondary/command)
 "aJE" = (
@@ -7644,9 +7640,6 @@
 	dir = 4
 	},
 /obj/item/kirbyplants/organic/plant22,
-/obj/effect/turf_decal/stripes/corner{
-	dir = 1
-	},
 /obj/effect/turf_decal/trimline/dark/corner,
 /turf/open/floor/iron/dark,
 /area/station/command)
@@ -11752,6 +11745,7 @@
 /obj/effect/turf_decal/siding/dark/corner,
 /obj/effect/turf_decal/trimline/dark_blue/filled/corner,
 /obj/item/radio/intercom/directional/north,
+/obj/machinery/airalarm/directional/west,
 /turf/open/floor/iron/dark,
 /area/station/hallway/secondary/command)
 "bNj" = (
@@ -25446,11 +25440,10 @@
 /turf/open/floor/iron/dark,
 /area/station/service/chapel/office)
 "dOy" = (
-/obj/structure/railing{
-	dir = 10
+/obj/structure/stairs/south,
+/turf/open/floor/iron/stairs/medium{
+	dir = 1
 	},
-/obj/structure/transport/linear/public,
-/turf/open/floor/plating/elevatorshaft,
 /area/station/command)
 "dOK" = (
 /obj/effect/decal/cleanable/dirt,
@@ -37955,9 +37948,7 @@
 /obj/effect/turf_decal/siding/dark{
 	dir = 1
 	},
-/obj/structure/chair/sofa/bench/solo{
-	dir = 1
-	},
+/obj/item/kirbyplants/organic/plant22,
 /turf/open/floor/iron/dark,
 /area/station/command)
 "fFD" = (
@@ -38153,6 +38144,11 @@
 	},
 /turf/open/floor/iron/dark,
 /area/station/medical/storage)
+"fHn" = (
+/obj/effect/turf_decal/tile/dark_blue/fourcorners,
+/obj/effect/turf_decal/stripes/white/line,
+/turf/open/floor/iron/dark/textured,
+/area/station/command)
 "fHo" = (
 /obj/effect/turf_decal/siding/wood/corner{
 	dir = 1
@@ -48333,18 +48329,6 @@
 /obj/effect/landmark/start/hangover,
 /turf/open/floor/iron/white,
 /area/station/hallway/primary/fore)
-"hhf" = (
-/obj/structure/railing{
-	dir = 5
-	},
-/obj/structure/transport/linear/public,
-/obj/machinery/elevator_control_panel/directional/north{
-	linked_elevator_id = "Bridge2Elevator";
-	preset_destination_names = list("2" = "Bridge Bottom", "3" = "Bridge Upper");
-	req_access = list("command")
-	},
-/turf/open/floor/plating/elevatorshaft,
-/area/station/command)
 "hhl" = (
 /obj/effect/turf_decal/siding/thinplating_new/dark/corner,
 /obj/structure/hedge,
@@ -53185,6 +53169,15 @@
 	},
 /turf/open/space/basic,
 /area/space/nearstation)
+"hSv" = (
+/obj/structure/sign/poster/official/random/directional/east,
+/obj/effect/turf_decal/tile/dark_blue/fourcorners,
+/obj/effect/turf_decal/stripes/white/line{
+	dir = 1
+	},
+/obj/machinery/door/firedoor,
+/turf/open/floor/iron/dark/textured,
+/area/station/hallway/secondary/command)
 "hSx" = (
 /obj/structure/railing{
 	dir = 1
@@ -55470,9 +55463,6 @@
 /obj/effect/turf_decal/siding/dark,
 /obj/effect/turf_decal/trimline/dark_blue/filled/line,
 /obj/effect/turf_decal/tile/dark_blue/half/contrasted{
-	dir = 1
-	},
-/obj/effect/turf_decal/stripes/line{
 	dir = 1
 	},
 /turf/open/floor/iron/dark,
@@ -59639,25 +59629,6 @@
 /obj/item/toy/captainsaid,
 /turf/open/misc/asteroid/airless,
 /area/space/nearstation)
-"iPR" = (
-/obj/machinery/button/elevator/directional/east{
-	id = "Bridge2Elevator"
-	},
-/obj/machinery/lift_indicator/directional/east{
-	pixel_x = 31;
-	pixel_y = -1;
-	linked_elevator_id = "Bridge2Elevator"
-	},
-/obj/effect/turf_decal/caution/stand_clear,
-/obj/effect/turf_decal/trimline/dark_blue/filled/warning,
-/obj/machinery/door/window/elevator/left/directional/north{
-	elevator_mode = 1;
-	transport_linked_id = "Bridge2Elevator";
-	req_access = null
-	},
-/obj/machinery/door/firedoor/border_only,
-/turf/open/floor/iron/dark/textured_large,
-/area/station/command)
 "iPU" = (
 /obj/effect/turf_decal/trimline/blue,
 /obj/machinery/light/floor,
@@ -63914,8 +63885,6 @@
 /obj/effect/turf_decal/siding/dark{
 	dir = 1
 	},
-/obj/effect/turf_decal/stripes/corner,
-/obj/machinery/camera/autoname/directional/south,
 /turf/open/floor/iron/dark,
 /area/station/command)
 "jzd" = (
@@ -65844,6 +65813,9 @@
 /obj/structure/cable,
 /obj/machinery/button/photobooth{
 	pixel_x = 26
+	},
+/obj/machinery/light_switch/directional/east{
+	pixel_x = 36
 	},
 /turf/open/floor/wood/large,
 /area/station/command/heads_quarters/hop)
@@ -68980,6 +68952,14 @@
 /obj/effect/landmark/start/hangover,
 /turf/open/floor/iron/dark/small,
 /area/station/maintenance/central)
+"kkl" = (
+/obj/effect/turf_decal/tile/dark_blue/fourcorners,
+/obj/effect/turf_decal/stripes/white/line{
+	dir = 1
+	},
+/obj/machinery/door/firedoor,
+/turf/open/floor/iron/dark/textured,
+/area/station/hallway/secondary/command)
 "kkn" = (
 /obj/structure/window/reinforced/spawner/directional/west,
 /obj/structure/window/reinforced/spawner/directional/north,
@@ -79880,16 +79860,6 @@
 	dir = 1
 	},
 /obj/item/kirbyplants/organic/plant22,
-/obj/effect/turf_decal/stripes/corner{
-	dir = 4
-	},
-/obj/structure/sign/directions/upload/directional/north{
-	pixel_y = 29;
-	dir = 4
-	},
-/obj/structure/sign/directions/vault/directional/north{
-	pixel_y = 37
-	},
 /obj/effect/turf_decal/trimline/dark/corner{
 	dir = 8
 	},
@@ -80483,7 +80453,6 @@
 /obj/effect/turf_decal/siding/wood{
 	dir = 5
 	},
-/obj/machinery/light_switch/directional/east,
 /obj/machinery/light/directional/east,
 /obj/structure/cable,
 /turf/open/floor/wood/large,
@@ -86747,14 +86716,9 @@
 /turf/open/floor/iron,
 /area/station/maintenance/department/security)
 "mSJ" = (
-/obj/structure/railing{
-	dir = 9
+/turf/open/floor/iron/stairs/medium{
+	dir = 1
 	},
-/obj/structure/transport/linear/public,
-/obj/structure/chair/sofa/bench/solo{
-	dir = 4
-	},
-/turf/open/floor/plating/elevatorshaft,
 /area/station/command)
 "mSL" = (
 /obj/machinery/door/airlock/research{
@@ -88110,31 +88074,6 @@
 	},
 /turf/open/floor/wood/large,
 /area/station/service/theater)
-"ndX" = (
-/obj/effect/turf_decal/caution/stand_clear{
-	dir = 1
-	},
-/obj/effect/turf_decal/trimline/dark_blue/filled/warning{
-	dir = 1
-	},
-/obj/machinery/button/elevator/directional/west{
-	id = "Bridge2Elevator"
-	},
-/obj/machinery/lift_indicator/directional/west{
-	pixel_y = -1;
-	pixel_x = -33;
-	linked_elevator_id = "Bridge2Elevator"
-	},
-/obj/machinery/door/window/elevator/left/directional/south{
-	transport_linked_id = "Bridge2Elevator";
-	elevator_mode = 1;
-	req_access = list("command")
-	},
-/obj/machinery/door/firedoor/border_only{
-	dir = 1
-	},
-/turf/open/floor/iron/dark/textured_large,
-/area/station/command)
 "ndZ" = (
 /obj/effect/turf_decal/stripes/line,
 /obj/machinery/meter,
@@ -103206,19 +103145,6 @@
 /obj/structure/marker_beacon/burgundy,
 /turf/open/floor/engine/hull/reinforced,
 /area/space/nearstation)
-"pmg" = (
-/obj/effect/turf_decal/trimline/dark_blue/filled/line{
-	dir = 1
-	},
-/obj/effect/turf_decal/tile/dark_blue/half/contrasted,
-/obj/effect/turf_decal/siding/dark{
-	dir = 1
-	},
-/obj/effect/turf_decal/stripes/corner{
-	dir = 8
-	},
-/turf/open/floor/iron/dark,
-/area/station/command)
 "pmj" = (
 /obj/effect/turf_decal/stripes/line{
 	dir = 6
@@ -122241,6 +122167,18 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /turf/open/floor/wood/large,
 /area/station/command/heads_quarters/captain)
+"sec" = (
+/obj/effect/turf_decal/trimline/dark_blue/filled/line{
+	dir = 1
+	},
+/obj/effect/turf_decal/tile/dark_blue/half/contrasted,
+/obj/effect/turf_decal/siding/dark{
+	dir = 1
+	},
+/obj/machinery/camera/autoname/directional/south,
+/obj/item/kirbyplants/organic/plant22,
+/turf/open/floor/iron/dark,
+/area/station/command)
 "see" = (
 /obj/structure/cable,
 /obj/effect/decal/cleanable/dirt/dust,
@@ -124267,17 +124205,6 @@
 /obj/machinery/atmospherics/pipe/smart/manifold4w/supply/hidden/layer4,
 /turf/open/floor/iron/chapel,
 /area/station/service/chapel)
-"svc" = (
-/obj/effect/turf_decal/trimline/dark_blue/filled/line{
-	dir = 1
-	},
-/obj/effect/turf_decal/tile/dark_blue/half/contrasted,
-/obj/effect/turf_decal/siding/dark{
-	dir = 1
-	},
-/obj/effect/turf_decal/stripes/line,
-/turf/open/floor/iron/dark,
-/area/station/command)
 "svi" = (
 /obj/structure/flora/rock/pile/jungle/style_random,
 /obj/effect/decal/cleanable/dirt,
@@ -128846,17 +128773,6 @@
 /obj/machinery/airalarm/directional/east,
 /turf/open/floor/plating,
 /area/station/security/prison/safe)
-"tfR" = (
-/obj/machinery/light/floor,
-/obj/effect/landmark/transport/transport_id{
-	specific_transport_id = "Bridge2Elevator"
-	},
-/obj/effect/abstract/elevator_music_zone{
-	linked_elevator_id = "Bridge2Elevator"
-	},
-/obj/structure/transport/linear/public,
-/turf/open/floor/plating/elevatorshaft,
-/area/station/command)
 "tfS" = (
 /obj/structure/hedge/opaque,
 /obj/structure/flora/bush/jungle/a/style_3,
@@ -152078,12 +151994,6 @@
 	},
 /obj/effect/turf_decal/siding/dark,
 /obj/effect/turf_decal/trimline/dark_blue/filled/line,
-/obj/item/kirbyplants/organic/plant22,
-/obj/item/kirbyplants/organic/plant22,
-/obj/effect/turf_decal/stripes/corner{
-	dir = 4
-	},
-/obj/structure/sign/poster/official/random/directional/north,
 /turf/open/floor/iron/dark,
 /area/station/hallway/secondary/command)
 "wFd" = (
@@ -153113,17 +153023,6 @@
 	},
 /turf/open/floor/iron/dark,
 /area/station/command)
-"wMQ" = (
-/obj/effect/turf_decal/stripes/line{
-	dir = 1
-	},
-/obj/effect/turf_decal/tile/dark_blue/half/contrasted{
-	dir = 1
-	},
-/obj/effect/turf_decal/siding/dark,
-/obj/effect/turf_decal/trimline/dark_blue/filled/line,
-/turf/open/floor/iron/dark,
-/area/station/hallway/secondary/command)
 "wMY" = (
 /obj/effect/turf_decal/trimline/red/filled/line{
 	dir = 9
@@ -159516,26 +159415,6 @@
 /obj/item/storage/toolbox/emergency,
 /turf/open/floor/iron/dark/textured_large,
 /area/station/cargo/miningoffice)
-"xLz" = (
-/obj/effect/turf_decal/caution/stand_clear,
-/obj/machinery/button/elevator/directional/east{
-	id = "Bridge2Elevator"
-	},
-/obj/machinery/lift_indicator/directional/east{
-	pixel_x = 31;
-	pixel_y = -1;
-	linked_elevator_id = "Bridge2Elevator"
-	},
-/obj/effect/turf_decal/caution/stand_clear,
-/obj/machinery/door/window/elevator/left/directional/north{
-	elevator_mode = 1;
-	transport_linked_id = "Bridge2Elevator"
-	},
-/obj/machinery/camera/autoname/directional/west{
-	dir = 10
-	},
-/turf/open/floor/iron/dark/textured_large,
-/area/station/hallway/secondary/command)
 "xLJ" = (
 /obj/machinery/atmospherics/pipe/smart/manifold4w/scrubbers/hidden/layer2,
 /obj/effect/turf_decal/stripes/corner,
@@ -212593,7 +212472,7 @@ dbg
 mfR
 mxG
 jyN
-mqK
+fHn
 mSJ
 dOy
 mqK
@@ -212849,11 +212728,11 @@ kQe
 igS
 rsJ
 sZz
-svc
-ndX
-hrR
-tfR
-iPR
+jyN
+fHn
+mSJ
+dOy
+mqK
 ika
 hCf
 gmY
@@ -213106,10 +212985,10 @@ gwv
 tak
 tkL
 mxG
-pmg
-mqK
-hhf
-eGW
+jyN
+fHn
+mSJ
+dOy
 mqK
 bil
 eld
@@ -213363,7 +213242,7 @@ gwv
 mqK
 xPS
 huM
-fFC
+sec
 mqK
 mqK
 mqK
@@ -278132,7 +278011,7 @@ dya
 vSH
 mCz
 mCz
-vSH
+kkl
 wEX
 fzZ
 tiz
@@ -278389,8 +278268,8 @@ hpC
 mon
 mCz
 mCz
-xLz
-wMQ
+kkl
+wEX
 fdG
 tzF
 lSD
@@ -278646,7 +278525,7 @@ wRH
 vSH
 mCz
 mCz
-vSH
+hSv
 aJD
 rGg
 jpa
