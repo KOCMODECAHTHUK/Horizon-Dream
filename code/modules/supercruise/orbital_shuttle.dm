@@ -2,36 +2,42 @@
  * # Orbital Shuttle
  *
  * A shuttle object in supercruise that can be controlled by the player.
- * Uses BeeStation-style direct velocity control instead of inertia physics.
+ * Uses full 3D thrust vector control for movement in orbital space.
+ * Inspired by Homeworld-style 3D movement.
  */
 /datum/orbital_object/shuttle
 	render_mode = "shuttle"
 	radius = 5
 
-	/// Current thrust angle (0-360 degrees)
-	var/thrust_angle = 0
-	/// Current thrust power (0-100)
+	/// 3D thrust vector: normalized direction scaled by power (0-1)
+	/// thrust_vector magnitude = thrust power fraction
+	/// thrust_vector direction = thrust direction in 3D
+	var/list/thrust_vector = list(0, 0, 0)
+
+	/// Thrust power (0-100) for UI display convenience
 	var/thrust_power = 0
+	/// Thrust heading angle (0-360 degrees, horizontal plane) for UI display
+	var/thrust_angle = 0
+	/// Thrust pitch angle (-90 to 90 degrees, vertical) for UI display
+	var/thrust_pitch = 0
+
 	/// Maximum speed in km/s
 	var/max_speed = 50
-	/// Horizontal speed scale to make X/Y movement smoother
-	var/xy_speed_scale = 0.5
 	/// Acceleration rate (km/s per second)
 	var/acceleration = 10
 	/// Deceleration rate (km/s per second) - higher for quick stops
 	var/deceleration = 20
-	/// Target position for click-to-fly (list with x, y keys)
+
+	/// Target position for autopilot (list: x, y, z)
 	var/list/target_position = null
 	/// Autopilot enabled
 	var/autopilot_enabled = FALSE
-	/// Position history for trail rendering (list of lists with x, y keys)
+
+	/// Position history for trail rendering (list of position lists)
 	var/list/position_history = list()
-	/// Maximum number of positions to track
-	var/max_history = 20
-	/// How much Z changes per vertical control command
-	var/altitude_step = 10
-	/// Maximum vertical speed in km/s for animation or physics
-	var/max_vertical_speed = 20
+	/// Maximum number of trail positions to track
+	var/max_history = 40
+
 	/// Distance at which to start slowing down (km)
 	var/slowdown_distance = 100
 	/// Minimum arrival distance (km)
@@ -65,7 +71,10 @@
 	if(is_docked)
 		// Reset all movement when docked
 		set_velocity(0, 0, 0)
+		thrust_vector = list(0, 0, 0)
 		thrust_power = 0
+		thrust_angle = 0
+		thrust_pitch = 0
 		autopilot_enabled = FALSE
 		target_position = null
 		return
@@ -73,19 +82,22 @@
 	// Record position history for trail
 	position_history += list(position.Copy())
 	if(length(position_history) > max_history)
-		position_history.Cut(1, 2) // Remove oldest entry
+		position_history.Cut(1, 2)
 
-	var/list/target_velocity = list("x" = 0, "y" = 0, "z" = 0)
+	// Calculate target velocity based on control mode
+	var/list/target_velocity = list(0, 0, 0)
 	var/target_speed = 0
 
 	// Handle autopilot to target position
 	if(autopilot_enabled && target_position)
-		thrust_power = 0 // Disable manual thrust while on autopilot
-		var/target_x = target_position["x"]
-		var/target_y = target_position["y"]
-		var/target_z = target_position["z"]
+		thrust_vector = list(0, 0, 0) // Disable manual thrust while on autopilot
+		thrust_power = 0
 
-		// Calculate direction and distance to target
+		var/target_x = target_position[1]
+		var/target_y = target_position[2]
+		var/target_z = target_position[3]
+
+		// Calculate direction and distance to target (full 3D)
 		var/dx = target_x - position[1]
 		var/dy = target_y - position[2]
 		var/dz = target_z - position[3]
@@ -101,34 +113,33 @@
 			if(distance > slowdown_distance)
 				target_speed = max_speed
 			else
-				// Linear interpolation: speed decreases from max_speed to 0 as distance goes from slowdown_distance to 0
+				// Linear interpolation: speed decreases from max_speed to 0
 				target_speed = max_speed * (distance / slowdown_distance)
 				target_speed = max(target_speed, 5) // Minimum speed to avoid crawling
 
 			// Set target velocity in the direction of target
-			target_velocity["x"] = dir_x * target_speed
-			target_velocity["y"] = dir_y * target_speed
-			target_velocity["z"] = dir_z * target_speed
+			target_velocity[1] = dir_x * target_speed
+			target_velocity[2] = dir_y * target_speed
+			target_velocity[3] = dir_z * target_speed
 		else
 			// Arrived!
 			autopilot_enabled = FALSE
 			target_position = null
-			target_velocity["x"] = 0
-			target_velocity["y"] = 0
-			target_velocity["z"] = 0
 
-	// Handle manual thrust (when not on autopilot or in addition to autopilot)
-	else if(thrust_power > 0 && !autopilot_enabled)
-		// Manual control: set target velocity based on thrust angle
-		var/thrust_speed = (thrust_power / 100) * max_speed * xy_speed_scale
-		target_velocity["x"] = cos(thrust_angle) * thrust_speed
-		target_velocity["y"] = sin(thrust_angle) * thrust_speed
-		// target_velocity["z"] = ...
+	// Handle manual 3D thrust vector control
+	else if(thrust_power > 0)
+		var/thrust_speed = (thrust_power / 100) * max_speed
+		// thrust_vector is already a normalized direction * power fraction
+		// Multiply by max_speed to get target velocity
+		target_velocity[1] = thrust_vector[1] * max_speed
+		target_velocity[2] = thrust_vector[2] * max_speed
+		target_velocity[3] = thrust_vector[3] * max_speed
+		target_speed = thrust_speed
 
 	// Smoothly adjust current velocity toward target velocity
-	var/vel_diff_x = target_velocity["x"] - velocity[1]
-	var/vel_diff_y = target_velocity["y"] - velocity[2]
-	var/vel_diff_z = target_velocity["z"] - velocity[3]
+	var/vel_diff_x = target_velocity[1] - velocity[1]
+	var/vel_diff_y = target_velocity[2] - velocity[2]
+	var/vel_diff_z = target_velocity[3] - velocity[3]
 	var/vel_diff_mag = sqrt(vel_diff_x*vel_diff_x + vel_diff_y*vel_diff_y + vel_diff_z*vel_diff_z)
 
 	if(vel_diff_mag > 0.1)
@@ -142,15 +153,31 @@
 
 		if(vel_diff_mag <= max_change)
 			// Can reach target velocity this tick
-			velocity[1] = target_velocity["x"]
-			velocity[2] = target_velocity["y"]
-			velocity[3] = target_velocity["z"]
+			velocity[1] = target_velocity[1]
+			velocity[2] = target_velocity[2]
+			velocity[3] = target_velocity[3]
 		else
 			// Move toward target velocity at change_rate
 			var/change_ratio = max_change / vel_diff_mag
 			velocity[1] += vel_diff_x * change_ratio
 			velocity[2] += vel_diff_y * change_ratio
 			velocity[3] += vel_diff_z * change_ratio
+	else
+		// No significant target velocity change - apply drag to slow down naturally
+		// when no thrust is applied and no autopilot target
+		if(!autopilot_enabled && thrust_power == 0)
+			var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
+			if(current_speed > 0.1)
+				var/drag = deceleration * seconds_per_tick
+				if(drag >= current_speed)
+					velocity[1] = 0
+					velocity[2] = 0
+					velocity[3] = 0
+				else
+					var/drag_ratio = 1 - (drag / current_speed)
+					velocity[1] *= drag_ratio
+					velocity[2] *= drag_ratio
+					velocity[3] *= drag_ratio
 
 	..()
 
@@ -158,19 +185,103 @@
 	var/list/data = ..()
 	data["priority"] = 10 // Shuttles render on top
 	data["position_history"] = position_history.Copy()
+	data["thrust_vector"] = thrust_vector.Copy()
+	data["thrust_angle"] = thrust_angle
+	data["thrust_pitch"] = thrust_pitch
+	data["thrust_power"] = thrust_power
 	return data
 
 /**
- * Set thrust direction and power (for manual control)
+ * Set thrust using 3D vector (for full 3D control from UI)
+ * tx, ty, tz - thrust direction components (will be normalized)
+ * power - thrust power 0-100
  */
-/datum/orbital_object/shuttle/proc/set_thrust(angle, power)
-	// Normalize angle to 0-360
+/datum/orbital_object/shuttle/proc/set_thrust_3d(tx, ty, tz, power)
+	thrust_power = clamp(power, 0, 100)
+	if(thrust_power == 0)
+		thrust_vector = list(0, 0, 0)
+		thrust_angle = 0
+		thrust_pitch = 0
+		return
+
+	// Normalize the direction
+	var/mag = sqrt(tx*tx + ty*ty + tz*tz)
+	if(mag < 0.001)
+		thrust_vector = list(0, 0, 0)
+		thrust_power = 0
+		return
+
+	tx /= mag
+	ty /= mag
+	tz /= mag
+
+	thrust_vector = list(tx, ty, tz)
+
+	// Update display angles from direction
+	thrust_angle = MODULUS(ATAN2(ty, tx), 360)
+	// Pitch: -90 (straight down) to 90 (straight up)
+	var/horizontal_mag = sqrt(tx*tx + ty*ty)
+	if(horizontal_mag < 0.001)
+		thrust_pitch = tz > 0 ? 90 : -90
+	else
+		thrust_pitch = ATAN2(tz, horizontal_mag)
+
+/**
+ * Set thrust using heading angle and pitch (for 2D+ control from UI)
+ * angle - horizontal heading (0-360 degrees)
+ * pitch - vertical angle (-90 to 90)
+ * power - thrust power 0-100
+ */
+/datum/orbital_object/shuttle/proc/set_thrust(angle, power, pitch)
 	thrust_angle = MODULUS(angle, 360)
 	if(thrust_angle < 0)
 		thrust_angle += 360
+	thrust_pitch = isnull(pitch) ? thrust_pitch : clamp(pitch, -90, 90)
 	thrust_power = clamp(power, 0, 100)
 
-/* // Меняем из псевдо-вертикали, на настоящую - отключено поэтому
+	if(thrust_power == 0)
+		thrust_vector = list(0, 0, 0)
+		return
+
+	// Convert spherical coordinates to 3D direction vector
+	var/horizontal_component = cos(thrust_pitch)
+	var/tx = cos(thrust_angle) * horizontal_component
+	var/ty = sin(thrust_angle) * horizontal_component
+	var/tz = sin(thrust_pitch)
+
+	// Normalize
+	var/mag = sqrt(tx*tx + ty*ty + tz*tz)
+	if(mag > 0.001)
+		thrust_vector = list(tx / mag, ty / mag, tz / mag)
+	else
+		thrust_vector = list(0, 0, 0)
+
+/**
+ * Set thrust direction toward a target point in 3D space
+ * power - thrust power 0-100
+ */
+/datum/orbital_object/shuttle/proc/set_thrust_toward(target_x, target_y, target_z, power)
+	var/dx = target_x - position[1]
+	var/dy = target_y - position[2]
+	var/dz = target_z - position[3]
+	var/mag = sqrt(dx*dx + dy*dy + dz*dz)
+	if(mag < 0.001)
+		return
+	set_thrust_3d(dx / mag, dy / mag, dz / mag, power)
+
+/**
+ * Kill thrust and begin decelerating
+ */
+/datum/orbital_object/shuttle/proc/kill_thrust()
+	thrust_vector = list(0, 0, 0)
+	thrust_power = 0
+	thrust_angle = 0
+	thrust_pitch = 0
+
+/**
+ * Adjust altitude by adding vertical velocity impulse
+ * dz - vertical velocity to add (positive = up, negative = down)
+ */
 /datum/orbital_object/shuttle/proc/adjust_altitude(dz)
 	if(!dz)
 		return null
@@ -182,10 +293,9 @@
 	if(is_docked)
 		return "Cannot change altitude while docked"
 
-	set_position(position[1], position[2], position[3] + dz)
-	set_velocity(velocity[1], velocity[2], 0)
+	// Add vertical velocity impulse
+	velocity[3] += dz
 	return null
-*/
 
 /**
  * Attempt to dock at a station
@@ -217,6 +327,8 @@
 	autopilot_enabled = FALSE
 	target_position = null
 	set_velocity(0, 0, 0)
+	thrust_vector = list(0, 0, 0)
+	thrust_power = 0
 
 	var/obj/docking_port/stationary/target_dock = null
 
@@ -306,7 +418,7 @@
 
 /**
  * Get nearby objects that can be interacted with (generic version)
- * Returns all objects within interaction range in the same system
+ * Returns all objects within interaction range in the same system (full 3D distance)
  */
 /datum/orbital_object/shuttle/proc/get_nearby_objects(interaction_range = 30)
 	var/list/nearby = list()
@@ -316,7 +428,10 @@
 	for(var/datum/orbital_object/obj in star_system.orbital_objects)
 		if(obj == src)
 			continue // Don't include ourselves
-		var/dist = sqrt((obj.position[1] - position[1])**2 + (obj.position[2] - position[2])**2)
+		var/dx = obj.position[1] - position[1]
+		var/dy = obj.position[2] - position[2]
+		var/dz = obj.position[3] - position[3]
+		var/dist = sqrt(dx*dx + dy*dy + dz*dz)
 		if(dist <= interaction_range)
 			nearby += obj
 	return nearby
@@ -364,8 +479,8 @@
 	if(user)
 		to_chat(user, span_notice("Initiating jump to [target_system.system_name]..."))
 
-	// Execute jump using SSsupercruise
-	var/jump_result = SSsupercruise.move_to_system(src, target_system, position[1], position[2])
+	// Execute jump using SSsupercruise (preserve Z position)
+	var/jump_result = SSsupercruise.move_to_system(src, target_system, position[1], position[2], position[3])
 
 	if(!jump_result)
 		is_jumping = FALSE

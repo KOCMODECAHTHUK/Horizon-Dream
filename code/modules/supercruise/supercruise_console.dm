@@ -73,6 +73,7 @@
 		data["linkedToShuttle"] = TRUE
 		data["shuttleName"] = controlled_shuttle.name
 		data["shuttleAngle"] = controlled_shuttle.thrust_angle
+		data["shuttlePitch"] = controlled_shuttle.thrust_pitch
 		data["shuttleThrust"] = controlled_shuttle.thrust_power
 		data["shuttleVelocity"] = controlled_shuttle.get_velocity()
 		data["shuttlePosition"] = controlled_shuttle.get_position()
@@ -130,9 +131,9 @@
 		data["nearbyObjects"] = nearby_objects
 
 		if(controlled_shuttle.target_position)
-			data["targetX"] = controlled_shuttle.target_position["x"]
-			data["targetY"] = controlled_shuttle.target_position["y"]
-			data["targetZ"] = controlled_shuttle.target_position["z"]
+			data["targetX"] = controlled_shuttle.target_position[1]
+			data["targetY"] = controlled_shuttle.target_position[2]
+			data["targetZ"] = controlled_shuttle.target_position[3]
 
 		// Jump drive data
 		data["hasJumpDrive"] = controlled_shuttle.has_jump_drive
@@ -168,8 +169,21 @@
 				return FALSE
 			var/angle = text2num(params["angle"])
 			var/power = text2num(params["power"])
+			var/pitch = text2num(params["pitch"])
 			if(!isnull(angle) && !isnull(power))
-				controlled_shuttle.set_thrust(angle, power)
+				controlled_shuttle.set_thrust(angle, power, pitch)
+			return TRUE
+
+		if("set_thrust_3d")
+			if(is_docked)
+				to_chat(usr, span_warning("Cannot control thrust while docked!"))
+				return FALSE
+			var/tx = text2num(params["tx"])
+			var/ty = text2num(params["ty"])
+			var/tz = text2num(params["tz"])
+			var/power = text2num(params["power"])
+			if(!isnull(tx) && !isnull(ty) && !isnull(tz) && !isnull(power))
+				controlled_shuttle.set_thrust_3d(tx, ty, tz, power)
 			return TRUE
 
 		if("set_heading")
@@ -180,15 +194,13 @@
 			var/new_y = text2num(params["y"])
 			var/new_z = text2num(params["z"])
 			if(!isnull(new_x) && !isnull(new_y))
-				// Calculate angle to target point
+				// Calculate 3D direction to target point
 				var/dx = new_x - controlled_shuttle.position[1]
 				var/dy = new_y - controlled_shuttle.position[2]
-				var/dz = new_z - controlled_shuttle.position[3]
-				var/angle = TODEGREES(arctan(dy, dx))
-				// Normalize to 0-360
-				if(angle < 0)
-					angle += 360
-				controlled_shuttle.thrust_angle = angle
+				var/dz = (isnull(new_z) ? 0 : new_z) - controlled_shuttle.position[3]
+				var/mag = sqrt(dx*dx + dy*dy + dz*dz)
+				if(mag > 0.001)
+					controlled_shuttle.set_thrust_3d(dx / mag, dy / mag, dz / mag, controlled_shuttle.thrust_power)
 			return TRUE
 
 		if("setTargetCoords")
@@ -203,13 +215,13 @@
 			if(altKey) // Alt+Click clears target and stops thrust
 				controlled_shuttle.autopilot_enabled = FALSE
 				controlled_shuttle.target_position = null
-				controlled_shuttle.thrust_power = 0
+				controlled_shuttle.kill_thrust()
 			else if(!isnull(x) && !isnull(y) && !isnull(z))
 				// Set target position and enable autopilot
-				controlled_shuttle.target_position = list("x" = x, "y" = y, "z" = z)
+				controlled_shuttle.target_position = list(x, y, z)
 				controlled_shuttle.autopilot_enabled = TRUE
 			return TRUE
-		/* Меняем из псевдо-вертикали, на настоящую - отключено поэтому
+
 		if("adjust_altitude")
 			if(is_docked)
 				to_chat(usr, span_warning("Cannot adjust altitude while docked!"))
@@ -221,7 +233,12 @@
 			if(alt_result)
 				to_chat(usr, span_warning("Altitude change failed: [alt_result]"))
 			return TRUE
-		*/
+
+		if("kill_thrust")
+			if(is_docked)
+				return FALSE
+			controlled_shuttle.kill_thrust()
+			return TRUE
 		if("dock")
 			var/object_id = params["stationId"]
 			if(!object_id)

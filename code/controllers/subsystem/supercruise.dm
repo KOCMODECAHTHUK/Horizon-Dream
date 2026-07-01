@@ -166,5 +166,6 @@ SUBSYSTEM_DEF(supercruise)
 		shuttle.set_velocity(0, 0, 0)
 		shuttle.autopilot_enabled = FALSE
 		shuttle.target_position = null
+		shuttle.kill_thrust()
 
 	return TRUE
