@@ -17,8 +17,24 @@ GLOBAL_LIST_INIT(available_ui_styles, list(
 	"Detective" = 'icons/hud/screen_detective.dmi',
 ))
 
+// Mapping of UI styles to their corresponding 48x32 hands icons
+GLOBAL_LIST_INIT(available_hands_icons, list(
+	"Midnight" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_midnight.dmi'
+	"Retro" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_retro.dmi'
+	"Plasmafire" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_plasmafire.dmi'
+	"Slimecore" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_slimecore.dmi'
+	"Operative" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_operative.dmi'
+	"Clockwork" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_clockwork.dmi'
+	"Glass" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_glass.dmi'
+	"Trasen-Knox" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_trasenknox.dmi'
+	"Detective" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_detective.dmi'
+))
+
 /proc/ui_style2icon(ui_style)
 	return GLOB.available_ui_styles[ui_style] || GLOB.available_ui_styles[GLOB.available_ui_styles[1]]
+
+/proc/ui_style2hands_icon(ui_style)
+	return GLOB.available_hands_icons[ui_style] || GLOB.available_hands_icons[GLOB.available_hands_icons[1]]
 
 /datum/hud
 	var/mob/mymob
@@ -64,6 +80,8 @@ GLOBAL_LIST_INIT(available_ui_styles, list(
 
 	/// Subtypes can override this to force a specific UI style
 	var/ui_style = null
+	/// Current hands icon file (48x32 format), matched to ui_style
+	var/hands_icon = null
 	/// Assoc list of all screen objects we hold by their key
 	var/list/atom/movable/screen/screen_objects = list()
 	/// List of screen objects by their screen group
@@ -88,6 +106,8 @@ GLOBAL_LIST_INIT(available_ui_styles, list(
 	if (!ui_style)
 		// will fall back to the default if any of these are null
 		ui_style = ui_style2icon(owner.client?.prefs?.read_preference(/datum/preference/choiced/ui_style))
+		// Set hands icon based on UI style (TODO: Переделать в верх)
+		hands_icon = ui_style2hands_icon(owner.client?.prefs?.read_preference(/datum/preference/choiced/ui_style))
 
 	add_screen_object(/atom/movable/screen/button_palette, HUD_MOB_TOGGLE_PALETTE)
 	add_screen_object(/atom/movable/screen/palette_scroll/down, HUD_MOB_PALETTE_DOWN)
@@ -427,6 +447,9 @@ GLOBAL_LIST_INIT(available_ui_styles, list(
 	if (initial(ui_style) || ui_style == new_ui_style)
 		return
 
+	// Update hands icon to match new UI style
+	hands_icon = ui_style2hands_icon(new_ui_style)
+
 	for(var/hud_key in screen_objects)
 		var/atom/item = screen_objects[hud_key]
 		if (item?.icon == ui_style)
@@ -458,7 +481,7 @@ GLOBAL_LIST_INIT(available_ui_styles, list(
 		remove_screen_object(hand, FALSE)
 
 	for(var/i in 1 to length(mymob.held_items))
-		var/atom/movable/screen/inventory/hand/hand_box = add_screen_object(/atom/movable/screen/inventory/hand, HUD_KEY_HAND_SLOT(i), HUD_GROUP_STATIC, ui_style, ui_hand_position(i))
+		var/atom/movable/screen/inventory/hand/hand_box = add_screen_object(/atom/movable/screen/inventory/hand, HUD_KEY_HAND_SLOT(i), HUD_GROUP_STATIC, hands_icon, ui_hand_position(i))
 		hand_box.name = mymob.get_held_index_name(i)
 		hand_box.icon_state = "hand_[mymob.held_index_to_dir(i)]"
 		hand_box.held_index = i
