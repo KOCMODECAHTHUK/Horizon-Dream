@@ -1,0 +1,247 @@
+import { useEffect, useState, useCallback } from 'react';
+import { useBackend } from '../../backend';
+import { Box, Button, Flex, NoticeBox, Section } from 'tgui-core/components';
+import { Window } from '../../layouts';
+import { SupercruiseMapCanvas } from './components/SupercruiseMapCanvas';
+import { SupercruiseMapData } from './types';
+import { FlightControls } from './screens/FlightControls';
+import { NavigationStatus } from './screens/NavigationStatus';
+import { NearbyContacts } from './screens/NearbyContacts';
+import { JumpDrivePanel } from './screens/JumpDrivePanel';
+
+export const SupercruiseMap = () => {
+  const { act, data } = useBackend<SupercruiseMapData>();
+  const {
+    map_objects = [],
+    linkedToShuttle = false,
+    shuttleName = '',
+    shuttleAngle = 0,
+    shuttlePitch = 0,
+    shuttleThrust = 0,
+    shuttleHeading = 0,
+    shuttleHeadingPitch = 0,
+    shuttleMaxSpeed = 50,
+    shuttleVelX = 0,
+    shuttleVelY = 0,
+    shuttleVelZ = 0,
+    update_index = 0,
+    ourObject = null,
+    autopilotEnabled = false,
+    targetX = null,
+    targetY = null,
+    targetZ = null,
+    hasPendingTarget = false,
+    pendingTargetX = null,
+    pendingTargetY = null,
+    pendingTargetZ = null,
+    isDocked = false,
+    dockedStation = null,
+    nearbyObjects = [],
+    hasJumpDrive = false,
+    isJumping = false,
+    jumpReady = true,
+    jumpCooldownRemaining = 0,
+    jumpDestinations = [],
+    currentSystemName = 'Unknown',
+    lastActionError = '',
+  } = data;
+
+  const [cameraYaw, setCameraYaw] = useState(45);
+  const [cameraPitch, setCameraPitch] = useState(30);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [selectedJumpDestination, setSelectedJumpDestination] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
+
+  useEffect(() => {
+    if (lastActionError) {
+      setActionError(lastActionError);
+      const timer = setTimeout(() => setActionError(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastActionError, update_index]);
+
+  const ourPos = ourObject
+    ? (ourObject.position || [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0])
+    : [0, 0, 0];
+
+  const focusX = linkedToShuttle ? ourPos[0] : 0;
+  const focusY = linkedToShuttle ? ourPos[1] : 0;
+  const focusZ = linkedToShuttle ? ourPos[2] : 0;
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!linkedToShuttle || isDocked) return;
+      if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+      const key = event.key.toLowerCase();
+      if (['w', 'ц'].includes(key)) { event.preventDefault(); act('toggle_rotate_pitch_up', { enable: true }); }
+      else if (['s', 'ы'].includes(key)) { event.preventDefault(); act('toggle_rotate_pitch_down', { enable: true }); }
+      else if (['a', 'ф'].includes(key)) { event.preventDefault(); act('toggle_rotate_left', { enable: true }); }
+      else if (['d', 'в'].includes(key)) { event.preventDefault(); act('toggle_rotate_right', { enable: true }); }
+      else if (key === 'q') { event.preventDefault(); act('set_thrust', { angle: shuttleAngle, power: Math.max(shuttleThrust - 10, 0), pitch: shuttlePitch || 0 }); }
+      else if (key === 'e') { event.preventDefault(); act('set_thrust', { angle: shuttleAngle, power: Math.min(shuttleThrust + 10, 100), pitch: shuttlePitch || 0 }); }
+      else if (key === 'x') { event.preventDefault(); act('kill_thrust'); }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (!linkedToShuttle || isDocked) return;
+      const key = event.key.toLowerCase();
+      if (['w', 'ц'].includes(key)) act('toggle_rotate_pitch_up', { enable: false });
+      else if (['s', 'ы'].includes(key)) act('toggle_rotate_pitch_down', { enable: false });
+      else if (['a', 'ф'].includes(key)) act('toggle_rotate_left', { enable: false });
+      else if (['d', 'в'].includes(key)) act('toggle_rotate_right', { enable: false });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [linkedToShuttle, isDocked, act, shuttleAngle, shuttlePitch, shuttleThrust]);
+
+  const clampPitch = (value: number) => Math.max(5, Math.min(85, value));
+
+  const rotateCamera = useCallback((dyaw: number, dpitch: number) => {
+    setCameraYaw((prev) => (prev + dyaw + 360) % 360);
+    setCameraPitch((prev) => clampPitch(prev + dpitch));
+  }, []);
+
+  const handleZoom = useCallback((factor: number) => {
+    setZoomScale((prev) => Math.max(0.1, Math.min(10, prev * factor)));
+  }, []);
+
+  const canvasMapObjects = map_objects.map((obj) => {
+    const pos = obj.position && Array.isArray(obj.position) ? obj.position : [obj.position_x || 0, obj.position_y || 0, obj.position_z || 0];
+    const vel = obj.velocity && Array.isArray(obj.velocity) ? obj.velocity : [obj.velocity_x || 0, obj.velocity_y || 0, obj.velocity_z || 0];
+    return { ...obj, position_x: pos[0], position_y: pos[1], position_z: pos[2] || 0, velocity_x: vel[0], velocity_y: vel[1], velocity_z: vel[2] || 0 };
+  });
+
+  const ourObjectNormalized = ourObject ? {
+    ...ourObject,
+    position: ourObject.position || [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0],
+    velocity: ourObject.velocity || [ourObject.velocity_x || 0, ourObject.velocity_y || 0, ourObject.velocity_z || 0],
+  } : null;
+
+  const shuttleAlt = ourPos[2] || 0;
+
+  return (
+    <Window width={1100} height={750}>
+      <Window.Content>
+        <Flex height="100%">
+          <Flex.Item grow>
+            <Box position="relative" height="100%" backgroundColor="#0a0a1a">
+              <SupercruiseMapCanvas
+                map_objects={canvasMapObjects}
+                update_index={update_index}
+                zoomScale={zoomScale}
+                shuttleAngle={shuttleAngle}
+                shuttlePitch={shuttlePitch}
+                shuttleThrust={shuttleThrust}
+                shuttleHeading={shuttleHeading}
+                shuttleHeadingPitch={shuttleHeadingPitch}
+                shuttleMaxSpeed={shuttleMaxSpeed}
+                ourObject={ourObjectNormalized}
+                targetX={targetX} targetY={targetY} targetZ={targetZ}
+                pendingTargetX={pendingTargetX} pendingTargetY={pendingTargetY} pendingTargetZ={pendingTargetZ}
+                hasPendingTarget={hasPendingTarget}
+                isDocked={isDocked}
+                autopilotEnabled={autopilotEnabled}
+                cameraYaw={cameraYaw} cameraPitch={cameraPitch} cameraDistance={600}
+                focusX={focusX} focusY={focusY} focusZ={focusZ}
+                shuttleVelX={shuttleVelX} shuttleVelY={shuttleVelY} shuttleVelZ={shuttleVelZ}
+                shuttleAlt={shuttleAlt}
+                onRotate={rotateCamera}
+                onZoom={handleZoom}
+                onMapClick={(worldX, worldY, clickType, altKey, objectId, clickZ) => {
+                  if (isDocked) return;
+                  if (clickType === 'cancel') { act('clearPendingTarget'); return; }
+                  if (clickType === 'right') {
+                    const finalZ = clickZ != null ? clickZ : (ourPos[2] || 0);
+                    act('setTargetCoords', { x: worldX, y: worldY, z: finalZ, altKey });
+                  }
+                  if (clickType === 'double' && objectId) { act('dock', { stationId: objectId }); }
+                }}
+              />
+            </Box>
+          </Flex.Item>
+
+          <Flex.Item width="240px" style={{ overflowY: 'auto', maxHeight: '100%' }}>
+            <Section title="Flight Controls" height="100%">
+              {!linkedToShuttle ? (
+                <NoticeBox>No shuttle linked</NoticeBox>
+              ) : (
+                <>
+                  {actionError && <NoticeBox color="red" mb={0.5} fontSize="0.8em">{actionError}</NoticeBox>}
+                  <Box bold mb={0.5} fontSize="1em" color="cyan">{shuttleName}</Box>
+                  <Box mb={0.5} fontSize="0.8em" color="label">
+                    POS {ourPos[0]?.toFixed(0)},{ourPos[1]?.toFixed(0)},Z{ourPos[2]?.toFixed(0)}
+                  </Box>
+
+                  <FlightControls
+                    isDocked={isDocked}
+                    shuttleAngle={shuttleAngle}
+                    shuttlePitch={shuttlePitch}
+                    shuttleThrust={shuttleThrust}
+                    act={act}
+                  />
+
+                  <Flex mb={0.5}>
+                    <Button compact icon="search-plus" onClick={() => handleZoom(1.3)} tooltip="Zoom In" />
+                    <Button compact icon="search-minus" onClick={() => handleZoom(0.7)} tooltip="Zoom Out" />
+                    <Box as="span" ml={1} fontSize="0.8em" color="label" lineHeight="22px">
+                      Zoom: {zoomScale.toFixed(1)}x
+                    </Box>
+                  </Flex>
+
+                  <NavigationStatus
+                    isDocked={isDocked}
+                    dockedStation={dockedStation}
+                    hasPendingTarget={hasPendingTarget}
+                    pendingTargetX={pendingTargetX}
+                    pendingTargetY={pendingTargetY}
+                    pendingTargetZ={pendingTargetZ}
+                    autopilotEnabled={autopilotEnabled}
+                    targetX={targetX}
+                    targetY={targetY}
+                    targetZ={targetZ}
+                    act={act}
+                  />
+
+                  {isDocked && (
+                    <Button fluid icon="anchor" color="red" mt={0.5} onClick={() => act('undock')}>Undock</Button>
+                  )}
+
+                  {!isDocked && (
+                    <NearbyContacts nearbyObjects={nearbyObjects} act={act} />
+                  )}
+
+                  <JumpDrivePanel
+                    hasJumpDrive={hasJumpDrive}
+                    currentSystemName={currentSystemName}
+                    isJumping={isJumping}
+                    jumpReady={jumpReady}
+                    isDocked={isDocked}
+                    jumpDestinations={jumpDestinations}
+                    jumpCooldownRemaining={jumpCooldownRemaining}
+                    selectedJumpDestination={selectedJumpDestination}
+                    setSelectedJumpDestination={setSelectedJumpDestination}
+                    act={act}
+                  />
+
+                  <Box mt={1} fontSize="0.7em" color="dim">
+                    W A S D — Повороты корпуса<br />
+                    Q — Уменьшить тягу / E — Увеличить тягу<br />
+                    X — Убить тягу<br />
+                    ПКМ=курс · Ctrl+ПКМ=Z · Shift+ПКМ=отмена<br />
+                  </Box>
+                </>
+              )}
+            </Section>
+          </Flex.Item>
+        </Flex>
+      </Window.Content>
+    </Window>
+  );
+};
