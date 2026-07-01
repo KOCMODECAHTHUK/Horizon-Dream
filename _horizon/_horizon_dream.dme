@@ -18,5 +18,8 @@
 // END_PREFERENCES
 
 // BEGIN_INCLUDE
+#include "code\__HELPERS\mobs.dm"
 #include "code\modules\admin\all_verb_panel.dm"
+#include "code\modules\admin\check_players.dm"
+#include "code\modules\admin\veth_player_panel.dm"
 // END_INCLUDE

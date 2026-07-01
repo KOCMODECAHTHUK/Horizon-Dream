@@ -51,7 +51,7 @@
 	. = ..()
 	if(.)
 		return
-	user.holder.player_panel_new()
+	SSadmin_verbs.dynamic_invoke_verb(user, /datum/admin_verb/player_panel_veth) // [HORIZON-EDIT] - Newest PP
 	return TRUE
 
 /datum/keybinding/admin/toggle_buildmode_self
