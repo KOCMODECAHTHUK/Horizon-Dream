@@ -19,7 +19,7 @@ GLOBAL_LIST_INIT(available_ui_styles, list(
 
 // Mapping of UI styles to their corresponding 48x32 hands icons
 GLOBAL_LIST_INIT(available_hands_icons, list(
-	"Midnight" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_midnight.dmi'
+	"Midnight" = '_horizon/icons/hands_midnight.dmi',
 	"Retro" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_retro.dmi'
 	"Plasmafire" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_plasmafire.dmi'
 	"Slimecore" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_slimecore.dmi'
@@ -27,7 +27,7 @@ GLOBAL_LIST_INIT(available_hands_icons, list(
 	"Clockwork" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_clockwork.dmi'
 	"Glass" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_glass.dmi'
 	"Trasen-Knox" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_trasenknox.dmi'
-	"Detective" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_detective.dmi'
+	"Detective" = '_horizon/icons/hands_detective.dmi',
 ))
 
 /proc/ui_style2icon(ui_style)
