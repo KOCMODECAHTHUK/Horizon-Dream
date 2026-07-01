@@ -112,6 +112,7 @@ INITIALIZE_IMMEDIATE(/atom/movable/screen) // I hate this place
 
 /atom/movable/screen/swap_hand
 	name = "swap hand"
+	icon_state = "act_swap"
 	mouse_over_pointer = MOUSE_HAND_POINTER
 
 /atom/movable/screen/swap_hand/Click()

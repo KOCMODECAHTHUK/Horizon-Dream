@@ -7,26 +7,23 @@
 // The default UI style is the first one in the list
 GLOBAL_LIST_INIT(available_ui_styles, list(
 	"Midnight" = 'icons/hud/screen_midnight.dmi',
-	"Retro" = 'icons/hud/screen_retro.dmi',
+	//"Retro" = 'icons/hud/screen_retro.dmi',
 	"Plasmafire" = 'icons/hud/screen_plasmafire.dmi',
 	"Slimecore" = 'icons/hud/screen_slimecore.dmi',
 	"Operative" = 'icons/hud/screen_operative.dmi',
-	"Clockwork" = 'icons/hud/screen_clockwork.dmi',
+	//"Clockwork" = 'icons/hud/screen_clockwork.dmi',
 	"Glass" = 'icons/hud/screen_glass.dmi',
-	"Trasen-Knox" = 'icons/hud/screen_trasenknox.dmi',
+	//"Trasen-Knox" = 'icons/hud/screen_trasenknox.dmi',
 	"Detective" = 'icons/hud/screen_detective.dmi',
 ))
 
 // Mapping of UI styles to their corresponding 48x32 hands icons
 GLOBAL_LIST_INIT(available_hands_icons, list(
 	"Midnight" = '_horizon/icons/hands_midnight.dmi',
-	"Retro" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_retro.dmi'
-	"Plasmafire" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_plasmafire.dmi'
-	"Slimecore" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_slimecore.dmi'
-	"Operative" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_operative.dmi'
-	"Clockwork" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_clockwork.dmi'
-	"Glass" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_glass.dmi'
-	"Trasen-Knox" = '_horizon/icons/hands.dmi', // TODO: заменить на 'icons/hud/hands_trasenknox.dmi'
+	"Plasmafire" = '_horizon/icons/hands_plasmafire.dmi',
+	"Slimecore" = '_horizon/icons/hands_slimecore.dmi',
+	"Operative" = '_horizon/icons/hands_operative.dmi',
+	"Glass" = '_horizon/icons/hands_glass.dmi',
 	"Detective" = '_horizon/icons/hands_detective.dmi',
 ))
 
