@@ -14,6 +14,7 @@
 	pin = /obj/item/firing_pin/implant/pindicate
 	bolt_type = BOLT_TYPE_NO_BOLT
 	can_muzzle_flash = FALSE
+	gun_flags = GUN_SMOKE_PARTICLES
 
 /obj/item/gun/ballistic/revolver/grenadelauncher/unrestricted
 	pin = /obj/item/firing_pin
@@ -99,6 +100,7 @@
 	can_muzzle_flash = FALSE
 	/// Do we shit flames behind us when we fire?
 	var/backblast = TRUE
+	gun_flags = GUN_SMOKE_PARTICLES
 
 /obj/item/gun/ballistic/rocketlauncher/Initialize(mapload)
 	. = ..()

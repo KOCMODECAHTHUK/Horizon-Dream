@@ -133,6 +133,9 @@
 /// This gun shouldn't be allowed to go in a turret (it probably causes a bug/exploit)
 #define TURRET_INCOMPATIBLE (1<<2)
 
+
+#define GUN_SMOKE_PARTICLES (1<<2)
+
 /// Flags for sharpness in obj/item
 #define SHARP_EDGED (1<<0)
 #define SHARP_POINTY (1<<1)
