@@ -22,4 +22,5 @@
 #include "code\modules\admin\all_verb_panel.dm"
 #include "code\modules\admin\check_players.dm"
 #include "code\modules\admin\veth_player_panel.dm"
+#include "code\modules\admin\selectequipment.dm"
 // END_INCLUDE
