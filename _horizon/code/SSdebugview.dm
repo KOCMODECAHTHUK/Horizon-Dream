@@ -57,6 +57,7 @@ SUBSYSTEM_DEF(debugview)
 	icon = '_horizon/icons/screen_full.dmi'
 	icon_state = "empty"
 	screen_loc = "TOP,LEFT"
+	plane = ABOVE_HUD_PLANE
 	maptext_height = 480 // 15 * 32 (15 tiles, 32 pixels each)
 	maptext_width = 480 // changes with prefs
 
