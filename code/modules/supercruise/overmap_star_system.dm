@@ -24,6 +24,8 @@
 	var/max_height = 600
 	/// Whether this system can be jumped to
 	var/can_jump = TRUE
+	// Central star object (for future star rendering)
+	var/datum/orbital_object/star/central_star = null
 
 /datum/overmap_star_system/New(id, name, description)
 	. = ..()
@@ -73,52 +75,39 @@
 	return TRUE
 
 /**
- * Generate planets for this system
+ * Генерируем планеты с 3D-орбитами
  */
 /datum/overmap_star_system/proc/generate_planets(num_planets = 8)
 	var/list/planet_types = GLOB.planet_types
-	var/list/used_positions = list()
+
+	// Если центральной звезды нет — создаем её
+	if(!central_star)
+		central_star = new(star_x, star_y, star_z, "[system_name] Star", src)
+		central_star.supercruise_color = star_color
 
 	for(var/i in 1 to num_planets)
-		// Random planet type
 		var/planet_type = pick(planet_types)
+		var/planet_name = gen_planet_name()
 
-		// Generate position - spread planets around the system
-		// Try to avoid overlapping
-		var/x_pos
-		var/y_pos
-		var/z_pos
-		var/attempts = 0
-		var/valid_position = FALSE
+		// Создаем планету (пока в центре, позицию пересчитает process())
+		var/datum/orbital_object/planet/new_planet = new planet_type(star_x, star_y, star_z, planet_name, planet_type, src)
 
-		while(!valid_position && attempts < 20)
-			attempts++
-			// Random position within system bounds
-			x_pos = rand(min_height, max_height)
-			y_pos = rand(min_height, max_height)
-			z_pos = rand(min_height, max_height / 3)
+		// Назначаем центр орбиты
+		new_planet.orbit_center = central_star
 
-			// Check if too close to any existing object in this system
-			valid_position = TRUE
-			for(var/datum/orbital_object/obj in orbital_objects)
-				var/dist = sqrt((obj.position[1] - x_pos)**2 + (obj.position[2] - y_pos)**2 + (obj.position[3] - z_pos)**2)
-				if(dist < 50)  // Minimum 50km separation
-					valid_position = FALSE
-					break
+		// Случайные 3D параметры
+		new_planet.orbit_radius = rand(100, 500) // Разброс расстояний
+		new_planet.orbit_angle = rand(0, 360) // Случайная стартовая фаза
+		new_planet.orbit_speed = (10 / new_planet.orbit_radius) * 10 // Кеплеровская зависимость (дальше = медленнее)
 
-			// Also check against other positions we've generated this loop
-			for(var/list/pos in used_positions)
-				var/dist = sqrt((pos["x"] - x_pos)**2 + (pos["y"] - y_pos)**2 + (pos["z"] - z_pos)**2)
-				if(dist < 50)
-					valid_position = FALSE
-					break
+		// Полноценный 3D наклон!
+		new_planet.orbit_inclination = rand(-75, 75)
+		new_planet.orbit_ascension = rand(0, 360)
 
-		if(valid_position)
-			used_positions += list(list("x" = x_pos, "y" = y_pos, "z" = z_pos))
-			var/planet_name = gen_planet_name()
-			new planet_type(x_pos, y_pos, z_pos, planet_name, planet_type, src)
-			// Planet is automatically added to this system via its New() method
-			log_world("Generated planet: [planet_name] ([planet_type]) at ([x_pos], [y_pos], [z_pos]) in system [system_name]")
+		// Вызываем первый тик, чтобы планета сразу встала на свою 3D-орбиту
+		new_planet.process(0)
+
+		log_world("Generated planet: [planet_name] orbiting [central_star.name] at R:[new_planet.orbit_radius] Inc:[new_planet.orbit_inclination] Asc:[new_planet.orbit_ascension]")
 
 /datum/overmap_star_system/proc/gen_planet_name()
 	. = ""

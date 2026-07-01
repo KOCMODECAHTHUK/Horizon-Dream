@@ -24,6 +24,19 @@
 	/// If TRUE, planet will not be unloaded when all players leave (default FALSE)
 	var/preserve_level = FALSE
 
+	/// Звезда, вокруг которой вращается планета
+	var/datum/orbital_object/star/orbit_center = null
+	/// Радиус орбиты
+	var/orbit_radius = 100
+	/// Текущий угол орбиты (0-360)
+	var/orbit_angle = 0
+	/// Скорость вращения (градусов в секунду)
+	var/orbit_speed = 1.0
+	/// Наклон орбиты (-90 до 90). Отвечает за 3D наклон плоскости
+	var/orbit_inclination = 0
+	/// Вращение орбиты (0-360). Поворот наклоненной плоскости вокруг оси Z
+	var/orbit_ascension = 0
+
 /datum/orbital_object/planet/New(x_pos, y_pos, z_pos, planet_name, set_type = /datum/orbital_object/planet/rocky, datum/overmap_star_system/spawn_system = null)
 	. = ..(x_pos, y_pos, z_pos, spawn_system)
 	name = planet_name
@@ -121,16 +134,46 @@
 	// Create and return the ticket (this automatically reserves the port)
 	return new /datum/docking_ticket(dock_to_use, src, dock_requester)
 
+/**
+ * Передаем данные орбиты на UI для отрисовки колец
+ */
 /datum/orbital_object/planet/get_map_data()
 	var/list/data = ..()
+	if(orbit_center)
+		data["orbit_center_id"] = orbit_center.unique_id
+		data["orbit_radius"] = orbit_radius
+		data["orbit_inclination"] = orbit_inclination
+		data["orbit_ascension"] = orbit_ascension
 	data["landable"] = landable
 	return data
 
 /**
- * Planets don't move - override the process to do nothing
+ * Переписываем process для полноценного 3D движения по орбите
  */
 /datum/orbital_object/planet/process(seconds_per_tick)
-	return
+	if(!orbit_center)
+		return // Нет звезды — стоим на месте
+
+	// Увеличиваем угол
+	orbit_angle = MODULUS(orbit_angle + (orbit_speed * seconds_per_tick), 360)
+	var/base_x = orbit_radius * cos(orbit_angle)
+	var/base_y = orbit_radius * sin(orbit_angle)
+	var/base_z = 0
+
+	// 1. Применяем наклон (inclination) - вращение вокруг оси X
+	var/inc_x = base_x
+	var/inc_y = base_y * cos(orbit_inclination) - base_z * sin(orbit_inclination)
+	var/inc_z = base_y * sin(orbit_inclination) + base_z * cos(orbit_inclination)
+
+	// 2. Применяем вращение (ascension) - вращение вокруг оси Z
+	var/final_x = inc_x * cos(orbit_ascension) - inc_y * sin(orbit_ascension)
+	var/final_y = inc_x * sin(orbit_ascension) + inc_y * cos(orbit_ascension)
+	var/final_z = inc_z // Ось Z не меняется при вращении вокруг оси Z
+
+	// Устанавливаем финальную позицию относительно центра (звезды)
+	position[1] = orbit_center.position[1] + final_x
+	position[2] = orbit_center.position[2] + final_y
+	position[3] = orbit_center.position[3] + final_z
 
 /**
  * Override interact to handle planet-specific interactions

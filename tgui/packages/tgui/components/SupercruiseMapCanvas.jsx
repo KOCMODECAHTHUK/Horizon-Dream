@@ -246,6 +246,12 @@ export class SupercruiseMapCanvas extends Component {
 
     this.drawGrid(ctx, canvasWidth, canvasHeight);
 
+    for (const obj of map_objects) {
+      if (obj.orbit_center_id && obj.orbit_radius) {
+        this.drawOrbit(ctx, obj);
+      }
+    }
+
     const now = Date.now();
     const drawItems = [];
 
@@ -280,6 +286,7 @@ export class SupercruiseMapCanvas extends Component {
 
     drawItems.sort((a, b) => b.depth - a.depth);
 
+    const labelCandidates = [];
     for (const item of drawItems) {
       if (item.type !== 'object') continue;
       const { ground, projected, worldZ, isOurShuttle } = item;
@@ -345,6 +352,33 @@ export class SupercruiseMapCanvas extends Component {
         ctx.fillStyle = sphereGradient; ctx.beginPath(); ctx.arc(projected.x, projected.y, planetRadius, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.globalAlpha = 0.4;
         ctx.beginPath(); ctx.arc(projected.x, projected.y, planetRadius, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+      } else if (obj.render_mode === 'star' || obj.render_mode === 'sun') {
+        const starRadius = Math.max(15, (obj.radius || 40) * projected.scale);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.15;
+        const corona = ctx.createRadialGradient(projected.x, projected.y, 0, projected.x, projected.y, starRadius * 5);
+        corona.addColorStop(0, '#ff8800');
+        corona.addColorStop(0.4, 'rgba(255, 100, 0, 0.05)');
+        corona.addColorStop(1, 'transparent');
+        ctx.fillStyle = corona;
+        ctx.beginPath(); ctx.arc(projected.x, projected.y, starRadius * 5, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.4;
+        const bloom = ctx.createRadialGradient(projected.x, projected.y, 0, projected.x, projected.y, starRadius * 2);
+        bloom.addColorStop(0, '#ffffcc');
+        bloom.addColorStop(0.5, 'rgba(255, 200, 50, 0.3)');
+        bloom.addColorStop(1, 'transparent');
+        ctx.fillStyle = bloom;
+        ctx.beginPath(); ctx.arc(projected.x, projected.y, starRadius * 2, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.9;
+        const core = ctx.createRadialGradient(projected.x, projected.y, 0, projected.x, projected.y, starRadius * 1.2);
+        core.addColorStop(0, '#ffffff');
+        core.addColorStop(0.2, '#ffffee');
+        core.addColorStop(0.6, '#ffcc00');
+        core.addColorStop(1, 'transparent');
+        ctx.fillStyle = core;
+        ctx.beginPath(); ctx.arc(projected.x, projected.y, starRadius * 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
       } else if (isOurShuttle) {
         const shuttleWidth = r * 2; const shuttleHeight = r * 1.5;
         const headingRad = ((shuttleHeading || 0) - 90) * DEG2RAD;
@@ -392,9 +426,9 @@ export class SupercruiseMapCanvas extends Component {
         }
       }
 
-      if (Math.abs(altitude) > 0.5 || isOurShuttle) {
+      if (isOurShuttle) {
         const altLabel = `Z:${altitude >= 0 ? '+' : ''}${altitude.toFixed(0)}`;
-        ctx.fillStyle = '#ff88ff'; ctx.font = `${Math.min(10 * projected.scale, 11)}px monospace`; ctx.textAlign = isOurShuttle ? 'right' : 'left'; ctx.globalAlpha = 0.85;
+        ctx.fillStyle = '#ff88ff'; ctx.font = `${Math.min(10 * projected.scale, 11)}px monospace`; ctx.textAlign = 'left'; ctx.globalAlpha = 0.85;
         const labelOffset = isOurShuttle ? -(r + 8) : (r + 4);
         ctx.fillText(altLabel, projected.x + labelOffset, projected.y + 3); ctx.globalAlpha = 1;
       }
@@ -468,8 +502,8 @@ export class SupercruiseMapCanvas extends Component {
         ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
         ctx.fillText(hovItem.obj.name || 'Unknown', tipX + 4, tipY + 14);
         ctx.fillStyle = '#aaa'; ctx.font = '10px monospace';
-        ctx.fillText(`X:${hovItem.worldX.toFixed(0)} Y:${hovItem.worldY.toFixed(0)}`, tipX + 4, tipY + 28);
-        ctx.fillText(`Z:${hovItem.worldZ.toFixed(0)} R:${hovItem.obj.radius || 5}`, tipX + 4, tipY + 40);
+        ctx.fillText(`X:${hovItem.worldX.toFixed(0)} Y:${hovItem.worldY.toFixed(0)} Z:${hovItem.worldZ.toFixed(0)} `, tipX + 4, tipY + 28);
+        ctx.fillText(`Radius:${hovItem.obj.radius || 5}`, tipX + 4, tipY + 40);
       }
     }
 
@@ -526,6 +560,59 @@ export class SupercruiseMapCanvas extends Component {
       ctx.beginPath(); ctx.moveTo(start2.x, start2.y); ctx.lineTo(end2.x, end2.y); ctx.stroke();
     }
     ctx.globalAlpha = 1;
+  }
+
+  drawOrbit(ctx, mapObj) {
+    if (!mapObj.orbit_center_id || !mapObj.orbit_radius) return;
+
+    // Находим координаты центра орбиты (звезды) среди всех объектов
+    const { map_objects = [] } = this.props;
+    const centerObj = map_objects.find(o => o.id === mapObj.orbit_center_id);
+    if (!centerObj) return;
+
+    const centerX = centerObj.position_x;
+    const centerY = centerObj.position_y;
+    const centerZ = centerObj.position_z || 0;
+
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(150, 180, 255, 0.07)'; // Очень слабая, чуть голубоватая линия
+    ctx.lineWidth = 1;
+
+    const incRad = (mapObj.orbit_inclination || 0) * (Math.PI / 180);
+    const ascRad = (mapObj.orbit_ascension || 0) * (Math.PI / 180);
+
+    // Рисуем эллипс (36 точек)
+    for (let i = 0; i <= 36; i++) {
+      const angle = (i * 10) * (Math.PI / 180);
+
+      // Базовые координаты на плоскости
+      let base_x = mapObj.orbit_radius * Math.cos(angle);
+      let base_y = mapObj.orbit_radius * Math.sin(angle);
+      let base_z = 0;
+
+      // Наклон (X-axis rotation)
+      let inc_x = base_x;
+      let inc_y = base_y * Math.cos(incRad) - base_z * Math.sin(incRad);
+      let inc_z = base_y * Math.sin(incRad) + base_z * Math.cos(incRad);
+
+      // Вращение (Z-axis rotation)
+      let final_x = inc_x * Math.cos(ascRad) - inc_y * Math.sin(ascRad);
+      let final_y = inc_x * Math.sin(ascRad) + inc_y * Math.cos(ascRad);
+      let final_z = inc_z;
+
+      // Смещение относительно звезды
+      let worldX = centerX + final_x;
+      let worldY = centerY + final_y;
+      let worldZ = centerZ + final_z;
+
+      const screenPos = this.projectPoint(worldX, worldY, worldZ);
+      if (i === 0) {
+        ctx.moveTo(screenPos.x, screenPos.y);
+      } else {
+        ctx.lineTo(screenPos.x, screenPos.y);
+      }
+    }
+    ctx.stroke();
   }
 
   drawHUD(ctx, canvasWidth, canvasHeight) {
@@ -597,7 +684,7 @@ export class SupercruiseMapCanvas extends Component {
 
     // Радар (заглушка)
     ctx.fillStyle = radarStatus === 'ACTIVE' ? '#44ff44' : '#ff4444';
-    ctx.fillText(`RDR: ${radarStatus}`, rx + 6, ry + 64);
+    ctx.fillText(`RDR: ${radarStatus}`, rx + 6, ry + 48);
 
     // === Статус по центру сверху ===
     if (isDocked) {

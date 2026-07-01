@@ -222,6 +222,23 @@
 				velocity[2] *= drag_ratio
 				velocity[3] *= drag_ratio
 
+	// ГРАВИТАЦИЯ ЗВЕЗДЫ
+	if(star_system && star_system.central_star)
+		var/datum/orbital_object/star/S = star_system.central_star
+		var/dx = S.position[1] - position[1]
+		var/dy = S.position[2] - position[2]
+		var/dz = S.position[3] - position[3]
+		var/dist_sq = dx*dx + dy*dy + dz*dz
+		var/dist = sqrt(dist_sq)
+
+		// S.gravity_mass = масса звезды (сейчас 5000 в orbital_star.dm)
+		// Можно изменить делитель (1000) ниже, чтобы сделать гравитацию слабее/сильнее.
+		if(dist > 0.01 && dist < 1000) // Гравитация работает только в радиусе 1000 км
+			var/pull_strength = (S.gravity_mass / max(dist_sq, 1)) / 1000
+			velocity[1] += (dx / dist) * pull_strength * seconds_per_tick
+			velocity[2] += (dy / dist) * pull_strength * seconds_per_tick
+			velocity[3] += (dz / dist) * pull_strength * seconds_per_tick
+
 	// Enforce speed limit
 	var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
 	if(current_speed > max_speed && current_speed > 0)
