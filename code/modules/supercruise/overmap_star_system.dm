@@ -16,13 +16,12 @@
 	/// Central star position (for future star rendering)
 	var/star_x = 0
 	var/star_y = 0
+	var/star_z = 0
 	/// Star color (for rendering)
 	var/star_color = "#ffff88"
 	/// System bounds (for rendering limits)
-	var/min_x = -300
-	var/max_x = 600
-	var/min_y = -300
-	var/max_y = 600
+	var/min_height = -300
+	var/max_height = 600
 	/// Whether this system can be jumped to
 	var/can_jump = TRUE
 
@@ -88,36 +87,38 @@
 		// Try to avoid overlapping
 		var/x_pos
 		var/y_pos
+		var/z_pos
 		var/attempts = 0
 		var/valid_position = FALSE
 
 		while(!valid_position && attempts < 20)
 			attempts++
 			// Random position within system bounds
-			x_pos = rand(min_x, max_x)
-			y_pos = rand(min_y, max_y)
+			x_pos = rand(min_height, max_height)
+			y_pos = rand(min_height, max_height)
+			z_pos = rand(min_height, max_height)
 
 			// Check if too close to any existing object in this system
 			valid_position = TRUE
 			for(var/datum/orbital_object/obj in orbital_objects)
-				var/dist = sqrt((obj.position_x - x_pos)**2 + (obj.position_y - y_pos)**2)
+				var/dist = sqrt((obj.position[1] - x_pos)**2 + (obj.position[2] - y_pos)**2 + (obj.position[3] - z_pos)**2)
 				if(dist < 50)  // Minimum 50km separation
 					valid_position = FALSE
 					break
 
 			// Also check against other positions we've generated this loop
 			for(var/list/pos in used_positions)
-				var/dist = sqrt((pos["x"] - x_pos)**2 + (pos["y"] - y_pos)**2)
+				var/dist = sqrt((pos["x"] - x_pos)**2 + (pos["y"] - y_pos)**2 + (pos["z"] - z_pos)**2)
 				if(dist < 50)
 					valid_position = FALSE
 					break
 
 		if(valid_position)
-			used_positions += list(list("x" = x_pos, "y" = y_pos))
+			used_positions += list(list("x" = x_pos, "y" = y_pos, "z" = z_pos))
 			var/planet_name = gen_planet_name()
-			new planet_type(x_pos, y_pos, planet_name, planet_type, src)
+			new planet_type(x_pos, y_pos, z_pos, planet_name, planet_type, src)
 			// Planet is automatically added to this system via its New() method
-			log_world("Generated planet: [planet_name] ([planet_type]) at ([x_pos], [y_pos]) in system [system_name]")
+			log_world("Generated planet: [planet_name] ([planet_type]) at ([x_pos], [y_pos], [z_pos]) in system [system_name]")
 
 /datum/overmap_star_system/proc/gen_planet_name()
 	. = ""
@@ -177,6 +178,7 @@
 	data["system_description"] = system_description
 	data["star_x"] = star_x
 	data["star_y"] = star_y
+	data["star_z"] = star_z
 	data["star_color"] = star_color
 	data["map_objects"] = list()
 

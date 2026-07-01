@@ -20,8 +20,8 @@
 	var/occupied = FALSE
 	supercruise_color = "#1e5ac1"
 
-/datum/orbital_object/station/New(x_pos = 0, y_pos = 0, name_override, datum/overmap_star_system/spawn_system = null)
-	. = ..(x_pos, y_pos, spawn_system)
+/datum/orbital_object/station/New(x_pos = 0, y_pos = 0, z_pos = 0, name_override, datum/overmap_star_system/spawn_system = null)
+	. = ..(x_pos, y_pos, z_pos, spawn_system)
 	if(name_override)
 		station_name = name_override
 		name = name_override
@@ -40,15 +40,14 @@
 /datum/orbital_object/station/proc/in_docking_range(datum/orbital_object/shuttle/target_shuttle)
 	if(!target_shuttle)
 		return FALSE
-	var/dx = target_shuttle.position_x - position_x
-	var/dy = target_shuttle.position_y - position_y
-	var/distance = sqrt(dx*dx + dy*dy)
+	var/dx = target_shuttle.position[1] - position[1]
+	var/dy = target_shuttle.position[2] - position[2]
+	var/dz = target_shuttle.position[3] - position[3]
+	var/distance = sqrt(dx*dx + dy*dy + dz*dz)
 	if(distance > docking_range)
 		return FALSE
 
-	var/dz = abs(target_shuttle.position_z - position_z)
-	if(dz > max_altitude_difference)
-		return FALSE
+	// Altitude check removed: docking range is handled using full 3D distance.
 
 	return TRUE
 
@@ -137,8 +136,7 @@
 
 	// Position the station based on the port's location (convert to supercruise coordinates)
 	// This is a simple conversion - you may want to adjust the scaling
-	new_station.position_x = port.x * 0.5
-	new_station.position_y = port.y * 0.5
+	new_station.set_position(port.x * 0.5, port.y * 0.5, port.z * 0.5)
 
 	// Add to the target system (or default system if none specified)
 	if(!target_system)

@@ -24,6 +24,7 @@ SUBSYSTEM_DEF(supercruise)
 	var/datum/overmap_star_system/sol_system = new("sol_system", "Sol System", "The home system of humanity.")
 	sol_system.star_x = 0
 	sol_system.star_y = 0
+	sol_system.star_z = 0
 	sol_system.star_color = "#ffff88"
 
 	// Create a test station in Sol at coordinates (100, 50)
@@ -36,6 +37,7 @@ SUBSYSTEM_DEF(supercruise)
 	var/datum/overmap_star_system/alpha_system = new("alpha_centauri", "Alpha Centauri", "The closest star system to Sol.")
 	alpha_system.star_x = 0
 	alpha_system.star_y = 0
+	alpha_system.star_z = 0
 	alpha_system.star_color = "#ffaa44"
 
 	// Create a test station in Alpha Centauri at different coordinates
@@ -138,7 +140,7 @@ SUBSYSTEM_DEF(supercruise)
  * Move an orbital object to a different star system
  * Returns TRUE on success, FALSE on failure
  */
-/datum/controller/subsystem/supercruise/proc/move_to_system(datum/orbital_object/obj, datum/overmap_star_system/new_system, x_pos = 0, y_pos = 0)
+/datum/controller/subsystem/supercruise/proc/move_to_system(datum/orbital_object/obj, datum/overmap_star_system/new_system, x_pos = 0, y_pos = 0, z_pos = 0)
 	if(!obj || !new_system)
 		return FALSE
 
@@ -156,14 +158,12 @@ SUBSYSTEM_DEF(supercruise)
 	new_system.add_object(obj)
 
 	// Set new position
-	obj.position_x = x_pos
-	obj.position_y = y_pos
+	obj.set_position(x_pos, y_pos, z_pos)
 
 	// Reset movement for shuttles
 	if(istype(obj, /datum/orbital_object/shuttle))
 		var/datum/orbital_object/shuttle/shuttle = obj
-		shuttle.velocity_x = 0
-		shuttle.velocity_y = 0
+		shuttle.set_velocity(0, 0, 0)
 		shuttle.autopilot_enabled = FALSE
 		shuttle.target_position = null
 

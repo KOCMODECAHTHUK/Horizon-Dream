@@ -64,19 +64,18 @@
 
 	if(is_docked)
 		// Reset all movement when docked
-		velocity_x = 0
-		velocity_y = 0
+		set_velocity(0, 0, 0)
 		thrust_power = 0
 		autopilot_enabled = FALSE
 		target_position = null
 		return
 
 	// Record position history for trail
-	position_history += list(list("x" = position_x, "y" = position_y))
+	position_history += list(position.Copy())
 	if(length(position_history) > max_history)
 		position_history.Cut(1, 2) // Remove oldest entry
 
-	var/list/target_velocity = list("x" = 0, "y" = 0)
+	var/list/target_velocity = list("x" = 0, "y" = 0, "z" = 0)
 	var/target_speed = 0
 
 	// Handle autopilot to target position
@@ -84,16 +83,19 @@
 		thrust_power = 0 // Disable manual thrust while on autopilot
 		var/target_x = target_position["x"]
 		var/target_y = target_position["y"]
+		var/target_z = target_position["z"]
 
 		// Calculate direction and distance to target
-		var/dx = target_x - position_x
-		var/dy = target_y - position_y
-		var/distance = sqrt(dx*dx + dy*dy)
+		var/dx = target_x - position[1]
+		var/dy = target_y - position[2]
+		var/dz = target_z - position[3]
+		var/distance = sqrt(dx*dx + dy*dy + dz*dz)
 
 		if(distance > arrival_threshold)
 			// Normalize direction
 			var/dir_x = dx / distance
 			var/dir_y = dy / distance
+			var/dir_z = dz / distance
 
 			// Calculate desired speed based on distance (slow down as we approach)
 			if(distance > slowdown_distance)
@@ -106,12 +108,14 @@
 			// Set target velocity in the direction of target
 			target_velocity["x"] = dir_x * target_speed
 			target_velocity["y"] = dir_y * target_speed
+			target_velocity["z"] = dir_z * target_speed
 		else
 			// Arrived!
 			autopilot_enabled = FALSE
 			target_position = null
 			target_velocity["x"] = 0
 			target_velocity["y"] = 0
+			target_velocity["z"] = 0
 
 	// Handle manual thrust (when not on autopilot or in addition to autopilot)
 	else if(thrust_power > 0 && !autopilot_enabled)
@@ -119,15 +123,17 @@
 		var/thrust_speed = (thrust_power / 100) * max_speed * xy_speed_scale
 		target_velocity["x"] = cos(thrust_angle) * thrust_speed
 		target_velocity["y"] = sin(thrust_angle) * thrust_speed
+		// target_velocity["z"] = ...
 
 	// Smoothly adjust current velocity toward target velocity
-	var/vel_diff_x = target_velocity["x"] - velocity_x
-	var/vel_diff_y = target_velocity["y"] - velocity_y
-	var/vel_diff_mag = sqrt(vel_diff_x*vel_diff_x + vel_diff_y*vel_diff_y)
+	var/vel_diff_x = target_velocity["x"] - velocity[1]
+	var/vel_diff_y = target_velocity["y"] - velocity[2]
+	var/vel_diff_z = target_velocity["z"] - velocity[3]
+	var/vel_diff_mag = sqrt(vel_diff_x*vel_diff_x + vel_diff_y*vel_diff_y + vel_diff_z*vel_diff_z)
 
 	if(vel_diff_mag > 0.1)
 		// Determine if we're accelerating or decelerating
-		var/current_speed = sqrt(velocity_x*velocity_x + velocity_y*velocity_y)
+		var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
 		var/is_decelerating = (target_speed < current_speed) || (target_speed == 0)
 
 		// Use appropriate rate
@@ -136,16 +142,15 @@
 
 		if(vel_diff_mag <= max_change)
 			// Can reach target velocity this tick
-			velocity_x = target_velocity["x"]
-			velocity_y = target_velocity["y"]
+			velocity[1] = target_velocity["x"]
+			velocity[2] = target_velocity["y"]
+			velocity[3] = target_velocity["z"]
 		else
 			// Move toward target velocity at change_rate
 			var/change_ratio = max_change / vel_diff_mag
-			velocity_x += vel_diff_x * change_ratio
-			velocity_y += vel_diff_y * change_ratio
-
-	// Apply vertical position changes from vertical velocity
-	position_z += velocity_z * seconds_per_tick
+			velocity[1] += vel_diff_x * change_ratio
+			velocity[2] += vel_diff_y * change_ratio
+			velocity[3] += vel_diff_z * change_ratio
 
 	..()
 
@@ -165,6 +170,7 @@
 		thrust_angle += 360
 	thrust_power = clamp(power, 0, 100)
 
+/* // Меняем из псевдо-вертикали, на настоящую - отключено поэтому
 /datum/orbital_object/shuttle/proc/adjust_altitude(dz)
 	if(!dz)
 		return null
@@ -176,9 +182,10 @@
 	if(is_docked)
 		return "Cannot change altitude while docked"
 
-	position_z += dz
-	velocity_z = 0
+	set_position(position[1], position[2], position[3] + dz)
+	set_velocity(velocity[1], velocity[2], 0)
 	return null
+*/
 
 /**
  * Attempt to dock at a station
@@ -209,9 +216,7 @@
 	// Stop all movement
 	autopilot_enabled = FALSE
 	target_position = null
-	velocity_x = 0
-	velocity_y = 0
-	velocity_z = 0
+	set_velocity(0, 0, 0)
 
 	var/obj/docking_port/stationary/target_dock = null
 
@@ -311,7 +316,7 @@
 	for(var/datum/orbital_object/obj in star_system.orbital_objects)
 		if(obj == src)
 			continue // Don't include ourselves
-		var/dist = sqrt((obj.position_x - position_x)**2 + (obj.position_y - position_y)**2)
+		var/dist = sqrt((obj.position[1] - position[1])**2 + (obj.position[2] - position[2])**2)
 		if(dist <= interaction_range)
 			nearby += obj
 	return nearby
@@ -360,7 +365,7 @@
 		to_chat(user, span_notice("Initiating jump to [target_system.system_name]..."))
 
 	// Execute jump using SSsupercruise
-	var/jump_result = SSsupercruise.move_to_system(src, target_system, position_x, position_y)
+	var/jump_result = SSsupercruise.move_to_system(src, target_system, position[1], position[2])
 
 	if(!jump_result)
 		is_jumping = FALSE

@@ -24,8 +24,8 @@
 	/// If TRUE, planet will not be unloaded when all players leave (default FALSE)
 	var/preserve_level = FALSE
 
-/datum/orbital_object/planet/New(x_pos, y_pos, planet_name, set_type = /datum/orbital_object/planet/rocky, datum/overmap_star_system/spawn_system = null)
-	. = ..(x_pos, y_pos, spawn_system)
+/datum/orbital_object/planet/New(x_pos, y_pos, z_pos, planet_name, set_type = /datum/orbital_object/planet/rocky, datum/overmap_star_system/spawn_system = null)
+	. = ..(x_pos, y_pos, z_pos, spawn_system)
 	name = planet_name
 
 /**

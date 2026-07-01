@@ -68,6 +68,7 @@ export class SupercruiseMapSvg extends Component {
     const {
       xOffset = 0,
       yOffset = 0,
+      zOffset = 0,
       zoomScale = 1,
       shuttleAngle = 0,
       shuttleThrust = 0,
@@ -78,6 +79,7 @@ export class SupercruiseMapSvg extends Component {
       onRotate = null,
       targetX = null,
       targetY = null,
+      targetZ = null,
       isDocked = false,
       autopilotEnabled = false,
     } = this.props;
