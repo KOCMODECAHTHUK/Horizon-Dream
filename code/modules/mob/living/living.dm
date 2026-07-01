@@ -2019,6 +2019,26 @@ GLOBAL_LIST_EMPTY(fire_appearances)
 	name = "[name] ([identifier])"
 	real_name = name
 
+/**
+ * Updates virtual z-level tracking for living mobs
+ * Handles players_by_virtual_z list maintenance
+ *
+ * * new_virtual_z - The new virtual z ID (or null to unregister)
+ * * old_virtual_z - The old virtual z ID
+ */
+/mob/living/on_virtual_z_change(new_virtual_z, old_virtual_z)
+	. = ..()
+	if(!client)
+		return
+
+	// Remove from old virtual z tracking
+	if(old_virtual_z)
+		LAZYREMOVE(SSmobs.players_by_virtual_z["[old_virtual_z]"], src)
+
+	// Add to new virtual z tracking
+	if(new_virtual_z)
+		LAZYADD(SSmobs.players_by_virtual_z["[new_virtual_z]"], src)
+
 /mob/living/proc/mob_pickup(mob/living/user)
 	var/obj/item/mob_holder/holder = new inhand_holder_type(get_turf(src), src, held_state, head_icon, held_lh, held_rh, worn_slot_flags)
 	SEND_SIGNAL(src, COMSIG_LIVING_SCOOPED_UP, user, holder)

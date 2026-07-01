@@ -110,12 +110,33 @@
 	var/x = round((world.maxx - width) * 0.5) + 1
 	var/y = round((world.maxy - height) * 0.5) + 1
 
-	var/datum/space_level/level = SSmapping.add_new_zlevel(name, secret ? ZTRAITS_AWAY_SECRET : ZTRAITS_AWAY, contain_turfs = FALSE)
+	// Create a new map zone and virtual level for this template
+	var/datum/map_zone/mapzone = SSmapping.create_map_zone(name)
+	var/datum/virtual_level/vlevel = SSmapping.create_virtual_level(
+		name,
+		secret ? ZTRAITS_AWAY_SECRET : ZTRAITS_AWAY,
+		mapzone,
+		width + 2,  // Add margin for safety
+		height + 2,
+		ALLOCATION_FREE
+	)
+
+	if(!vlevel)
+		return FALSE
+
+	// Reserve margin around the template
+	vlevel.reserve_margin(1)
+
+	// Load the template at the unreserved bottom-left corner
+	var/turf/load_turf = vlevel.get_unreserved_bottom_left_turf()
+	if(!load_turf)
+		return FALSE
+
 	var/datum/parsed_map/parsed = load_map(
 		file(mappath),
-		x,
-		y,
-		level.z_value,
+		load_turf.x,
+		load_turf.y,
+		vlevel.z_value,
 		no_changeturf = (SSatoms.initialized == INITIALIZATION_INSSATOMS),
 		place_on_top = should_place_on_top,
 		new_z = TRUE,
@@ -127,10 +148,10 @@
 	require_area_resort()
 	//initialize things that are normally initialized after map load
 	initTemplateBounds(bounds)
-	smooth_zlevel(world.maxz)
-	log_game("Z-level [name] loaded at [x],[y],[world.maxz]")
+	smooth_zlevel(vlevel.z_value)
+	log_game("Z-level [name] loaded at [load_turf.x],[load_turf.y],[vlevel.z_value] in virtual level [vlevel.id]")
 
-	return level
+	return mapzone
 
 /datum/map_template/proc/load(turf/T, centered = FALSE)
 	if(centered)
@@ -187,6 +208,27 @@
 
 	log_game("[name] loaded at [T.x],[T.y],[T.z]")
 	return bounds
+
+/**
+ * Loads this template into a virtual level
+ *
+ * * vlevel - The virtual level to load into
+ * * x_offset - X offset from the virtual level's unreserved bottom-left corner (default 0)
+ * * y_offset - Y offset from the virtual level's unreserved bottom-left corner (default 0)
+ */
+/datum/map_template/proc/load_into_virtual_level(datum/virtual_level/vlevel, x_offset = 0, y_offset = 0)
+	if(!vlevel)
+		return FALSE
+
+	var/turf/target = vlevel.get_unreserved_bottom_left_turf()
+	if(!target)
+		return FALSE
+
+	// Offset if needed
+	if(x_offset || y_offset)
+		target = locate(target.x + x_offset, target.y + y_offset, target.z)
+
+	return load(target, centered = FALSE)
 
 /datum/map_template/proc/generate_ceiling(affected_turfs)
 	for (var/turf/turf in affected_turfs)

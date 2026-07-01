@@ -51,7 +51,7 @@
 				continue
 
 		var/turf/implant_turf = get_turf(tracking_implant)
-		if(!implant_turf  || implant_turf.z != current_turf.z)
+		if(!implant_turf  || implant_turf.virtual_z != current_turf.virtual_z) // [HORIZON-ERROR]
 			continue
 
 		var/distance = max(abs(implant_turf.x - current_turf.x), abs(implant_turf.y - current_turf.y)) // get Chebyshev distance

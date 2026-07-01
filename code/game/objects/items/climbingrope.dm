@@ -31,12 +31,12 @@
 
 /obj/item/climbing_hook/ranged_interact_with_atom(turf/open/interacting_with, mob/living/user, list/modifiers)
 	interacting_with = get_turf(interacting_with)
-	if(interacting_with.z == user.z)
+	var/turf/user_turf = get_turf(user)
+	if(interacting_with.virtual_z == user_turf.virtual_z)
 		return NONE
 	if(!istype(interacting_with) || !isturf(user.loc)) //better safe than sorry
 		return ITEM_INTERACT_BLOCKING
 
-	var/turf/user_turf = get_turf(user)
 	var/turf/trans_vertical = interacting_with.z > user.z ? GET_TURF_ABOVE(user_turf) : GET_TURF_ABOVE(interacting_with)
 	if(target_blocked(interacting_with, trans_vertical))
 		balloon_alert(user, "cant get there!")

@@ -135,7 +135,9 @@
 	if(!isAI(usr))
 		return
 	var/mob/living/silicon/ai/AI = usr
-	if(AI.eyeobj && (AI.multicam_on || (AI.client.eye == AI.eyeobj)) && (AI.eyeobj.z == z))
+	var/turf/eye_turf = get_turf(AI.eyeobj)
+	var/turf/target_turf = get_turf(src)
+	if(AI.eyeobj && (AI.multicam_on || (AI.client.eye == AI.eyeobj)) && (eye_turf.virtual_z == target_turf.virtual_z))
 		AI.ai_tracking_tool.reset_tracking()
 		if (isturf(loc) || isturf(src))
 			AI.eyeobj.setLoc(src)

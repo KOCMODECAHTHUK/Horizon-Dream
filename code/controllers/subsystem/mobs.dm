@@ -9,6 +9,10 @@ SUBSYSTEM_DEF(mobs)
 	///only contains living players for some reason
 	var/static/list/clients_by_zlevel[][]
 	var/static/list/dead_players_by_zlevel[][] = list(list()) // Needs to support zlevel 1 here, MaxZChanged only happens when z2 is created and new_players can login before that.
+	/// Virtual z-level tracking - living players by virtual z
+	var/static/list/players_by_virtual_z = list()
+	/// Virtual z-level tracking - dead players/observers by virtual z
+	var/static/list/dead_players_by_virtual_z = list()
 	var/static/list/cubemonkeys = list()
 	var/static/list/cheeserats = list()
 

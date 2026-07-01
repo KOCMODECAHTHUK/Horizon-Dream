@@ -1,5 +1,7 @@
 GLOBAL_VAR_INIT(hhStorageTurf, null)
 GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
+// Shared map zone for all Hilbert's Hotel rooms to cluster together
+GLOBAL_VAR_INIT(hhSharedMapZone, null)
 
 /obj/item/hilbertshotel
 	name = "Hilbert's Hotel"
@@ -97,12 +99,24 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 	if(!storageTurf) //Blame subsystems for not allowing this to be in Initialize
 		if(!GLOB.hhStorageTurf)
 			var/datum/map_template/hilbertshotelstorage/storageTemp = new()
-			var/datum/turf_reservation/storageReservation = SSmapping.request_turf_block_reservation(1, 1, 1)
-			var/turf/storage_turf = storageReservation.bottom_left_turfs[1]
-			storageTemp.load(storage_turf)
+			// Create or reuse the shared map zone for all hotel storage
+			if(!GLOB.hhSharedMapZone)
+				GLOB.hhSharedMapZone = SSmapping.create_map_zone("Hilbert's Hotel Shared Zone")
+			// Create a virtual level for hotel storage in the shared zone
+			// Add 2 tiles (1 per side) to accommodate the margin
+			var/datum/virtual_level/storage_vlevel = SSmapping.create_virtual_level(
+				"Hotel Storage",
+				list(ZTRAIT_AWAY = TRUE),
+				GLOB.hhSharedMapZone,
+				storageTemp.width + 2,
+				storageTemp.height + 2,
+				ALLOCATION_FREE,
+			)
+			storage_vlevel.reserve_margin(1)
+			var/turf/storage_turf = locate(storage_vlevel.low_x + storage_vlevel.reserved_margin, storage_vlevel.low_y + storage_vlevel.reserved_margin, storage_vlevel.z_value)
+			storageTemp.load(storage_turf, centered = FALSE)
 			GLOB.hhStorageTurf = storage_turf
-		else
-			storageTurf = GLOB.hhStorageTurf
+		storageTurf = GLOB.hhStorageTurf
 	if(tryActiveRoom(chosenRoomNumber, target))
 		return
 	if(tryStoredRoom(chosenRoomNumber, target))
@@ -111,27 +125,34 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 
 /obj/item/hilbertshotel/proc/tryActiveRoom(roomNumber, mob/user)
 	if(activeRooms["[roomNumber]"])
-		var/datum/turf_reservation/roomReservation = activeRooms["[roomNumber]"]
+		var/datum/virtual_level/roomVLevel = activeRooms["[roomNumber]"]
 		do_sparks(3, FALSE, get_turf(user))
-		var/turf/room_bottom_left = roomReservation.bottom_left_turfs[1]
 		user.forceMove(locate(
-			room_bottom_left.x + hotelRoomTemp.landingZoneRelativeX,
-			room_bottom_left.y + hotelRoomTemp.landingZoneRelativeY,
-			room_bottom_left.z,
+			roomVLevel.low_x + roomVLevel.reserved_margin + hotelRoomTemp.landingZoneRelativeX,
+			roomVLevel.low_y + roomVLevel.reserved_margin + hotelRoomTemp.landingZoneRelativeY,
+			roomVLevel.z_value,
 		))
 		return TRUE
 	return FALSE
 
 /obj/item/hilbertshotel/proc/tryStoredRoom(roomNumber, mob/user)
 	if(storedRooms["[roomNumber]"])
-		var/datum/turf_reservation/roomReservation = SSmapping.request_turf_block_reservation(hotelRoomTemp.width, hotelRoomTemp.height, 1)
-		var/turf/room_turf = roomReservation.bottom_left_turfs[1]
-		hotelRoomTempEmpty.load(room_turf)
-		var/obj/item/abstracthotelstorage/storage_obj
-		for(var/obj/item/abstracthotelstorage/hotel_storage in storageTurf)
-			if((hotel_storage.roomNumber == roomNumber) && (hotel_storage.parentSphere == src))
-				storage_obj = hotel_storage
-				break
+		// Ensure shared map zone exists
+		if(!GLOB.hhSharedMapZone)
+			GLOB.hhSharedMapZone = SSmapping.create_map_zone("Hilbert's Hotel Shared Zone")
+		// Create a virtual level for this room in the shared zone
+		// Add 2 tiles (1 per side) to accommodate the margin
+		var/datum/virtual_level/roomVLevel = SSmapping.create_virtual_level(
+			"Hotel Room [roomNumber] ([src])",
+			list(ZTRAIT_AWAY = TRUE),
+			GLOB.hhSharedMapZone,
+			hotelRoomTemp.width + 2,
+			hotelRoomTemp.height + 2,
+			ALLOCATION_FREE,
+		)
+		roomVLevel.reserve_margin(1)
+		var/turf/room_turf = locate(roomVLevel.low_x + roomVLevel.reserved_margin, roomVLevel.low_y + roomVLevel.reserved_margin, roomVLevel.z_value)
+		hotelRoomTempEmpty.load(room_turf, centered = FALSE)
 		var/turfNumber = 1
 		for(var/x in 0 to hotelRoomTemp.width-1)
 			for(var/y in 0 to hotelRoomTemp.height-1)
@@ -142,15 +163,11 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 							room_turf.y + y,
 							room_turf.z,
 						))
-						if(storage_obj && (atom in storage_obj.wallmounted_contents))
-							var/obj/stored_in = atom
-							if(istype(stored_in))
-								stored_in.find_and_mount_on_atom()
 				turfNumber++
-		qdel(storage_obj)
+
 		storedRooms -= "[roomNumber]"
-		activeRooms["[roomNumber]"] = roomReservation
-		linkTurfs(roomReservation, roomNumber)
+		activeRooms["[roomNumber]"] = roomVLevel
+		linkTurfs(roomVLevel, roomNumber)
 		do_sparks(3, FALSE, get_turf(user))
 		user.forceMove(locate(
 			room_turf.x + hotelRoomTemp.landingZoneRelativeX,
@@ -161,16 +178,29 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 	return FALSE
 
 /obj/item/hilbertshotel/proc/sendToNewRoom(roomNumber, mob/user)
-	var/datum/turf_reservation/roomReservation = SSmapping.request_turf_block_reservation(hotelRoomTemp.width, hotelRoomTemp.height, 1)
-	var/turf/bottom_left = roomReservation.bottom_left_turfs[1]
+	// Ensure shared map zone exists
+	if(!GLOB.hhSharedMapZone)
+		GLOB.hhSharedMapZone = SSmapping.create_map_zone("Hilbert's Hotel Shared Zone")
+	// Create a virtual level for this new room in the shared zone
+	// Add 2 tiles (1 per side) to accommodate the margin
+	var/datum/virtual_level/roomVLevel = SSmapping.create_virtual_level(
+		"Hotel Room [roomNumber] ([src])",
+		list(ZTRAIT_AWAY = TRUE),
+		GLOB.hhSharedMapZone,
+		hotelRoomTemp.width + 2,
+		hotelRoomTemp.height + 2,
+		ALLOCATION_FREE,
+	)
+	roomVLevel.reserve_margin(1)
+	var/turf/bottom_left = locate(roomVLevel.low_x + roomVLevel.reserved_margin, roomVLevel.low_y + roomVLevel.reserved_margin, roomVLevel.z_value)
 	var/datum/map_template/load_from = hotelRoomTemp
 
 	if(ruinSpawned && roomNumber == GLOB.hhMysteryRoomNumber)
 		load_from = hotelRoomTempLore
 
-	load_from.load(bottom_left)
-	activeRooms["[roomNumber]"] = roomReservation
-	linkTurfs(roomReservation, roomNumber)
+	load_from.load(bottom_left, centered = FALSE)
+	activeRooms["[roomNumber]"] = roomVLevel
+	linkTurfs(roomVLevel, roomNumber)
 	do_sparks(3, FALSE, get_turf(user))
 	user.forceMove(locate(
 		bottom_left.x + hotelRoomTemp.landingZoneRelativeX,
@@ -178,37 +208,52 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 		bottom_left.z,
 	))
 
-/obj/item/hilbertshotel/proc/linkTurfs(datum/turf_reservation/currentReservation, currentRoomnumber)
-	var/turf/room_bottom_left = currentReservation.bottom_left_turfs[1]
-	var/area/misc/hilbertshotel/currentArea = get_area(room_bottom_left)
+/obj/item/hilbertshotel/proc/linkTurfs(datum/virtual_level/currentVLevel, currentRoomnumber)
+	// Find the hotel area within the loaded template
+	var/area/misc/hilbertshotel/currentArea = null
+	for(var/x in 0 to hotelRoomTemp.width-1)
+		for(var/y in 0 to hotelRoomTemp.height-1)
+			var/turf/T = locate(currentVLevel.low_x + currentVLevel.reserved_margin + x, currentVLevel.low_y + currentVLevel.reserved_margin + y, currentVLevel.z_value)
+			if(istype(T.loc, /area/misc/hilbertshotel))
+				currentArea = T.loc
+				break
+		if(currentArea)
+			break
+
+	if(!currentArea)
+		CRASH("Failed to find hotel area in loaded template for room [currentRoomnumber]")
+
 	currentArea.name = "Hilbert's Hotel Room [currentRoomnumber]"
 	currentArea.parentSphere = src
 	currentArea.storageTurf = storageTurf
 	currentArea.roomnumber = currentRoomnumber
-	currentArea.reservation = currentReservation
+	currentArea.vlevel = currentVLevel
 
-	for(var/turf/closed/indestructible/hoteldoor/door in currentReservation.reserved_turfs)
-		door.parentSphere = src
-		door.desc = "The door to this hotel room. \
-			The placard reads 'Room [currentRoomnumber]'. \
-			Strangely, this door doesn't even seem openable. \
-			The doorknob, however, seems to buzz with unusual energy...<br/>\
-			[span_info("Alt-Click to look through the peephole.")]"
-	for(var/turf/open/space/bluespace/BSturf in currentReservation.reserved_turfs)
-		BSturf.parentSphere = src
+	for(var/x in 0 to hotelRoomTemp.width-1)
+		for(var/y in 0 to hotelRoomTemp.height-1)
+			var/turf/closed/indestructible/hoteldoor/door = locate(currentVLevel.low_x + currentVLevel.reserved_margin + x, currentVLevel.low_y + currentVLevel.reserved_margin + y, currentVLevel.z_value)
+			if(istype(door))
+				door.parentSphere = src
+				door.desc = "The door to this hotel room. \
+					The placard reads 'Room [currentRoomnumber]'. \
+					Strangely, this door doesn't even seem openable. \
+					The doorknob, however, seems to buzz with unusual energy...<br/>\
+					[span_info("Alt-Click to look through the peephole.")]"
+			var/turf/open/space/bluespace/BSturf = locate(currentVLevel.low_x + currentVLevel.reserved_margin + x, currentVLevel.low_y + currentVLevel.reserved_margin + y, currentVLevel.z_value)
+			if(istype(BSturf))
+				BSturf.parentSphere = src
 
 /obj/item/hilbertshotel/proc/ejectRooms()
-	if(length(activeRooms))
-		for(var/active_room, turf_reservation in activeRooms)
-			var/datum/turf_reservation/room = turf_reservation
-			var/turf/room_bottom_left = room.bottom_left_turfs[1]
+	if(activeRooms.len)
+		for(var/x in activeRooms)
+			var/datum/virtual_level/room = activeRooms[x]
 			for(var/i in 0 to hotelRoomTemp.width-1)
 				for(var/j in 0 to hotelRoomTemp.height-1)
-					for(var/atom/movable/atom in locate(room_bottom_left.x + i, room_bottom_left.y + j, room_bottom_left.z))
-						if(ismob(atom))
-							var/mob/mob_atom = atom
-							if(mob_atom.mind)
-								to_chat(mob_atom, span_warning("As the sphere breaks apart, you're suddenly ejected into the depths of space!"))
+					for(var/atom/movable/A in locate(room.low_x + room.reserved_margin + i, room.low_y + room.reserved_margin + j, room.z_value))
+						if(ismob(A))
+							var/mob/M = A
+							if(M.mind)
+								to_chat(M, span_warning("As the sphere breaks apart, you're suddenly ejected into the depths of space!"))
 						var/max = world.maxx-TRANSITIONEDGE
 						var/min = 1+TRANSITIONEDGE
 						var/list/possible_transtitons = list()
@@ -219,11 +264,9 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 						var/_z = pick(possible_transtitons)
 						var/_x = rand(min,max)
 						var/_y = rand(min,max)
-						var/turf/turf_to_place_at = locate(_x, _y, _z)
-						atom.forceMove(turf_to_place_at)
-			qdel(room)
-
-	if(length(storedRooms))
+						var/turf/T = locate(_x, _y, _z)
+						A.forceMove(T)
+		// Clear the virtual level (Destroy will handle removing it from the map zone)
 		for(var/room in storedRooms)
 			var/list/atom_list = storedRooms[room]
 			for(var/atom/movable/atom in atom_list)
@@ -440,7 +483,7 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 	ambientsounds = list('sound/ambience/ruin/servicebell.ogg')
 	var/roomnumber = 0
 	var/obj/item/hilbertshotel/parentSphere
-	var/datum/turf_reservation/reservation
+	var/datum/virtual_level/vlevel
 	var/turf/storageTurf
 
 /area/misc/hilbertshotel/Entered(atom/movable/arrived, atom/old_loc, list/atom/old_locs)
@@ -494,11 +537,9 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 				storeRoom()
 
 /area/misc/hilbertshotel/proc/storeRoom()
-	var/turf/room_bottom_left = reservation.bottom_left_turfs[1]
-	var/turf/room_top_right = reservation.top_right_turfs[1]
 	var/roomSize = \
-		((room_top_right.x - room_bottom_left.x) + 1) * \
-		((room_top_right.y - room_bottom_left.y) + 1)
+		((vlevel.high_x - vlevel.low_x) + 1) * \
+		((vlevel.high_y - vlevel.low_y) + 1)
 	var/storage[roomSize]
 	var/turfNumber = 1
 	var/obj/item/abstracthotelstorage/storageObj = new(storageTurf)
@@ -508,7 +549,7 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 	for(var/x in 0 to parentSphere.hotelRoomTemp.width-1)
 		for(var/y in 0 to parentSphere.hotelRoomTemp.height-1)
 			var/list/turfContents = list()
-			for(var/atom/movable/atom in locate(room_bottom_left.x + x, room_bottom_left.y + y, room_bottom_left.z))
+			for(var/atom/movable/atom in locate(vlevel.low_x + vlevel.reserved_margin + x, vlevel.low_y + vlevel.reserved_margin + y, vlevel.z_value))
 				if(ismob(atom) && !isliving(atom))
 					continue //Don't want to store ghosts
 				turfContents += atom
@@ -520,7 +561,8 @@ GLOBAL_VAR_INIT(hhMysteryRoomNumber, rand(1, 999999))
 			turfNumber++
 	parentSphere.storedRooms["[roomnumber]"] = storage
 	parentSphere.activeRooms -= "[roomnumber]"
-	QDEL_NULL(reservation)
+	// Clean up the virtual level (Destroy will handle removing it from the map zone)
+	qdel(vlevel)
 
 /area/misc/hilbertshotelstorage
 	name = "Hilbert's Hotel Storage Room"

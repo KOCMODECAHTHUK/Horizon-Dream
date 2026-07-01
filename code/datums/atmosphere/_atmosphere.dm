@@ -17,7 +17,13 @@
 	generate_gas_string()
 
 /datum/atmosphere/proc/generate_gas_string()
-	var/list/spicy_gas = restricted_gases.Copy()
+	// Safety check: ensure we have valid gas lists
+	if(!length(normal_gases) && !length(restricted_gases))
+		log_world("ERROR: Atmosphere [id] has no normal_gases or restricted_gases defined!")
+		gas_string = "o2=21;n2=79;TEMP=[T20C]" // Fallback to breathable air
+		return
+
+	var/list/spicy_gas = restricted_gases?.Copy()
 	var/target_pressure = rand(minimum_pressure, maximum_pressure)
 	var/pressure_scalar = target_pressure / maximum_pressure
 
@@ -37,6 +43,8 @@
 	var/amount
 	while(gasmix.return_pressure() < target_pressure)
 		if(!prob(restricted_chance) || !length(spicy_gas))
+			if(!length(normal_gases))
+				break // Safety: no gases to pick from
 			gastype = pick(normal_gases)
 			amount = normal_gases[gastype]
 		else
@@ -49,6 +57,12 @@
 		amount = CEILING(amount, 0.1)
 
 		cached_moles[gastype] += amount
+
+	// Safety check: ensure gastype is valid before accessing
+	if(!gastype || !gaslist[gastype])
+		log_world("WARNING: Atmosphere [id] generation completed without valid gastype!")
+		gas_string = "o2=21;n2=79;TEMP=[gasmix.temperature]"
+		return
 
 	// Ensure that minimum_pressure is actually a hard lower limit
 	target_pressure = clamp(target_pressure, minimum_pressure + (cached_moles[gastype] * 0.1), maximum_pressure)

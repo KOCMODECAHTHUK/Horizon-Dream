@@ -16,7 +16,7 @@
 /turf/open/floor/iron/dark,
 /area/shuttle/mining/large)
 "d" = (
-/obj/machinery/computer/shuttle/mining,
+/obj/machinery/computer/supercruise,
 /obj/effect/turf_decal/bot_white,
 /obj/effect/turf_decal/tile/brown/half/contrasted,
 /turf/open/floor/iron/dark,

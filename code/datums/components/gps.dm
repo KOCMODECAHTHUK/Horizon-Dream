@@ -195,13 +195,13 @@ GLOBAL_LIST_EMPTY(GPS_list)
 		if(gps == src || gps.emped || !gps.tracking)
 			continue
 		var/turf/pos = get_turf(gps.parent)
-		if(!pos || (!global_mode && pos.z != curr.z))
+		if(!pos || (!global_mode && pos.virtual_z != curr.virtual_z))
 			continue
 		var/list/signal = list()
 		signal["entrytag"] = gps.gpstag //Name or 'tag' of the GPS
 		signal["coords"] = "[pos.x], [pos.y], [pos.z]"
 		// Distance is calculated for the same z-level only, and direction is calculated for crosslinked/neighboring and same z-levels.
-		if(pos.z == curr.z)
+		if(pos.virtual_z == curr.virtual_z)
 			signal["dist"] = max(get_dist(curr, pos), 0) //Distance between the src and remote GPS turfs
 			signal["degrees"] = round(get_angle(curr, pos)) //0-360 degree directional bearing, for more precision.
 		else

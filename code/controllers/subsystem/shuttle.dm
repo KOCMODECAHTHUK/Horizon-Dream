@@ -666,20 +666,15 @@ SUBSYSTEM_DEF(shuttle)
 			transit_requesters += M
 
 /datum/controller/subsystem/shuttle/proc/generate_transit_dock(obj/docking_port/mobile/M)
-	// First, determine the size of the needed zone
-	// Because of shuttle rotation, the "width" of the shuttle is not
-	// always x.
 	var/travel_dir = M.preferred_direction
-	// Remember, the direction is the direction we appear to be
-	// coming from
+	// Remember, the direction is the direction we appear to be coming from
 	var/dock_angle = dir2angle(M.preferred_direction) + dir2angle(M.port_direction) + 180
 	var/dock_dir = angle2dir(dock_angle)
 
 	var/transit_width = SHUTTLE_TRANSIT_BORDER * 2
 	var/transit_height = SHUTTLE_TRANSIT_BORDER * 2
 
-	// Shuttles travelling on their side have their dimensions swapped
-	// from our perspective
+	// Shuttles travelling on their side have their dimensions swapped from our perspective
 	switch(dock_dir)
 		if(NORTH, SOUTH)
 			transit_width += M.width
@@ -688,11 +683,7 @@ SUBSYSTEM_DEF(shuttle)
 			transit_width += M.height
 			transit_height += M.width
 
-/*
-	to_chat(world, "The attempted transit dock will be [transit_width] width, and \)
-		[transit_height] in height. The travel dir is [travel_dir]."
-*/
-
+	// Determine transit turf type based on travel direction
 	var/transit_path = /turf/open/space/transit
 	switch(travel_dir)
 		if(NORTH)
@@ -704,67 +695,67 @@ SUBSYSTEM_DEF(shuttle)
 		if(WEST)
 			transit_path = /turf/open/space/transit/west
 
-	var/datum/turf_reservation/proposal = SSmapping.request_turf_block_reservation(
+	var/datum/map_zone/transit_mapzone = SSmapping.create_map_zone("Transit for [M.shuttle_id]")
+
+	var/datum/virtual_level/transit_vlevel = SSmapping.create_virtual_level(
+		"Transit [M.shuttle_id]",
+		list(
+			ZTRAIT_RESERVED = TRUE
+		),
+		transit_mapzone,
 		transit_width,
 		transit_height,
-		z_size = 1, //if this is changed the turf uncontain code below has to be updated to support multiple zs
-		reservation_type = /datum/turf_reservation/transit,
-		turf_type_override = transit_path,
+		ALLOCATION_FREE
 	)
 
-	if(!istype(proposal))
+	if(!transit_vlevel)
+		qdel(transit_mapzone)
 		return FALSE
 
-	var/turf/bottomleft = proposal.bottom_left_turfs[1]
-	// Then create a transit docking port in the middle
-	var/coords = M.return_coords(0, 0, dock_dir)
-	/*  0------2
-	*   |      |
-	*   |      |
-	*   |  x   |
-	*   3------1
-	*/
+	transit_vlevel.reserve_margin(1)
 
+	// Set parallax direction for the mapzone
+	transit_mapzone.parallax_movedir = travel_dir
+
+	// Create transit area
+	var/area/shuttle/transit/transit_area = new()
+	transit_area.parallax_movedir = travel_dir
+
+	transit_vlevel.fill_in(transit_path, transit_area)
+
+	// Calculate docking port position in the center of the unreserved area
+	var/coords = M.return_coords(0, 0, dock_dir)
 	var/x0 = coords[1]
 	var/y0 = coords[2]
 	var/x1 = coords[3]
 	var/y1 = coords[4]
-	// Then we want the point closest to -infinity,-infinity
 	var/x2 = min(x0, x1)
 	var/y2 = min(y0, y1)
 
-	// Then invert the numbers
-	var/transit_x = bottomleft.x + SHUTTLE_TRANSIT_BORDER + abs(x2)
-	var/transit_y = bottomleft.y + SHUTTLE_TRANSIT_BORDER + abs(y2)
+	// Position the dock in the center of the unreserved (usable) area
+	var/transit_x = transit_vlevel.low_x + SHUTTLE_TRANSIT_BORDER + abs(x2)
+	var/transit_y = transit_vlevel.low_y + SHUTTLE_TRANSIT_BORDER + abs(y2)
 
-	var/turf/midpoint = locate(transit_x, transit_y, bottomleft.z)
+	var/turf/midpoint = locate(transit_x, transit_y, transit_vlevel.z_value)
 	if(!midpoint)
-		qdel(proposal)
+		qdel(transit_vlevel)
+		qdel(transit_mapzone)
 		return FALSE
 
-	var/area/old_area = midpoint.loc
-	LISTASSERTLEN(old_area.turfs_to_uncontain_by_zlevel, bottomleft.z, list())
-	old_area.turfs_to_uncontain_by_zlevel[bottomleft.z] += proposal.reserved_turfs
-
-	var/area/shuttle/transit/new_area = new()
-	new_area.parallax_movedir = travel_dir
-	new_area.contents = proposal.reserved_turfs
-	LISTASSERTLEN(new_area.turfs_by_zlevel, bottomleft.z, list())
-	new_area.turfs_by_zlevel[bottomleft.z] = proposal.reserved_turfs
-
+	// Create the transit docking port
 	var/obj/docking_port/stationary/transit/new_transit_dock = new(midpoint)
-	new_transit_dock.reserved_area = proposal
+	new_transit_dock.reserved_mapzone = transit_mapzone
 	new_transit_dock.name = "Transit for [M.shuttle_id]/[M.name]"
 	new_transit_dock.owner = M
-	new_transit_dock.assigned_area = new_area
+	new_transit_dock.assigned_area = transit_area
 
 	// Add 180, because ports point inwards, rather than outwards
 	new_transit_dock.setDir(angle2dir(dock_angle))
 
-	// Proposals use 2 extra hidden tiles of space, from the cordons that surround them
-	transit_utilized += (proposal.width + 2) * (proposal.height + 2)
+	// Track space utilization
+	transit_utilized += transit_width * transit_height
 	M.assigned_transit = new_transit_dock
-	RegisterSignal(proposal, COMSIG_QDELETING, PROC_REF(transit_space_clearing))
+	RegisterSignal(transit_mapzone, COMSIG_QDELETING, PROC_REF(transit_space_clearing_vlevel))
 
 	return new_transit_dock
 
@@ -772,6 +763,14 @@ SUBSYSTEM_DEF(shuttle)
 /datum/controller/subsystem/shuttle/proc/transit_space_clearing(datum/turf_reservation/source)
 	SIGNAL_HANDLER
 	transit_utilized -= (source.width + 2) * (source.height + 2)
+
+/// Signal handler for virtual level transit space cleanup
+/datum/controller/subsystem/shuttle/proc/transit_space_clearing_vlevel(datum/map_zone/source)
+	SIGNAL_HANDLER
+	// Calculate space from the virtual level dimensions
+	var/datum/virtual_level/vlevel = locate() in source.virtual_levels
+	if(vlevel)
+		transit_utilized -= vlevel.x_distance * vlevel.y_distance
 
 /datum/controller/subsystem/shuttle/Recover()
 	initialized = SSshuttle.initialized

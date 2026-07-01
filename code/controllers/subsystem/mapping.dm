@@ -75,6 +75,10 @@ SUBSYSTEM_DEF(mapping)
 	var/space_levels_so_far = 0
 	///list of all z level datums in the order of their z (z level 1 is at index 1, etc.)
 	var/list/datum/space_level/z_list
+	/// List of all map zones
+	var/list/map_zones = list()
+	/// Translation of virtual level ID to a virtual level reference
+	var/list/virtual_z_translation = list()
 	///list of all z level indices that form multiz connections and whether theyre linked up or down.
 	///list of lists, inner lists are of the form: list("up or down link direction" = TRUE)
 	var/list/multiz_levels = list()
@@ -984,3 +988,101 @@ ADMIN_VERB(load_away_mission, R_FUN, "Load Away Mission", "Load a specific away 
 	if(webmap_included && !isnull(SSmapping.current_map.mapping_url))
 		text += " | <a href='byond://?action=openWebMap'>(Show Map)</a>"
 	return text
+
+/// Creates basic physical levels so we dont have to do that during runtime every time, nothing bad will happen if this wont run, as allocation will handle adding new levels
+/datum/controller/subsystem/mapping/proc/init_reserved_levels()
+	add_new_zlevel("Free Allocation Level", allocation_type = ALLOCATION_FREE)
+	CHECK_TICK
+	add_new_zlevel("Quadrant Allocation Level", allocation_type = ALLOCATION_QUADRANT)
+	CHECK_TICK
+
+/// Creates and passes a new map zone
+/datum/controller/subsystem/mapping/proc/create_map_zone(new_name)
+	return new /datum/map_zone(new_name)
+
+/// Allocates, creates and passes a new virtual level
+/datum/controller/subsystem/mapping/proc/create_virtual_level(new_name, list/traits, datum/map_zone/mapzone, width, height, allocation_type = ALLOCATION_FREE, allocation_jump = DEFAULT_ALLOC_JUMP)
+	/// Because we add an implicit 1 for the coordinate calcuations.
+	width--
+	height--
+	var/list/allocation_coords = get_free_allocation(allocation_type, width, height, allocation_jump)
+	return new /datum/virtual_level(new_name, traits, mapzone, allocation_coords[1], allocation_coords[2], allocation_coords[1] + width, allocation_coords[2] + height, allocation_coords[3])
+
+/// Searches for a free allocation for the passed type and size, creates new physical levels if nessecary.
+/datum/controller/subsystem/mapping/proc/get_free_allocation(allocation_type, size_x, size_y, allocation_jump = DEFAULT_ALLOC_JUMP)
+	var/list/allocation_list
+	var/list/levels_to_check = z_list.Copy()
+	var/created_new_level = FALSE
+	while(TRUE)
+		for(var/datum/space_level/iterated_level as anything in levels_to_check)
+			if(iterated_level.allocation_type != allocation_type)
+				continue
+			// Don't allow virtual level allocation on protected z-levels (CentCom, Station, Away missions)
+			if(iterated_level.traits[ZTRAIT_CENTCOM] || iterated_level.traits[ZTRAIT_STATION] || iterated_level.traits[ZTRAIT_AWAY])
+				continue
+			allocation_list = find_allocation_in_level(iterated_level, size_x, size_y, allocation_jump)
+			if(allocation_list)
+				return allocation_list
+
+		if(created_new_level)
+			stack_trace("MAPPING: We have failed to find allocation after creating a new level just for it, something went terribly wrong")
+			return FALSE
+
+		/// None of the levels could faciliate a new allocation, make a new one
+		created_new_level = TRUE
+		levels_to_check.Cut()
+
+		var/allocation_name
+		switch(allocation_type)
+			if(ALLOCATION_FREE)
+				allocation_name = "Free Allocation"
+			if(ALLOCATION_QUADRANT)
+				allocation_name = "Quadrant Allocation"
+			if(ALLOCATION_OCTODRANT)
+				allocation_name = "Octodrant Allocation"
+			else
+				allocation_name = "Unaccounted Allocation"
+
+		levels_to_check += add_new_zlevel("Generated [allocation_name] Level", allocation_type = allocation_type)
+
+/// Finds a box allocation inside a Z level. Uses a methodical box boundary check method
+/datum/controller/subsystem/mapping/proc/find_allocation_in_level(datum/space_level/level, size_x, size_y, allocation_jump)
+	var/target_x = 1
+	var/target_y = 1
+
+	/// Sanity
+	if(size_x > world.maxx || size_y > world.maxy)
+		stack_trace("Tried to find virtual level allocation that cannot possibly fit in a physical level.")
+		return FALSE
+
+	/// Methodical trial and error method
+	while(TRUE)
+		var/upper_target_x = target_x+size_x
+		var/upper_target_y = target_y+size_y
+
+		var/out_of_bounds = FALSE
+		if((target_x < 1 || upper_target_x > world.maxx) || (target_y < 1 || upper_target_y > world.maxy))
+			out_of_bounds = TRUE
+
+		if(!out_of_bounds && level.is_box_free(target_x, target_y, upper_target_x, upper_target_y))
+			return list(target_x, target_y, level.z_value) //hallelujah we found the unallocated spot
+
+		if(upper_target_x > world.maxx) //If we can't increment x, then the search is over
+			break
+
+		var/increments_y = TRUE
+		if(upper_target_y > world.maxy)
+			target_y = 1
+			increments_y = FALSE
+		if(increments_y)
+			target_y += allocation_jump
+		else
+			target_x += allocation_jump
+
+/// Get a list of all virtual levels which have the specified trait
+/datum/controller/subsystem/mapping/proc/virtual_levels_by_trait(trait)
+	. = list()
+	for(var/datum/map_zone/zone as anything in map_zones)
+		for(var/datum/virtual_level/vlevel as anything in zone.virtual_levels)
+			if(vlevel.traits[trait])
+				. += vlevel

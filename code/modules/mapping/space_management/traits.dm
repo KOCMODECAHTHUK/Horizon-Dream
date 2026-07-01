@@ -53,3 +53,33 @@
 /datum/controller/subsystem/mapping/proc/get_station_center()
 	var/station_z = levels_by_trait(ZTRAIT_STATION)[1]
 	return locate(round(world.maxx * 0.5, 1), round(world.maxy * 0.5, 1), station_z)
+
+// Virtual level trait procs
+
+/// Look up levels[z].traits[trait]
+/atom/proc/virtual_level_trait(trait)
+	var/datum/virtual_level/zone = get_virtual_level()
+	if(!zone)
+		return
+	return zone.traits[trait]
+
+/// Check if levels[z] has any of the specified traits
+/atom/proc/virtual_level_has_any_trait(list/traits)
+	var/datum/virtual_level/zone = get_virtual_level()
+	if(!zone)
+		return FALSE
+	for (var/trait in traits)
+		if(trait in zone.traits)
+			return TRUE
+	return FALSE
+
+/// Check if levels[z] has all of the specified traits
+/atom/proc/virtual_level_has_all_traits(list/traits)
+	var/datum/virtual_level/zone = get_virtual_level()
+	if(!zone)
+		return FALSE
+	for (var/trait in traits)
+		if(!(trait in zone.traits))
+			return FALSE
+	return TRUE
+

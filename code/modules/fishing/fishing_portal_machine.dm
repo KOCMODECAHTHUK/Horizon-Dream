@@ -212,7 +212,7 @@
 				abort = FALSE
 			var/turf/spot_turf = get_turf(spot)
 			var/turf/turf = get_turf(src)
-			if(turf.z == spot_turf.z || (is_station_level(turf.z) && is_station_level(spot_turf.z)))
+			if(turf.virtual_z == spot_turf.virtual_z || (is_station_level(turf.z) && is_station_level(spot_turf.z)))
 				abort = FALSE
 			if(!abort)
 				RegisterSignal(spot, COMSIG_MOVABLE_Z_CHANGED, PROC_REF(on_fishing_spot_z_level_changed))

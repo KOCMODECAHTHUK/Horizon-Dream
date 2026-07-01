@@ -1,5 +1,8 @@
 #define SYNDICATE_CHALLENGE_TIMER (20 MINUTES)
 
+// DISABLED for PentestSS13 - Replaced with /obj/machinery/computer/supercruise
+
+/*
 /obj/machinery/computer/shuttle/syndicate
 	name = "syndicate shuttle terminal"
 	desc = "The terminal used to control the syndicate transport shuttle."
@@ -53,6 +56,7 @@
 		to_chat(user, span_warning("Pods are one way!"))
 		return FALSE
 	return TRUE
+*/
 
 /obj/machinery/computer/camera_advanced/shuttle_docker/syndicate
 	name = "syndicate shuttle navigation computer"

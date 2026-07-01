@@ -88,7 +88,9 @@
 	new /obj/item/gun/energy/recharge/kinetic_accelerator(src)
 
 /**********************Shuttle Computer**************************/
+// DISABLED for PentestSS13 - Replaced with /obj/machinery/computer/supercruise
 
+/*
 /obj/machinery/computer/shuttle/mining
 	name = "mining shuttle console"
 	desc = "Used to call and send the mining shuttle."
@@ -122,6 +124,7 @@
 	circuit = /obj/item/circuitboard/computer/mining_shuttle/common
 	shuttleId = "mining_common"
 	possible_destinations = "commonmining_home;lavaland_common_away;landing_zone_dock;mining_public"
+*/
 
 /obj/docking_port/stationary/mining_home
 	name = "SS13: Mining Dock"

@@ -1,0 +1,398 @@
+/**
+ * # Orbital Shuttle
+ *
+ * A shuttle object in supercruise that can be controlled by the player.
+ * Uses BeeStation-style direct velocity control instead of inertia physics.
+ */
+/datum/orbital_object/shuttle
+	render_mode = "shuttle"
+	radius = 5
+
+	/// Current thrust angle (0-360 degrees)
+	var/thrust_angle = 0
+	/// Current thrust power (0-100)
+	var/thrust_power = 0
+	/// Maximum speed in km/s
+	var/max_speed = 50
+	/// Horizontal speed scale to make X/Y movement smoother
+	var/xy_speed_scale = 0.5
+	/// Acceleration rate (km/s per second)
+	var/acceleration = 10
+	/// Deceleration rate (km/s per second) - higher for quick stops
+	var/deceleration = 20
+	/// Target position for click-to-fly (list with x, y keys)
+	var/list/target_position = null
+	/// Autopilot enabled
+	var/autopilot_enabled = FALSE
+	/// Position history for trail rendering (list of lists with x, y keys)
+	var/list/position_history = list()
+	/// Maximum number of positions to track
+	var/max_history = 20
+	/// How much Z changes per vertical control command
+	var/altitude_step = 10
+	/// Maximum vertical speed in km/s for animation or physics
+	var/max_vertical_speed = 20
+	/// Distance at which to start slowing down (km)
+	var/slowdown_distance = 100
+	/// Minimum arrival distance (km)
+	var/arrival_threshold = 5
+
+	/// Reference to the actual shuttle docking port
+	var/obj/docking_port/mobile/shuttle_port = null
+	/// The station we're currently docked at (if any)
+	var/datum/orbital_object/station/docked_at = null
+	/// Are we currently in the process of docking?
+	var/is_docking = FALSE
+	/// The original stationary port where the shuttle was docked before entering supercruise
+	var/obj/docking_port/stationary/original_dock = null
+
+	/// Does this shuttle have a jump drive installed?
+	var/has_jump_drive = TRUE
+	/// Cooldown between jumps in seconds
+	var/jump_cooldown = 60 SECONDS
+	/// World time of the last jump
+	var/last_jump_time = 0
+	/// Is the shuttle currently jumping between systems?
+	var/is_jumping = FALSE
+
+/datum/orbital_object/shuttle/process(seconds_per_tick)
+	// Don't process movement if docked
+	// Check both: docked at a station object OR not in transit dock
+	var/obj/docking_port/stationary/current_dock = shuttle_port?.get_docked()
+	var/is_in_transit = istype(current_dock, /obj/docking_port/stationary/transit)
+	var/is_docked = (docked_at != null) || (current_dock && !is_in_transit)
+
+	if(is_docked)
+		// Reset all movement when docked
+		velocity_x = 0
+		velocity_y = 0
+		thrust_power = 0
+		autopilot_enabled = FALSE
+		target_position = null
+		return
+
+	// Record position history for trail
+	position_history += list(list("x" = position_x, "y" = position_y))
+	if(length(position_history) > max_history)
+		position_history.Cut(1, 2) // Remove oldest entry
+
+	var/list/target_velocity = list("x" = 0, "y" = 0)
+	var/target_speed = 0
+
+	// Handle autopilot to target position
+	if(autopilot_enabled && target_position)
+		thrust_power = 0 // Disable manual thrust while on autopilot
+		var/target_x = target_position["x"]
+		var/target_y = target_position["y"]
+
+		// Calculate direction and distance to target
+		var/dx = target_x - position_x
+		var/dy = target_y - position_y
+		var/distance = sqrt(dx*dx + dy*dy)
+
+		if(distance > arrival_threshold)
+			// Normalize direction
+			var/dir_x = dx / distance
+			var/dir_y = dy / distance
+
+			// Calculate desired speed based on distance (slow down as we approach)
+			if(distance > slowdown_distance)
+				target_speed = max_speed
+			else
+				// Linear interpolation: speed decreases from max_speed to 0 as distance goes from slowdown_distance to 0
+				target_speed = max_speed * (distance / slowdown_distance)
+				target_speed = max(target_speed, 5) // Minimum speed to avoid crawling
+
+			// Set target velocity in the direction of target
+			target_velocity["x"] = dir_x * target_speed
+			target_velocity["y"] = dir_y * target_speed
+		else
+			// Arrived!
+			autopilot_enabled = FALSE
+			target_position = null
+			target_velocity["x"] = 0
+			target_velocity["y"] = 0
+
+	// Handle manual thrust (when not on autopilot or in addition to autopilot)
+	else if(thrust_power > 0 && !autopilot_enabled)
+		// Manual control: set target velocity based on thrust angle
+		var/thrust_speed = (thrust_power / 100) * max_speed * xy_speed_scale
+		target_velocity["x"] = cos(thrust_angle) * thrust_speed
+		target_velocity["y"] = sin(thrust_angle) * thrust_speed
+
+	// Smoothly adjust current velocity toward target velocity
+	var/vel_diff_x = target_velocity["x"] - velocity_x
+	var/vel_diff_y = target_velocity["y"] - velocity_y
+	var/vel_diff_mag = sqrt(vel_diff_x*vel_diff_x + vel_diff_y*vel_diff_y)
+
+	if(vel_diff_mag > 0.1)
+		// Determine if we're accelerating or decelerating
+		var/current_speed = sqrt(velocity_x*velocity_x + velocity_y*velocity_y)
+		var/is_decelerating = (target_speed < current_speed) || (target_speed == 0)
+
+		// Use appropriate rate
+		var/change_rate = is_decelerating ? deceleration : acceleration
+		var/max_change = change_rate * seconds_per_tick
+
+		if(vel_diff_mag <= max_change)
+			// Can reach target velocity this tick
+			velocity_x = target_velocity["x"]
+			velocity_y = target_velocity["y"]
+		else
+			// Move toward target velocity at change_rate
+			var/change_ratio = max_change / vel_diff_mag
+			velocity_x += vel_diff_x * change_ratio
+			velocity_y += vel_diff_y * change_ratio
+
+	// Apply vertical position changes from vertical velocity
+	position_z += velocity_z * seconds_per_tick
+
+	..()
+
+/datum/orbital_object/shuttle/get_map_data()
+	var/list/data = ..()
+	data["priority"] = 10 // Shuttles render on top
+	data["position_history"] = position_history.Copy()
+	return data
+
+/**
+ * Set thrust direction and power (for manual control)
+ */
+/datum/orbital_object/shuttle/proc/set_thrust(angle, power)
+	// Normalize angle to 0-360
+	thrust_angle = MODULUS(angle, 360)
+	if(thrust_angle < 0)
+		thrust_angle += 360
+	thrust_power = clamp(power, 0, 100)
+
+/datum/orbital_object/shuttle/proc/adjust_altitude(dz)
+	if(!dz)
+		return null
+
+	// Disallow altitude control while docked
+	var/obj/docking_port/stationary/current_dock = shuttle_port?.get_docked()
+	var/is_in_transit = istype(current_dock, /obj/docking_port/stationary/transit)
+	var/is_docked = (docked_at != null) || (current_dock && !is_in_transit)
+	if(is_docked)
+		return "Cannot change altitude while docked"
+
+	position_z += dz
+	velocity_z = 0
+	return null
+
+/**
+ * Attempt to dock at a station
+ * Modified to work with Pentest-style transit dock system.
+ * Shuttles move from their assigned_transit dock to the station dock.
+ */
+/datum/orbital_object/shuttle/proc/dock_at_station(datum/orbital_object/station/target_station)
+	if(!target_station)
+		return "No target station specified"
+
+	if(docked_at)
+		return "Already docked at [docked_at.station_name]"
+
+	if(is_docking)
+		return "Already docking"
+
+	// Check if we have a shuttle port
+	if(!shuttle_port)
+		return "Shuttle has no docking port"
+
+	// Attempt to dock at the station
+	var/dock_error = target_station.dock_shuttle(src)
+	if(dock_error)
+		return dock_error
+
+	is_docking = TRUE
+
+	// Stop all movement
+	autopilot_enabled = FALSE
+	target_position = null
+	velocity_x = 0
+	velocity_y = 0
+	velocity_z = 0
+
+	var/obj/docking_port/stationary/target_dock = null
+
+	if(original_dock)
+		target_dock = original_dock
+	// Otherwise, try to find a docking port from the station
+	else if(length(target_station.docking_ports))
+		for(var/obj/docking_port/stationary/port in target_station.docking_ports)
+			target_dock = port
+			break
+
+	if(!target_dock)
+		target_station.undock_shuttle(src)
+		is_docking = FALSE
+		return "No docking port available at station"
+
+	// Move the shuttle from its transit dock back to the station
+	var/docking_result = shuttle_port.initiate_docking(target_dock)
+	if(docking_result != DOCKING_SUCCESS)
+		target_station.undock_shuttle(src)
+		is_docking = FALSE
+		return "Failed to dock shuttle ([docking_result])"
+	// Set docked status
+	docked_at = target_station
+	is_docking = FALSE
+
+	return null // Success
+
+/**
+ * Undock from the current station (or launch into supercruise for the first time)
+ * Shuttles get a persistent assigned_transit
+ * that is reused every time they undock, instead of creating a new virtual level each time.
+ */
+/datum/orbital_object/shuttle/proc/undock_from_station()
+	if(is_docking)
+		return "Currently docking, please wait"
+
+	if(!shuttle_port)
+		return "Shuttle has no docking port"
+
+	// If we're docked at a station object, undock from it
+	if(docked_at)
+		var/undock_error = docked_at.undock_shuttle(src)
+		if(undock_error)
+			return undock_error
+
+	// Store the current dock location so we can return to it
+	var/obj/docking_port/stationary/current_dock = shuttle_port.get_docked()
+	if(!current_dock)
+		if(docked_at)
+			docked_at = null
+		return "Error: Shuttle not physically docked"
+
+	// Save this as the original dock if we don't have one yet
+	if(!original_dock)
+		original_dock = current_dock
+
+	// If shuttle doesn't have an assigned transit dock yet, generate one
+	if(!shuttle_port.assigned_transit)
+		var/success = SSshuttle.generate_transit_dock(shuttle_port)
+		if(!success)
+			docked_at = null
+			return "Error: Failed to generate transit dock"
+	var/docking_result = shuttle_port.initiate_docking(shuttle_port.assigned_transit)
+	if(docking_result != DOCKING_SUCCESS)
+		// Don't clean up assigned_transit - it's persistent and should be reused
+		docked_at = null
+		stack_trace("Failed to move shuttle [shuttle_port.shuttle_id] to transit dock. Error code: [docking_result]")
+		return "Error: Failed to move shuttle to transit ([docking_result])"
+
+	docked_at = null
+
+	return null
+
+/**
+ * Get nearby stations that are in docking range
+ */
+/datum/orbital_object/shuttle/proc/get_nearby_stations()
+	var/list/nearby = list()
+	if(!star_system)
+		return nearby
+
+	for(var/datum/orbital_object/station/station in star_system.get_stations())
+		if(station.in_docking_range(src))
+			nearby += station
+	return nearby
+
+/**
+ * Get nearby objects that can be interacted with (generic version)
+ * Returns all objects within interaction range in the same system
+ */
+/datum/orbital_object/shuttle/proc/get_nearby_objects(interaction_range = 30)
+	var/list/nearby = list()
+	if(!star_system)
+		return nearby
+
+	for(var/datum/orbital_object/obj in star_system.orbital_objects)
+		if(obj == src)
+			continue // Don't include ourselves
+		var/dist = sqrt((obj.position_x - position_x)**2 + (obj.position_y - position_y)**2)
+		if(dist <= interaction_range)
+			nearby += obj
+	return nearby
+
+/**
+ * Initiate a jump to another star system
+ * Returns null on success, error message string on failure
+ */
+/datum/orbital_object/shuttle/proc/jump_to_system(system_id, mob/user)
+	// Check if we have a jump drive
+	if(!has_jump_drive)
+		return "This shuttle does not have a jump drive installed"
+
+	// Check if we're currently jumping
+	if(is_jumping)
+		return "Jump drive is already charging"
+
+	// Check if docked
+	if(docked_at || is_docking)
+		return "Cannot jump while docked - undock first"
+
+	// Check cooldown
+	var/time_since_jump = (world.time - last_jump_time)
+	if(time_since_jump < jump_cooldown)
+		var/remaining = jump_cooldown - time_since_jump
+		return "Jump drive is cooling down - [round(remaining)] seconds remaining"
+
+	// Check if we're in a system
+	if(!star_system)
+		return "Error: Shuttle is not in a star system"
+
+	// Get target system
+	var/datum/overmap_star_system/target_system = SSsupercruise.get_system(system_id)
+	if(!target_system)
+		return "Error: Target system not found"
+
+	// Don't allow jumping to the same system
+	if(target_system == star_system)
+		return "Already in target system"
+
+	// Start jump sequence
+	is_jumping = TRUE
+
+	// Announce jump
+	if(user)
+		to_chat(user, span_notice("Initiating jump to [target_system.system_name]..."))
+
+	// Execute jump using SSsupercruise
+	var/jump_result = SSsupercruise.move_to_system(src, target_system, position_x, position_y)
+
+	if(!jump_result)
+		is_jumping = FALSE
+		return "Error: Failed to execute jump"
+
+	// Update jump time and status
+	last_jump_time = world.time
+	is_jumping = FALSE
+
+	if(user)
+		to_chat(user, span_notice("Jump complete! Now in [target_system.system_name]."))
+
+	return null // Success
+
+/**
+ * Get available jump destinations from current system
+ */
+/datum/orbital_object/shuttle/proc/get_jump_destinations()
+	if(!star_system)
+		return list()
+
+	var/list/destinations = list()
+	// Get all systems that allow jumping (except the current system)
+	for(var/system_id in SSsupercruise.star_systems)
+		var/datum/overmap_star_system/system = SSsupercruise.star_systems[system_id]
+		// Don't show current system or systems that can't be jumped to
+		if(system == star_system || !system.can_jump)
+			continue
+		destinations += list(list(
+			"id" = system.system_id,
+			"name" = system.system_name,
+			"description" = system.system_description
+		))
+
+	return destinations

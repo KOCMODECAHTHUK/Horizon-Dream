@@ -14,6 +14,9 @@
 	// if we're both on "station", regardless of multi-z, we'll pass by.
 	if(is_station_level(source_loc.z) && is_station_level(checking_loc.z))
 		return TRUE
+	// Check virtual z-levels first
+	if(source_loc.virtual_z && checking_loc.virtual_z && source_loc.virtual_z == checking_loc.virtual_z)
+		return TRUE
 	if(source_loc.z == checking_loc.z)
 		return TRUE
 	return FALSE

@@ -129,7 +129,12 @@
 	SIGNAL_HANDLER
 	if(QDELING(src))
 		return
-	if(QDELETED(origin) || QDELETED(target) || get_dist(origin, target) >= max_distance || origin.z != target.z)
+	var/turf/origin_turf = get_turf(origin)
+	var/turf/target_turf = get_turf(target)
+	if(!QDELETED(origin) && !QDELETED(target) && get_dist(origin,target)<max_distance && origin_turf.virtual_z == target_turf.virtual_z)
+		QDEL_LIST(elements)
+		INVOKE_ASYNC(src, PROC_REF(Draw))
+	else
 		qdel(src)
 		return
 	var/queued_time = 0

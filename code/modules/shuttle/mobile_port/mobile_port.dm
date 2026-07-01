@@ -41,6 +41,9 @@
 
 	var/obj/docking_port/stationary/transit/assigned_transit
 
+	/// Current docking ticket for this shuttle (if any)
+	var/datum/docking_ticket/current_ticket
+
 	var/launch_status = NOLAUNCH
 
 	var/list/ripples = list()
@@ -103,6 +106,10 @@
 		assigned_transit = null
 	shuttle_areas = null
 	remove_ripples()
+
+	// Clear docking ticket on destruction
+	clear_docking_ticket()
+
 	return ..()
 
 #define WORLDMAXX_CUTOFF (world.maxx + 1)
@@ -244,6 +251,12 @@
 	if(stationary_dock.override_can_dock_checks)
 		return SHUTTLE_CAN_DOCK
 
+	// If the dock has adjust_dock_for_landing enabled, adjust it to fit this shuttle
+	if(stationary_dock.adjust_dock_for_landing)
+		if(stationary_dock.is_adjusting_now)
+			return "Port is adjusting for another shuttle"
+		stationary_dock.adjust_dock_to_shuttle(src)
+
 	if(dwidth > stationary_dock.dwidth)
 		return SHUTTLE_DWIDTH_TOO_LARGE
 
@@ -279,6 +292,63 @@
 		// We're already docked there, don't need to do anything.
 		// Triggering shuttle movement code in place is weird
 		return FALSE
+
+/**
+ * Issue a docking ticket for this shuttle to dock at a specific port
+ *
+ * Arguments:
+ * * target_port - The stationary docking port to dock at
+ * * target_orbital - Optional orbital object for the target (station, ship, etc.)
+ * * issuer_orbital - Optional orbital object for the issuer (shuttle)
+ *
+ * Returns a docking ticket datum, or null if docking is not possible
+ */
+/obj/docking_port/mobile/proc/issue_docking_ticket(obj/docking_port/stationary/target_port, datum/orbital_object/target_orbital = null, datum/orbital_object/shuttle/issuer_orbital = null)
+	if(!target_port)
+		return null
+
+	// Check if we can dock here
+	var/dock_status = canDock(target_port)
+
+	// Clear any existing ticket
+	clear_docking_ticket()
+
+	// Create new ticket
+	if(dock_status == SHUTTLE_CAN_DOCK)
+		current_ticket = new /datum/docking_ticket(target_port, target_orbital, issuer_orbital, null)
+	else
+		// Create ticket with error
+		current_ticket = new /datum/docking_ticket(target_port, target_orbital, issuer_orbital, dock_status)
+
+	return current_ticket
+
+/**
+ * Validate the current docking ticket
+ *
+ * Returns TRUE if ticket is valid and docking can proceed, FALSE otherwise
+ */
+/obj/docking_port/mobile/proc/validate_docking_ticket()
+	if(!current_ticket)
+		return FALSE
+
+	return current_ticket.is_valid()
+
+/**
+ * Clear the current docking ticket
+ */
+/obj/docking_port/mobile/proc/clear_docking_ticket()
+	if(current_ticket)
+		qdel(current_ticket)
+		current_ticket = null
+
+/**
+ * Get the status message from the current docking ticket
+ */
+/obj/docking_port/mobile/proc/get_ticket_status()
+	if(!current_ticket)
+		return "No docking ticket issued"
+
+	return current_ticket.get_status_message()
 
 /obj/docking_port/mobile/proc/transit_failure()
 	message_admins("Shuttle [src] repeatedly failed to create transit zone.")
@@ -326,6 +396,9 @@
 		return
 
 	remove_ripples()
+
+	// Clear docking ticket on cancel
+	clear_docking_ticket()
 
 	invertTimer()
 	mode = SHUTTLE_RECALL

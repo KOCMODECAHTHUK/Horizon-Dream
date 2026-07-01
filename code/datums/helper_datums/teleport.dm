@@ -7,7 +7,8 @@
 // asoundout: soundfile to play after teleportation
 // no_effects: disable the default effectin/effectout of sparks
 // forced: whether or not to ignore no_teleport
-/proc/do_teleport(atom/movable/teleatom, atom/destination, precision=null, datum/effect_system/effectin=null, datum/effect_system/effectout=null, asoundin=null, asoundout=null, no_effects=FALSE, channel=TELEPORT_CHANNEL_BLUESPACE, forced = FALSE)
+// restrain_vlevel: whether to restrict teleportation within the same virtual level (default TRUE)
+/proc/do_teleport(atom/movable/teleatom, atom/destination, precision=null, datum/effect_system/effectin=null, datum/effect_system/effectout=null, asoundin=null, asoundout=null, no_effects=FALSE, channel=TELEPORT_CHANNEL_BLUESPACE, forced = FALSE, restrain_vlevel = TRUE)
 	// teleporting most effects just deletes them
 	var/static/list/delete_atoms = zebra_typecacheof(list(
 		/obj/effect = TRUE,
@@ -264,6 +265,22 @@
 	if(is_reserved_level(destination_turf.z) && istype(original_destination) \
 		&& SSmapping.get_reservation_from_turf(destination_turf) != SSmapping.get_reservation_from_turf(get_turf(original_destination)))
 		return FALSE
+
+	// prevent teleports from crossing virtual level boundaries
+	var/turf/origin_turf = get_turf(teleported_atom)
+	if(origin_turf && destination_turf)
+		var/datum/virtual_level/origin_vlevel = origin_turf.get_virtual_level()
+		var/datum/virtual_level/dest_vlevel = destination_turf.get_virtual_level()
+		// If both have virtual levels and they're different, check if we're trying to jump
+		if(origin_vlevel && dest_vlevel && origin_vlevel != dest_vlevel)
+			// Allow if the original destination is actually in the target vlevel
+			// (this handles precision teleports that might land in adjacent areas)
+			if(istype(original_destination))
+				var/turf/original_dest_turf = get_turf(original_destination)
+				if(original_dest_turf)
+					var/datum/virtual_level/original_dest_vlevel = original_dest_turf.get_virtual_level()
+					if(original_dest_vlevel != dest_vlevel)
+						return FALSE
 
 	if((origin_area.area_flags & NOTELEPORT) || (destination_area.area_flags & NOTELEPORT))
 		return FALSE

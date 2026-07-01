@@ -1235,6 +1235,12 @@
 				if(destarea && old_area != destarea)
 					destarea.Entered(src, old_area)
 
+			// Check for virtual z-level changes
+			var/old_virtual_z = isturf(oldloc) ? oldloc:virtual_z : null
+			var/new_virtual_z = isturf(destination) ? destination:virtual_z : null
+			if(old_virtual_z != new_virtual_z)
+				on_virtual_z_change(new_virtual_z, old_virtual_z)
+
 		. = TRUE
 
 	//If no destination, move the atom into nullspace (don't do this unless you know what you're doing)
@@ -2097,3 +2103,13 @@
 		factions_printout += "\n[faction_string]"
 
 	return jointext(factions_printout, "")
+
+/**
+ * Called when this atom's virtual_z changes
+ *
+ * new_virtual_z - The new virtual_z value
+ * old_virtual_z - The old virtual_z value
+ */
+/atom/movable/proc/on_virtual_z_change(new_virtual_z, old_virtual_z)
+	SHOULD_CALL_PARENT(TRUE)
+	SEND_SIGNAL(src, COMSIG_ATOM_VIRTUAL_Z_CHANGE, new_virtual_z, old_virtual_z)

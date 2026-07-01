@@ -114,7 +114,7 @@ GLOBAL_LIST_EMPTY(heretic_arenas)
 /// Blocks Z movement to new z levels
 /datum/proximity_monitor/advanced/heretic_arena/proc/on_try_z_move(atom/movable/source, turf/start, turf/destination)
 	SIGNAL_HANDLER
-	if(start.z == destination.z)
+	if(start.virtual_z == destination.virtual_z)
 		return
 	return COMPONENT_CANT_Z_MOVE
 

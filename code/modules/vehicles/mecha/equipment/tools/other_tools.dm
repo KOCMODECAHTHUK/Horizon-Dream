@@ -18,7 +18,8 @@
 	if(!action_checks(target) || !check_teleport_valid(source, target, TELEPORT_CHANNEL_BLUESPACE))
 		return
 	var/turf/T = get_turf(target)
-	if(T && (loc.z == T.z) && (get_dist(loc, T) <= teleport_range))
+	var/turf/loc_turf = get_turf(loc)
+	if(T && (loc_turf.virtual_z == T.virtual_z) && (get_dist(loc, T) <= teleport_range))
 		do_teleport(chassis, T, 4, channel = TELEPORT_CHANNEL_BLUESPACE)
 		return ..()
 

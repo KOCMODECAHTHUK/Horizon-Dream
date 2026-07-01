@@ -135,7 +135,7 @@
 /turf/open/floor/mineral/plastitanium/pod/light,
 /area/shuttle/mining)
 "s" = (
-/obj/machinery/computer/shuttle/mining,
+/obj/machinery/computer/supercruise,
 /turf/open/floor/mineral/plastitanium/pod/light,
 /area/shuttle/mining)
 "z" = (

@@ -17,10 +17,10 @@
 //Invokes the proctype with a turf above as target.
 /datum/element/openspace_item_click_handler/proc/divert_interaction(obj/item/source, mob/user, atom/target, list/modifiers)
 	SIGNAL_HANDLER
-	if((target.z == 0) || (user.z == 0) || target.z == user.z)
+	if((target.z == 0) || (user.z == 0) || target.virtual_z() == user.virtual_z())
 		return NONE
 	var/turf/target_turf = parse_caught_click_modifiers(modifiers, get_turf(user.client?.eye || user), user.client)
-	if(target_turf?.z == user.z && target_turf.IsReachableBy(user, source?.reach))
+	if(target_turf?.virtual_z == user.virtual_z() && target_turf.IsReachableBy(user, source?.reach))
 		INVOKE_ASYNC(source, TYPE_PROC_REF(/obj/item, handle_openspace_click), target_turf, user, modifiers)
 		return ITEM_INTERACT_BLOCKING
 	return NONE
