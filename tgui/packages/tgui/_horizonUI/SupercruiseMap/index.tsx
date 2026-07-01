@@ -3,7 +3,6 @@ import { useBackend } from '../../backend';
 import { Box, Button, Flex, NoticeBox, Section } from 'tgui-core/components';
 import { Window } from '../../layouts';
 import { SupercruiseMapCanvas } from './components/MapCanvas';
-import { SupercruiseMapData } from './types';
 import { FlightControls } from './screens/FlightControls';
 import { NavigationStatus } from './screens/NavigationStatus';
 import { NearbyContacts } from './screens/NearbyContacts';
@@ -11,7 +10,7 @@ import { JumpDrivePanel } from './screens/JumpDrivePanel';
 import { useShuttleControls } from './ShuttleControls';
 
 export const SupercruiseMap = () => {
-  const { act, data } = useBackend<SupercruiseMapData>();
+  const { act, data } = useBackend();
   const {
     map_objects = [],
     linkedToShuttle = false,
@@ -47,7 +46,7 @@ export const SupercruiseMap = () => {
     lastActionError = '',
   } = data;
 
-  const [selectedJumpDestination, setSelectedJumpDestination] = useState<string | null>(null);
+  const [selectedJumpDestination, setSelectedJumpDestination] = useState(null);
   const [actionError, setActionError] = useState('');
 
   useEffect(() => {
@@ -59,24 +58,20 @@ export const SupercruiseMap = () => {
   }, [lastActionError, update_index]);
 
   const { cameraYaw, cameraPitch, zoomScale, rotateCamera, handleZoom } = useShuttleControls(act, linkedToShuttle, isDocked, shuttleAngle, shuttlePitch, shuttleThrust);
-  const ourPos = ourObject ? (ourObject.position || [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0]) : [0, 0, 0];
+  const ourPos = ourObject?.position ? [ourObject.position[0] || 0, ourObject.position[1] || 0, ourObject.position[2] || 0] : [0, 0, 0];
   const focusX = linkedToShuttle ? ourPos[0] : 0;
   const focusY = linkedToShuttle ? ourPos[1] : 0;
   const focusZ = linkedToShuttle ? ourPos[2] : 0;
 
-  const canvasMapObjects = map_objects.map((obj) => {
-    const pos = obj.position && Array.isArray(obj.position) ? obj.position : [obj.position_x || 0, obj.position_y || 0, obj.position_z || 0];
-    const vel = obj.velocity && Array.isArray(obj.velocity) ? obj.velocity : [obj.velocity_x || 0, obj.velocity_y || 0, obj.velocity_z || 0];
-    return { ...obj, position_x: pos[0], position_y: pos[1], position_z: pos[2] || 0, velocity_x: vel[0], velocity_y: vel[1], velocity_z: vel[2] || 0 };
-  });
-
-  const ourObjectNormalized = ourObject ? {
-    ...ourObject,
-    position: ourObject.position || [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0],
-    velocity: ourObject.velocity || [ourObject.velocity_x || 0, ourObject.velocity_y || 0, ourObject.velocity_z || 0],
-  } : null;
-
-  const shuttleAlt = ourPos[2] || 0;
+  const canvasMapObjects = map_objects.map((obj) => ({
+    ...obj,
+    position_x: obj.position?.[0] ?? obj.position_x ?? 0,
+    position_y: obj.position?.[1] ?? obj.position_y ?? 0,
+    position_z: obj.position?.[2] ?? obj.position_z ?? 0,
+    velocity_x: obj.velocity?.[0] ?? obj.velocity_x ?? 0,
+    velocity_y: obj.velocity?.[1] ?? obj.velocity_y ?? 0,
+    velocity_z: obj.velocity?.[2] ?? obj.velocity_z ?? 0,
+  }));
 
   return (
     <Window width={1100} height={750}>
@@ -94,7 +89,7 @@ export const SupercruiseMap = () => {
                 shuttleHeading={shuttleHeading}
                 shuttleHeadingPitch={shuttleHeadingPitch}
                 shuttleMaxSpeed={shuttleMaxSpeed}
-                ourObject={ourObjectNormalized}
+                ourObject={ourObject}
                 targetX={targetX} targetY={targetY} targetZ={targetZ}
                 pendingTargetX={pendingTargetX} pendingTargetY={pendingTargetY} pendingTargetZ={pendingTargetZ}
                 hasPendingTarget={hasPendingTarget}
@@ -103,17 +98,24 @@ export const SupercruiseMap = () => {
                 cameraYaw={cameraYaw} cameraPitch={cameraPitch} cameraDistance={600}
                 focusX={focusX} focusY={focusY} focusZ={focusZ}
                 shuttleVelX={shuttleVelX} shuttleVelY={shuttleVelY} shuttleVelZ={shuttleVelZ}
-                shuttleAlt={shuttleAlt}
+                shuttleAlt={ourPos[2] || 0}
                 onRotate={rotateCamera}
                 onZoom={handleZoom}
                 onMapClick={(worldX, worldY, clickType, altKey, objectId, clickZ) => {
                   if (isDocked) return;
-                  if (clickType === 'cancel') { act('clearPendingTarget'); return; }
-                  if (clickType === 'right') {
-                    const finalZ = clickZ != null ? clickZ : (ourPos[2] || 0);
-                    act('setTargetCoords', { x: worldX, y: worldY, z: finalZ, altKey });
+                  switch (clickType) {
+                    case 'cancel':
+                      act('clearPendingTarget');
+                      break;
+                    case 'right': {
+                      const finalZ = clickZ != null ? clickZ : (ourPos[2] || 0);
+                      act('setTargetCoords', { x: worldX, y: worldY, z: finalZ, altKey });
+                      break;
+                    }
+                    case 'double':
+                      if (objectId) act('dock', { stationId: objectId });
+                      break;
                   }
-                  if (clickType === 'double' && objectId) { act('dock', { stationId: objectId }); }
                 }}
               />
             </Box>

@@ -180,11 +180,20 @@
 	var/is_in_transit = istype(current_dock, /obj/docking_port/stationary/transit)
 	var/is_docked = (controlled_shuttle.docked_at != null) || (current_dock && !is_in_transit)
 
+	var/list/flight_actions = list(
+		"set_thrust", "set_thrust_3d", "set_heading", "setTargetCoords",
+		"confirmAutopilot", "adjust_altitude", "kill_thrust",
+		"toggle_rotate_left", "toggle_rotate_right",
+		"toggle_rotate_pitch_up", "toggle_rotate_pitch_down"
+	)
+
+	if(is_docked && (action in flight_actions))
+		last_action_error = "Cannot perform flight actions while docked"
+		to_chat(usr, span_warning("Cannot control thrust while docked!"))
+		return FALSE
+
 	switch(action)
 		if("set_thrust")
-			if(is_docked)
-				to_chat(usr, span_warning("Cannot control thrust while docked!"))
-				return FALSE
 			var/angle = text2num(params["angle"])
 			var/power = text2num(params["power"])
 			var/pitch = text2num(params["pitch"])
@@ -193,9 +202,6 @@
 			return TRUE
 
 		if("set_thrust_3d")
-			if(is_docked)
-				to_chat(usr, span_warning("Cannot control thrust while docked!"))
-				return FALSE
 			var/tx = text2num(params["tx"])
 			var/ty = text2num(params["ty"])
 			var/tz = text2num(params["tz"])
@@ -205,14 +211,10 @@
 			return TRUE
 
 		if("set_heading")
-			if(is_docked)
-				to_chat(usr, span_warning("Cannot set heading while docked!"))
-				return FALSE
 			var/new_x = text2num(params["x"])
 			var/new_y = text2num(params["y"])
 			var/new_z = text2num(params["z"])
 			if(!isnull(new_x) && !isnull(new_y))
-				// Calculate 3D direction to target point
 				var/dx = new_x - controlled_shuttle.position[1]
 				var/dy = new_y - controlled_shuttle.position[2]
 				var/dz = (isnull(new_z) ? 0 : new_z) - controlled_shuttle.position[3]
@@ -222,9 +224,6 @@
 			return TRUE
 
 		if("setTargetCoords")
-			if(is_docked)
-				to_chat(usr, span_warning("Cannot engage autopilot while docked!"))
-				return FALSE
 			var/x = text2num(params["x"])
 			var/y = text2num(params["y"])
 			var/z = text2num(params["z"])
@@ -236,18 +235,13 @@
 				controlled_shuttle.pending_target = null
 				controlled_shuttle.kill_thrust()
 			else if(!isnull(x) && !isnull(y) && !isnull(z))
-				// Set pending target (requires confirmation before engaging)
 				controlled_shuttle.pending_target = list(x, y, z)
 			return TRUE
 
 		if("confirmAutopilot")
-			if(is_docked)
-				last_action_error = "Cannot engage autopilot while docked"
-				return FALSE
 			if(!controlled_shuttle.pending_target)
 				last_action_error = "No pending target to confirm"
 				return FALSE
-			// Engage autopilot to the pending target
 			controlled_shuttle.target_position = controlled_shuttle.pending_target.Copy()
 			controlled_shuttle.autopilot_enabled = TRUE
 			controlled_shuttle.pending_target = null
@@ -255,12 +249,12 @@
 
 		if("clearPendingTarget")
 			controlled_shuttle.pending_target = null
+			if(controlled_shuttle.autopilot_enabled)
+				controlled_shuttle.autopilot_enabled = FALSE
+				controlled_shuttle.target_position = null
 			return TRUE
 
 		if("adjust_altitude")
-			if(is_docked)
-				to_chat(usr, span_warning("Cannot adjust altitude while docked!"))
-				return FALSE
 			var/dz = text2num(params["dz"])
 			if(isnull(dz))
 				return FALSE
@@ -270,45 +264,31 @@
 			return TRUE
 
 		if("kill_thrust")
-			if(is_docked)
-				return FALSE
 			controlled_shuttle.kill_thrust()
 			return TRUE
 
 		if("toggle_rotate_left")
-			if(is_docked)
-				return FALSE
-			var/enable = text2num(params["enable"])
-			controlled_shuttle.toggle_rotate_left(enable)
+			controlled_shuttle.toggle_rotate_left(text2num(params["enable"]))
 			return TRUE
 
 		if("toggle_rotate_right")
-			if(is_docked)
-				return FALSE
-			var/enable = text2num(params["enable"])
-			controlled_shuttle.toggle_rotate_right(enable)
+			controlled_shuttle.toggle_rotate_right(text2num(params["enable"]))
 			return TRUE
 
 		if("toggle_rotate_pitch_up")
-			if(is_docked)
-				return FALSE
-			var/enable = text2num(params["enable"])
-			controlled_shuttle.toggle_rotate_pitch_up(enable)
+			controlled_shuttle.toggle_rotate_pitch_up(text2num(params["enable"]))
 			return TRUE
 
 		if("toggle_rotate_pitch_down")
-			if(is_docked)
-				return FALSE
-			var/enable = text2num(params["enable"])
-			controlled_shuttle.toggle_rotate_pitch_down(enable)
+			controlled_shuttle.toggle_rotate_pitch_down(text2num(params["enable"]))
 			return TRUE
+
 		if("dock")
 			var/object_id = params["stationId"]
 			if(!object_id)
 				last_action_error = "No target specified"
 				return FALSE
 
-			// Find object in the shuttle's current system
 			var/datum/overmap_star_system/current_system = SSsupercruise.get_current_system(controlled_shuttle)
 			var/datum/orbital_object/target_object = SSsupercruise.find_object(object_id, current_system)
 			if(!target_object)
@@ -320,15 +300,6 @@
 			if(interact_result)
 				last_action_error = interact_result
 				to_chat(usr, span_warning("Docking failed: [interact_result]"))
-			return TRUE
-
-		if("clearPendingTarget")
-			// Сбрасываем ожидающую цель
-			//controlled_shuttle.pending_target = null
-			// И ТОЖЕ САМОЕ ВАЖНОЕ: сбрасываем активный автопилот!
-			if(controlled_shuttle.autopilot_enabled)
-				controlled_shuttle.autopilot_enabled = FALSE
-				controlled_shuttle.target_position = null
 			return TRUE
 
 		if("undock")
