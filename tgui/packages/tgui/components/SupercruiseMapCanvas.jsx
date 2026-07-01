@@ -959,113 +959,72 @@ export class SupercruiseMapCanvas extends Component {
 
     // Background glow
     const glowGradient = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius * 1.3);
-    glowGradient.addColorStop(0, 'rgba(0, 100, 150, 0.3)');
+    glowGradient.addColorStop(0, 'rgba(13, 153, 222, 0.3)');
     glowGradient.addColorStop(1, 'transparent');
     ctx.fillStyle = glowGradient;
     ctx.beginPath();
     ctx.arc(cx, cy, radius * 1.3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Sphere background
-    ctx.fillStyle = 'rgba(0, 20, 40, 0.85)';
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fill();
+  // Это неплохо, но позже вернуться к этому - для стиля пока выключено
+  //  // Sphere background
+  //  ctx.fillStyle = 'rgba(0, 20, 40, 0.85)';
+  //  ctx.beginPath();
+  //  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  //  ctx.fill();
 
-    // Sphere border
-    ctx.strokeStyle = 'rgba(100, 150, 200, 0.65)';
+    // ===== THREE NEUTRAL DISKS =====
+    const diskFillColor = 'rgba(100, 180, 255, 0.06)';
+    const diskStrokeColor = 'rgba(150, 200, 255, 0.3)';
+
+    // XY disk (horizontal) — with degree labels
+    this.drawDisk(ctx, projectWorld, diskFillColor, diskStrokeColor,
+      (angle, mult = 1) => ({ x: Math.cos(angle) * mult, y: Math.sin(angle) * mult, z: 0 })
+    );
+    this.drawDiskGraduations(ctx, projectWorld, cx, cy,
+      (angle, mult = 1) => ({ x: Math.cos(angle) * mult, y: Math.sin(angle) * mult, z: 0 }),
+      ['0°', '90°', '180°', '270°']
+    );
+
+    // XZ disk (vertical through X-Z) — no labels, just ticks
+    this.drawDisk(ctx, projectWorld, diskFillColor, diskStrokeColor,
+      (angle, mult = 1) => ({ x: Math.cos(angle) * mult, y: 0, z: Math.sin(angle) * mult })
+    );
+
+    // YZ disk (vertical through Y-Z) — no labels, just ticks
+    this.drawDisk(ctx, projectWorld, diskFillColor, diskStrokeColor,
+      (angle, mult = 1) => ({ x: 0, y: Math.cos(angle) * mult, z: Math.sin(angle) * mult })
+    );
+    // ===== COLORED AXES =====
+    const axisScale = 1.15;
+
+    // X axis (red)
+    const xPos = projectWorld({ x: axisScale, y: 0, z: 0 });
+    const xNeg = projectWorld({ x: -axisScale, y: 0, z: 0 });
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Draw XY plane disk
-    const planePoints = [];
-    for (let a = 0; a <= 360; a += 10) {
-      const rad = a * DEG2RAD;
-      planePoints.push(projectWorld({ x: Math.cos(rad), y: Math.sin(rad), z: 0 }));
-    }
-    ctx.fillStyle = 'rgba(0, 140, 220, 0.08)';
-    ctx.beginPath();
-    planePoints.forEach((pt, index) => {
-      if (index === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    });
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = 'rgba(120, 190, 255, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    planePoints.forEach((pt, index) => {
-      if (index === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    });
-    ctx.closePath();
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Draw X and Y axes on the XY plane
-    const xPos = projectWorld({ x: 1, y: 0, z: 0 });
-    const xNeg = projectWorld({ x: -1, y: 0, z: 0 });
-    const yPos = projectWorld({ x: 0, y: 1, z: 0 });
-    const yNeg = projectWorld({ x: 0, y: -1, z: 0 });
-
-    ctx.strokeStyle = 'rgba(180, 220, 255, 0.75)';
-    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(xNeg.x, xNeg.y);
     ctx.lineTo(xPos.x, xPos.y);
+    ctx.stroke();
+
+    // Y axis (green)
+    const yPos = projectWorld({ x: 0, y: axisScale, z: 0 });
+    const yNeg = projectWorld({ x: 0, y: -axisScale, z: 0 });
+    ctx.lineWidth = 2;
+    ctx.beginPath();
     ctx.moveTo(yNeg.x, yNeg.y);
     ctx.lineTo(yPos.x, yPos.y);
     ctx.stroke();
 
-    ctx.fillStyle = '#88ccff';
-    ctx.font = '9px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('X', xPos.x, xPos.y - 10);
-    ctx.fillText('-X', xNeg.x, xNeg.y + 10);
-    ctx.fillText('Y', yPos.x + 10, yPos.y);
-    ctx.fillText('-Y', yNeg.x - 10, yNeg.y);
-
-    // Draw Z axis indicator
-    const zPos = projectWorld({ x: 0, y: 0, z: 1 });
-    const zNeg = projectWorld({ x: 0, y: 0, z: -1 });
-    ctx.strokeStyle = 'rgba(255, 180, 120, 0.75)';
-    ctx.lineWidth = 1.5;
+    // Z axis (blue)
+    const zPos = projectWorld({ x: 0, y: 0, z: axisScale });
+    const zNeg = projectWorld({ x: 0, y: 0, z: -axisScale });
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(zNeg.x, zNeg.y);
     ctx.lineTo(zPos.x, zPos.y);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(zPos.x, zPos.y, 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffcc88';
-    ctx.fill();
-    ctx.fillText('Z', zPos.x, zPos.y - 10);
 
-    // Draw sphere wireframe using camera orientation
-    ctx.strokeStyle = 'rgba(100, 150, 200, 0.2)';
-    ctx.lineWidth = 1;
-    for (let lat = -60; lat <= 60; lat += 30) {
-      const latRad = lat * DEG2RAD;
-      const ring = [];
-      for (let lon = 0; lon <= 360; lon += 10) {
-        const lonRad = lon * DEG2RAD;
-        ring.push(projectWorld({
-          x: Math.cos(latRad) * Math.cos(lonRad),
-          y: Math.cos(latRad) * Math.sin(lonRad),
-          z: Math.sin(latRad),
-        }));
-      }
-      ctx.beginPath();
-      ring.forEach((pt, index) => {
-        if (index === 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
-      });
-      ctx.stroke();
-    }
 
     // Ship heading vector
     const headingRad = shipHeading * DEG2RAD;
@@ -1078,6 +1037,7 @@ export class SupercruiseMapCanvas extends Component {
     const shipEnd = projectWorld(shipDir);
     drawArrow(shipEnd, '#00ff80', 3);
     ctx.fillStyle = '#00ff80';
+    ctx.font = 'bold 9px sans-serif';
     ctx.fillText('NOSE', shipEnd.x, shipEnd.y - 12);
 
     // Velocity vector
@@ -1086,6 +1046,7 @@ export class SupercruiseMapCanvas extends Component {
       const velEnd = projectWorld(velDir);
       drawArrow(velEnd, '#00ffff', 2, [3, 3]);
       ctx.fillStyle = '#00ffff';
+      ctx.font = '9px sans-serif';
       ctx.fillText('VEL', velEnd.x, velEnd.y - 12);
     }
 
@@ -1101,24 +1062,11 @@ export class SupercruiseMapCanvas extends Component {
       const thrEnd = projectWorld(thrDir);
       drawArrow(thrEnd, '#ffff00', 2, [5, 4]);
       ctx.fillStyle = '#ffff00';
+      ctx.font = '9px sans-serif';
       ctx.fillText('THR', thrEnd.x, thrEnd.y + 14);
     }
 
-    // Cardinal labels projected through camera rotation
-    const cardinalDirs = [
-      { label: 'N', vector: { x: 0, y: 1, z: 0 } },
-      { label: 'E', vector: { x: 1, y: 0, z: 0 } },
-      { label: 'S', vector: { x: 0, y: -1, z: 0 } },
-      { label: 'W', vector: { x: -1, y: 0, z: 0 } },
-    ];
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px sans-serif';
-    cardinalDirs.forEach((card) => {
-      const pos = projectWorld(card.vector);
-      ctx.fillText(card.label, pos.x, pos.y);
-    });
-
-    // Center dot with interior highlight
+    // Center dot
     ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.beginPath();
     ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
@@ -1131,6 +1079,92 @@ export class SupercruiseMapCanvas extends Component {
     ctx.fillText(`PIT: ${Math.round(shipHeadingPitch)}°`, cx, cy + radius + 14);
   }
 
+  /**
+   * Draw a single disk on the sphere compass
+   */
+  drawDisk(ctx, projectWorld, fillColor, strokeColor, pointFn) {
+    const points = [];
+    for (let a = 0; a <= 360; a += 5) {
+      const rad = a * DEG2RAD;
+      points.push(projectWorld(pointFn(rad, 1)));
+    }
+
+    // Fill disk
+    ctx.fillStyle = fillColor;
+    ctx.beginPath();
+    points.forEach((pt, index) => {
+      if (index === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.closePath();
+    ctx.fill();
+
+    // Stroke disk edge
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    points.forEach((pt, index) => {
+      if (index === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /**
+    * Draw degree labels ON the disk plane — they project with the same 3D transform,
+    * so they become less visible when the disk is viewed edge-on.
+    */
+  drawDiskGraduations(ctx, projectWorld, cx, cy, pointFn, labels) {
+    const labelRadius = 1.4;  // Farther from the disk edge, still on the plane
+    const tickOuter = 1.05;
+    const tickInner = 0.94;
+    const sampleDelta = 0.05;
+
+    const normalize2 = (v) => {
+      const len = Math.hypot(v.x, v.y);
+      return len > 0 ? { x: v.x / len, y: v.y / len } : { x: 1, y: 0 };
+    };
+
+    ctx.font = '8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(200, 220, 255, 0.9)';
+
+    // Major ticks and labels every 90°
+    for (let i = 0; i < 4; i++) {
+      const angleDeg = i * 90;
+      const angleRad = angleDeg * DEG2RAD;
+
+      // Tick mark — on the plane
+      const outer = projectWorld(pointFn(angleRad, tickOuter));
+      const inner = projectWorld(pointFn(angleRad, tickInner));
+      ctx.strokeStyle = 'rgba(200, 220, 255, 0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(outer.x, outer.y);
+      ctx.lineTo(inner.x, inner.y);
+      ctx.stroke();
+
+      const center3D = pointFn(angleRad, labelRadius);
+      const labelPos = projectWorld(center3D);
+
+      // Project small offsets in the plane to get local axes in screen space
+      const screenTangent = projectWorld(pointFn(angleRad + sampleDelta, labelRadius));
+      const screenRadial = projectWorld(pointFn(angleRad, labelRadius - 0.1));
+
+      const tangentDir = normalize2({ x: screenTangent.x - labelPos.x, y: screenTangent.y - labelPos.y });
+      const radialDir = normalize2({ x: labelPos.x - screenRadial.x, y: labelPos.y - screenRadial.y });
+
+      ctx.save();
+      ctx.translate(labelPos.x, labelPos.y);
+      ctx.transform(tangentDir.x, tangentDir.y, radialDir.x, radialDir.y, 0, 0);
+      ctx.fillText(labels[i], 0, 0);
+      ctx.restore();
+    }
+  }
 
 
   handleMouseDown = (e) => {
