@@ -140,6 +140,15 @@
 			data["targetY"] = controlled_shuttle.target_position[2]
 			data["targetZ"] = controlled_shuttle.target_position[3]
 
+		// Pending autopilot target (set by right-click, requires confirmation)
+		if(controlled_shuttle.pending_target)
+			data["pendingTargetX"] = controlled_shuttle.pending_target[1]
+			data["pendingTargetY"] = controlled_shuttle.pending_target[2]
+			data["pendingTargetZ"] = controlled_shuttle.pending_target[3]
+			data["hasPendingTarget"] = TRUE
+		else
+			data["hasPendingTarget"] = FALSE
+
 		// Jump drive data
 		data["hasJumpDrive"] = controlled_shuttle.has_jump_drive
 		data["isJumping"] = controlled_shuttle.is_jumping
@@ -224,11 +233,28 @@
 			if(altKey) // Alt+Click clears target and stops thrust
 				controlled_shuttle.autopilot_enabled = FALSE
 				controlled_shuttle.target_position = null
+				controlled_shuttle.pending_target = null
 				controlled_shuttle.kill_thrust()
 			else if(!isnull(x) && !isnull(y) && !isnull(z))
-				// Set target position and enable autopilot
-				controlled_shuttle.target_position = list(x, y, z)
-				controlled_shuttle.autopilot_enabled = TRUE
+				// Set pending target (requires confirmation before engaging)
+				controlled_shuttle.pending_target = list(x, y, z)
+			return TRUE
+
+		if("confirmAutopilot")
+			if(is_docked)
+				last_action_error = "Cannot engage autopilot while docked"
+				return FALSE
+			if(!controlled_shuttle.pending_target)
+				last_action_error = "No pending target to confirm"
+				return FALSE
+			// Engage autopilot to the pending target
+			controlled_shuttle.target_position = controlled_shuttle.pending_target.Copy()
+			controlled_shuttle.autopilot_enabled = TRUE
+			controlled_shuttle.pending_target = null
+			return TRUE
+
+		if("clearPendingTarget")
+			controlled_shuttle.pending_target = null
 			return TRUE
 
 		if("adjust_altitude")
@@ -294,6 +320,15 @@
 			if(interact_result)
 				last_action_error = interact_result
 				to_chat(usr, span_warning("Docking failed: [interact_result]"))
+			return TRUE
+
+		if("clearPendingTarget")
+			// Сбрасываем ожидающую цель
+			//controlled_shuttle.pending_target = null
+			// И ТОЖЕ САМОЕ ВАЖНОЕ: сбрасываем активный автопилот!
+			if(controlled_shuttle.autopilot_enabled)
+				controlled_shuttle.autopilot_enabled = FALSE
+				controlled_shuttle.target_position = null
 			return TRUE
 
 		if("undock")

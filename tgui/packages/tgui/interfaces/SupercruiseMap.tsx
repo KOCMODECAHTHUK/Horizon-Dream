@@ -31,6 +31,11 @@ interface MapObject {
   heading?: number;
   heading_pitch?: number;
   max_speed?: number;
+  autopilot_enabled?: boolean;
+  hasPendingTarget?: boolean;
+  pendingTargetX?: number;
+  pendingTargetY?: number;
+  pendingTargetZ?: number;
 }
 
 interface NearbyObject {
@@ -66,6 +71,10 @@ interface SupercruiseMapData {
   targetX: number | null;
   targetY: number | null;
   targetZ: number | null;
+  hasPendingTarget: boolean;
+  pendingTargetX: number | null;
+  pendingTargetY: number | null;
+  pendingTargetZ: number | null;
   isDocked: boolean;
   dockedStation: string | null;
   nearbyStations: NearbyObject[];
@@ -80,10 +89,6 @@ interface SupercruiseMapData {
   lastActionError: string;
 }
 
-/**
- * Supercruise flight console UI
- * Homeworld-style 3D map with orbit camera
- */
 export const SupercruiseMap = (props) => {
   const { act, data } = useBackend<SupercruiseMapData>();
   const {
@@ -105,6 +110,10 @@ export const SupercruiseMap = (props) => {
     targetX = null,
     targetY = null,
     targetZ = null,
+    hasPendingTarget = false,
+    pendingTargetX = null,
+    pendingTargetY = null,
+    pendingTargetZ = null,
     isDocked = false,
     dockedStation = null,
     nearbyStations = [],
@@ -118,14 +127,12 @@ export const SupercruiseMap = (props) => {
     lastActionError = '',
   } = data;
 
-  // Camera state
   const [cameraYaw, setCameraYaw] = useState(45);
   const [cameraPitch, setCameraPitch] = useState(30);
   const [zoomScale, setZoomScale] = useState(1);
   const [selectedJumpDestination, setSelectedJumpDestination] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
 
-  // Update action error from backend
   useEffect(() => {
     if (lastActionError) {
       setActionError(lastActionError);
@@ -134,36 +141,30 @@ export const SupercruiseMap = (props) => {
     }
   }, [lastActionError, update_index]);
 
-  // Our shuttle position for camera focus
   const ourPos = ourObject
     ? (ourObject.position || [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0])
     : [0, 0, 0];
 
-  // Camera focus point (follows our shuttle)
   const focusX = linkedToShuttle ? ourPos[0] : 0;
   const focusY = linkedToShuttle ? ourPos[1] : 0;
   const focusZ = linkedToShuttle ? ourPos[2] : 0;
 
-  // Keyboard controls for altitude, kill thrust, and rotation toggles
+  // Keyboard controls: WASD = Rotate, Q = Thrust -, E = Thrust +
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!linkedToShuttle || isDocked) return;
       if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
       switch (event.key.toLowerCase()) {
-        case ' ':
-        case 'q':
+        case 'w':
+        case 'ц':
           event.preventDefault();
-          act('adjust_altitude', { dz: 10 });
+          act('toggle_rotate_pitch_up', { enable: true });
           break;
-        case 'e':
-        case 'c':
+        case 's':
+        case 'ы':
           event.preventDefault();
-          act('adjust_altitude', { dz: -10 });
-          break;
-        case 'x':
-          event.preventDefault();
-          act('kill_thrust');
+          act('toggle_rotate_pitch_down', { enable: true });
           break;
         case 'a':
         case 'ф':
@@ -175,15 +176,17 @@ export const SupercruiseMap = (props) => {
           event.preventDefault();
           act('toggle_rotate_right', { enable: true });
           break;
-        case 'w':
-        case 'ц':
+        case 'q':
           event.preventDefault();
-          act('toggle_rotate_pitch_up', { enable: true });
+          act('set_thrust', { angle: shuttleAngle, power: Math.max(shuttleThrust - 10, 0), pitch: shuttlePitch || 0 });
           break;
-        case 's':
-        case 'ы':
+        case 'e':
           event.preventDefault();
-          act('toggle_rotate_pitch_down', { enable: true });
+          act('set_thrust', { angle: shuttleAngle, power: Math.min(shuttleThrust + 10, 100), pitch: shuttlePitch || 0 });
+          break;
+        case 'x':
+          event.preventDefault();
+          act('kill_thrust');
           break;
       }
     };
@@ -192,14 +195,6 @@ export const SupercruiseMap = (props) => {
       if (!linkedToShuttle || isDocked) return;
 
       switch (event.key.toLowerCase()) {
-        case 'a':
-        case 'ф':
-          act('toggle_rotate_left', { enable: false });
-          break;
-        case 'd':
-        case 'в':
-          act('toggle_rotate_right', { enable: false });
-          break;
         case 'w':
         case 'ц':
           act('toggle_rotate_pitch_up', { enable: false });
@@ -207,6 +202,14 @@ export const SupercruiseMap = (props) => {
         case 's':
         case 'ы':
           act('toggle_rotate_pitch_down', { enable: false });
+          break;
+        case 'a':
+        case 'ф':
+          act('toggle_rotate_left', { enable: false });
+          break;
+        case 'd':
+        case 'в':
+          act('toggle_rotate_right', { enable: false });
           break;
       }
     };
@@ -217,7 +220,7 @@ export const SupercruiseMap = (props) => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [linkedToShuttle, isDocked, act]);
+  }, [linkedToShuttle, isDocked, act, shuttleAngle, shuttlePitch, shuttleThrust]);
 
   const clampPitch = (value: number) => Math.max(5, Math.min(85, value));
 
@@ -230,43 +233,20 @@ export const SupercruiseMap = (props) => {
     setZoomScale((prev) => Math.max(0.1, Math.min(10, prev * factor)));
   }, []);
 
-  // Calculate 3D velocity
-  const velocity3D = Math.sqrt(shuttleVelX ** 2 + shuttleVelY ** 2 + shuttleVelZ ** 2);
-  const velocityHoriz = Math.sqrt(shuttleVelX ** 2 + shuttleVelY ** 2);
-  const velocityAngle = velocityHoriz > 0.01
-    ? (Math.atan2(shuttleVelY, shuttleVelX) * 180 / Math.PI + 360) % 360
-    : 0;
-  const velocityPitchAngle = velocity3D > 0.01
-    ? Math.asin(Math.max(-1, Math.min(1, shuttleVelZ / velocity3D))) * 180 / Math.PI
-    : 0;
-
-  // Normalize map_objects for canvas (position can be array or separate fields)
   const canvasMapObjects = map_objects.map((obj) => {
     const pos = obj.position && Array.isArray(obj.position)
-      ? obj.position
-      : [obj.position_x || 0, obj.position_y || 0, obj.position_z || 0];
+      ? obj.position : [obj.position_x || 0, obj.position_y || 0, obj.position_z || 0];
     const vel = obj.velocity && Array.isArray(obj.velocity)
-      ? obj.velocity
-      : [obj.velocity_x || 0, obj.velocity_y || 0, obj.velocity_z || 0];
-    return {
-      ...obj,
-      position_x: pos[0],
-      position_y: pos[1],
-      position_z: pos[2] || 0,
-      velocity_x: vel[0],
-      velocity_y: vel[1],
-      velocity_z: vel[2] || 0,
-    };
+      ? obj.velocity : [obj.velocity_x || 0, obj.velocity_y || 0, obj.velocity_z || 0];
+    return { ...obj, position_x: pos[0], position_y: pos[1], position_z: pos[2] || 0, velocity_x: vel[0], velocity_y: vel[1], velocity_z: vel[2] || 0 };
   });
 
-  // Our object for canvas
   const ourObjectNormalized = ourObject ? {
     ...ourObject,
     position: ourObject.position || [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0],
     velocity: ourObject.velocity || [ourObject.velocity_x || 0, ourObject.velocity_y || 0, ourObject.velocity_z || 0],
   } : null;
 
-  // Current shuttle Z position for display
   const shuttleAlt = ourPos[2] || 0;
 
   return (
@@ -289,6 +269,10 @@ export const SupercruiseMap = (props) => {
                 targetX={targetX}
                 targetY={targetY}
                 targetZ={targetZ}
+                pendingTargetX={pendingTargetX}
+                pendingTargetY={pendingTargetY}
+                pendingTargetZ={pendingTargetZ}
+                hasPendingTarget={hasPendingTarget}
                 isDocked={isDocked}
                 autopilotEnabled={autopilotEnabled}
                 cameraYaw={cameraYaw}
@@ -303,15 +287,20 @@ export const SupercruiseMap = (props) => {
                 shuttleAlt={shuttleAlt}
                 onRotate={rotateCamera}
                 onZoom={handleZoom}
-                onMapClick={(worldX, worldY, clickType, altKey, objectId) => {
+                onMapClick={(worldX, worldY, clickType, altKey, objectId, targetZ) => {
                   if (isDocked) return;
+
+                  if (clickType === 'cancel') {
+                    act('clearPendingTarget');
+                    return;
+                  }
+
                   if (clickType === 'right') {
-                    // Use shuttle's current Z for autopilot target altitude
-                    const targetZ = ourPos[2] || 0;
+                    const finalZ = targetZ != null ? targetZ : (ourPos[2] || 0);
                     if (altKey) {
-                      act('setTargetCoords', { x: worldX, y: worldY, z: targetZ, altKey: true });
+                      act('setTargetCoords', { x: worldX, y: worldY, z: finalZ, altKey: true });
                     } else {
-                      act('setTargetCoords', { x: worldX, y: worldY, z: targetZ });
+                      act('setTargetCoords', { x: worldX, y: worldY, z: finalZ });
                     }
                   }
                   if (clickType === 'double' && objectId) {
@@ -329,134 +318,56 @@ export const SupercruiseMap = (props) => {
               ) : (
                 <>
                   {actionError && (
-                    <NoticeBox color="red" mb={0.5} fontSize="0.8em">
-                      {actionError}
-                    </NoticeBox>
+                    <NoticeBox color="red" mb={0.5} fontSize="0.8em">{actionError}</NoticeBox>
                   )}
-                  <Box bold mb={0.5} fontSize="1em" color="cyan">
-                    {shuttleName}
-                  </Box>
-
-                  {/* Compact position readout */}
+                  <Box bold mb={0.5} fontSize="1em" color="cyan">{shuttleName}</Box>
                   <Box mb={0.5} fontSize="0.8em" color="label">
                     POS {ourPos[0]?.toFixed(0)},{ourPos[1]?.toFixed(0)},Z{ourPos[2]?.toFixed(0)}
                   </Box>
 
-                  {/* Thrust Controls — toggle buttons for rotation */}
                   <Box mb={0.5}>
                     <Flex wrap="wrap" gap={0.5} mb={0.5}>
-                      <Box bold fontSize="0.75em" color="label" style={{ width: '100%' }}>Rotation (hold):</Box>
-                      <Button
-                        compact
-                        icon="rotate-left"
-                        color="yellow"
-                        disabled={isDocked}
+                      <Box bold fontSize="0.75em" color="label" style={{ width: '100%' }}>Rotation (W A S D):</Box>
+                      <Button compact icon="rotate-left" color="yellow" disabled={isDocked}
                         onMouseDown={() => act('toggle_rotate_left', { enable: true })}
                         onMouseUp={() => act('toggle_rotate_left', { enable: false })}
                         onMouseLeave={() => act('toggle_rotate_left', { enable: false })}
-                        tooltip="Hold to rotate left (A)"
-                      >
-                        ←
-                      </Button>
-                      <Button
-                        compact
-                        icon="rotate-right"
-                        color="yellow"
-                        disabled={isDocked}
+                        tooltip="Rotate left (A)">←</Button>
+                      <Button compact icon="rotate-right" color="yellow" disabled={isDocked}
                         onMouseDown={() => act('toggle_rotate_right', { enable: true })}
                         onMouseUp={() => act('toggle_rotate_right', { enable: false })}
                         onMouseLeave={() => act('toggle_rotate_right', { enable: false })}
-                        tooltip="Hold to rotate right (D)"
-                      >
-                        →
-                      </Button>
-                      <Button
-                        compact
-                        icon="angle-double-up"
-                        color="yellow"
-                        disabled={isDocked}
+                        tooltip="Rotate right (D)">→</Button>
+                      <Button compact icon="angle-double-up" color="yellow" disabled={isDocked}
                         onMouseDown={() => act('toggle_rotate_pitch_up', { enable: true })}
                         onMouseUp={() => act('toggle_rotate_pitch_up', { enable: false })}
                         onMouseLeave={() => act('toggle_rotate_pitch_up', { enable: false })}
-                        tooltip="Hold to pitch up (W)"
-                      >
-                        ↑
-                      </Button>
-                      <Button
-                        compact
-                        icon="angle-double-down"
-                        color="yellow"
-                        disabled={isDocked}
+                        tooltip="Pitch up (W)">↑</Button>
+                      <Button compact icon="angle-double-down" color="yellow" disabled={isDocked}
                         onMouseDown={() => act('toggle_rotate_pitch_down', { enable: true })}
                         onMouseUp={() => act('toggle_rotate_pitch_down', { enable: false })}
                         onMouseLeave={() => act('toggle_rotate_pitch_down', { enable: false })}
-                        tooltip="Hold to pitch down (S)"
-                      >
-                        ↓
-                      </Button>
+                        tooltip="Pitch down (S)">↓</Button>
                     </Flex>
                     <Flex wrap="wrap" gap={0.5}>
-                      <Button
-                        compact
-                        icon="arrow-up"
-                        disabled={isDocked}
-                        onClick={() => act('set_thrust', {
-                          angle: shuttleAngle,
-                          power: Math.min(shuttleThrust + 10, 100),
-                          pitch: shuttlePitch || 0,
-                        })}
-                        tooltip="Thrust +10%"
-                      >
-                        +Pwr
-                      </Button>
-                      <Button
-                        compact
-                        icon="arrow-down"
-                        disabled={isDocked}
-                        onClick={() => act('set_thrust', {
-                          angle: shuttleAngle,
-                          power: Math.max(shuttleThrust - 10, 0),
-                          pitch: shuttlePitch || 0,
-                        })}
-                        tooltip="Thrust -10%"
-                      >
-                        -Pwr
-                      </Button>
-                      <Button
-                        compact
-                        icon="arrow-up"
-                        color="teal"
-                        disabled={isDocked}
+                      <Button compact icon="arrow-down" disabled={isDocked}
+                        onClick={() => act('set_thrust', { angle: shuttleAngle, power: Math.max(shuttleThrust - 10, 0), pitch: shuttlePitch || 0 })}
+                        tooltip="Thrust -10% (Q)">-Pwr</Button>
+                      <Button compact icon="arrow-up" disabled={isDocked}
+                        onClick={() => act('set_thrust', { angle: shuttleAngle, power: Math.min(shuttleThrust + 10, 100), pitch: shuttlePitch || 0 })}
+                        tooltip="Thrust +10% (E)">+Pwr</Button>
+                      <Button compact icon="arrow-up" color="teal" disabled={isDocked}
                         onClick={() => act('adjust_altitude', { dz: 10 })}
-                        tooltip="Ascend (Q/Space)"
-                      >
-                        ↑Alt
-                      </Button>
-                      <Button
-                        compact
-                        icon="arrow-down"
-                        color="teal"
-                        disabled={isDocked}
+                        tooltip="Ascend">↑Alt</Button>
+                      <Button compact icon="arrow-down" color="teal" disabled={isDocked}
                         onClick={() => act('adjust_altitude', { dz: -10 })}
-                        tooltip="Descend (E/C)"
-                      >
-                        ↓Alt
-                      </Button>
-                      <Button
-                        fluid
-                        compact
-                        icon="xmark"
-                        color="red"
-                        disabled={isDocked}
+                        tooltip="Descend">↓Alt</Button>
+                      <Button fluid compact icon="xmark" color="red" disabled={isDocked}
                         onClick={() => act('kill_thrust')}
-                        tooltip="Kill Thrust (X)"
-                      >
-                        STOP
-                      </Button>
+                        tooltip="Kill Thrust (X)">STOP</Button>
                     </Flex>
                   </Box>
 
-                  {/* Zoom */}
                   <Flex mb={0.5}>
                     <Button compact icon="search-plus" onClick={() => handleZoom(1.3)} tooltip="Zoom In" />
                     <Button compact icon="search-minus" onClick={() => handleZoom(0.7)} tooltip="Zoom Out" />
@@ -465,53 +376,42 @@ export const SupercruiseMap = (props) => {
                     </Box>
                   </Flex>
 
-                  {/* Status */}
                   {isDocked ? (
-                    <NoticeBox color="red" fontSize="0.8em" mt={0.5}>
-                      DOCKED — {dockedStation}
+                    <NoticeBox color="red" fontSize="0.8em" mt={0.5}>DOCKED — {dockedStation}</NoticeBox>
+                  ) : hasPendingTarget ? (
+                    <NoticeBox color="yellow" fontSize="0.8em" mt={0.5}>
+                      <Box mb={0.5}>AUTOPILOT TARGET: ({pendingTargetX?.toFixed(0)}, {pendingTargetY?.toFixed(0)}, Z{(pendingTargetZ || 0).toFixed(0)})</Box>
+                      <Flex gap={0.5}>
+                        <Button compact icon="check" color="green" onClick={() => act('confirmAutopilot')}>Confirm</Button>
+                        <Button compact icon="xmark" color="red" onClick={() => act('clearPendingTarget')}>Cancel</Button>
+                      </Flex>
+                    </NoticeBox>
+                  ) : autopilotEnabled ? (
+                    <NoticeBox color="green" fontSize="0.8em" mt={0.5}>
+                      AUTOPILOT → ({targetX?.toFixed(0)}, {targetY?.toFixed(0)}, Z{(targetZ || 0).toFixed(0)})
+                      <Button fluid compact icon="xmark" color="red" mt={0.5} onClick={() => act('clearPendingTarget')}>Cancel Autopilot</Button>
                     </NoticeBox>
                   ) : (
-                    <NoticeBox color={autopilotEnabled ? 'green' : 'purple'} fontSize="0.8em" mt={0.5}>
-                      {autopilotEnabled
-                        ? `AUTOPILOT → (${targetX?.toFixed(0)}, ${targetY?.toFixed(0)}, Z${(targetZ || 0).toFixed(0)})`
-                        : 'Right-click map → autopilot'}
-                    </NoticeBox>
+                    <NoticeBox color="purple" fontSize="0.8em" mt={0.5}>Right-click map → set course</NoticeBox>
                   )}
 
                   {isDocked && (
-                    <Button
-                      fluid
-                      icon="anchor"
-                      color="red"
-                      mt={0.5}
-                      onClick={() => act('undock')}
-                    >
-                      Undock
-                    </Button>
+                    <Button fluid icon="anchor" color="red" mt={0.5} onClick={() => act('undock')}>Undock</Button>
                   )}
 
-                  {/* Nearby Objects — compact list */}
                   {!isDocked && nearbyObjects?.length > 0 && (
                     <Box mt={0.5}>
                       <Box bold fontSize="0.8em" color="label">Contacts:</Box>
                       {nearbyObjects.map((obj) => (
                         <Flex key={obj.id} align="center" justify="space-between" mb={0.25}>
                           <Box fontSize="0.8em">
-                            <Box as="span" color={
-                              obj.type === 'station' ? 'blue' :
-                              obj.type === 'planet' ? 'green' : 'gray'
-                            }>●</Box>{' '}
+                            <Box as="span" color={obj.type === 'station' ? 'blue' : obj.type === 'planet' ? 'green' : 'gray'}>●</Box>{' '}
                             {obj.name}
                             <Box as="span" color="label" ml={1}>{obj.distance}km</Box>
                           </Box>
                           {obj.type === 'station' && (
-                            <Button
-                              compact
-                              fontSize="0.75em"
-                              icon="anchor"
-                              disabled={obj.occupied || obj.distance > 20}
-                              onClick={() => act('dock', { stationId: obj.id })}
-                            >
+                            <Button compact fontSize="0.75em" icon="anchor" disabled={obj.occupied || obj.distance > 20}
+                              onClick={() => act('dock', { stationId: obj.id })}>
                               {obj.occupied ? 'Occupied' : obj.distance > 20 ? 'Too far' : 'Dock'}
                             </Button>
                           )}
@@ -520,12 +420,9 @@ export const SupercruiseMap = (props) => {
                     </Box>
                   )}
 
-                  {/* Jump Drive */}
                   {hasJumpDrive && (
                     <Box mt={0.5}>
-                      <Box bold fontSize="0.8em" color="label">
-                        Jump Drive: {currentSystemName}
-                      </Box>
+                      <Box bold fontSize="0.8em" color="label">Jump Drive: {currentSystemName}</Box>
                       {isJumping ? (
                         <Box color="orange" fontSize="0.8em">Jump in progress...</Box>
                       ) : !jumpReady ? (
@@ -537,35 +434,15 @@ export const SupercruiseMap = (props) => {
                       ) : (
                         <Flex mt={0.5}>
                           <Flex.Item grow>
-                            <select
-                              style={{
-                                width: '100%', padding: '2px',
-                                backgroundColor: '#1a1a2e', color: '#fff',
-                                border: '1px solid #444', borderRadius: '2px',
-                                fontSize: '0.8em',
-                              }}
-                              value={selectedJumpDestination || ''}
-                              onChange={(e) => setSelectedJumpDestination(e.target.value)}
-                            >
+                            <select style={{ width: '100%', padding: '2px', backgroundColor: '#1a1a2e', color: '#fff', border: '1px solid #444', borderRadius: '2px', fontSize: '0.8em' }}
+                              value={selectedJumpDestination || ''} onChange={(e) => setSelectedJumpDestination(e.target.value)}>
                               <option value="">-- System --</option>
-                              {jumpDestinations.map((dest) => (
-                                <option key={dest.id} value={dest.id}>{dest.name}</option>
-                              ))}
+                              {jumpDestinations.map((dest) => (<option key={dest.id} value={dest.id}>{dest.name}</option>))}
                             </select>
                           </Flex.Item>
                           <Flex.Item ml={0.5}>
-                            <Button
-                              compact
-                              icon="rocket"
-                              color="purple"
-                              disabled={!selectedJumpDestination}
-                              onClick={() => {
-                                if (selectedJumpDestination) {
-                                  act('jump', { systemId: selectedJumpDestination });
-                                  setSelectedJumpDestination(null);
-                                }
-                              }}
-                            >
+                            <Button compact icon="rocket" color="purple" disabled={!selectedJumpDestination}
+                              onClick={() => { if (selectedJumpDestination) { act('jump', { systemId: selectedJumpDestination }); setSelectedJumpDestination(null); } }}>
                               Jump
                             </Button>
                           </Flex.Item>
@@ -575,8 +452,10 @@ export const SupercruiseMap = (props) => {
                   )}
 
                   <Box mt={1} fontSize="0.7em" color="dim">
-                    Drag=rotate · Wheel=zoom · RClick=fly<br />
-                    WASD=rotate (hold) · Q/Space=ascend · E/C=descend · X=stop
+                    W A S D — Повороты корпуса<br />
+                    Q — Уменьшить тягу / E — Увеличить тягу<br />
+                    X — Убить тягу<br />
+                    ПКМ=курс · Ctrl+ПКМ=Z · Shift+ПКМ=отмена<br />
                   </Box>
                 </>
               )}

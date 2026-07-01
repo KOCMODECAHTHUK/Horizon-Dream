@@ -27,8 +27,8 @@ SUBSYSTEM_DEF(supercruise)
 	sol_system.star_z = 0
 	sol_system.star_color = "#ffff88"
 
-	// Create a test station in Sol at coordinates (100, 50)
-	var/datum/orbital_object/station/test_station = new(100, 50, "Test Station Alpha", sol_system)
+	// Create a test station in Sol at coordinates (100, 50, 0)
+	var/datum/orbital_object/station/test_station = new(100, 50, 0, "Test Station Alpha", sol_system)
 
 	// Generate planets for Sol system
 	sol_system.generate_planets(rand(8, 12))
@@ -41,7 +41,7 @@ SUBSYSTEM_DEF(supercruise)
 	alpha_system.star_color = "#ffaa44"
 
 	// Create a test station in Alpha Centauri at different coordinates
-	var/datum/orbital_object/station/alpha_station = new(150, -100, "Alpha Station One", alpha_system)
+	var/datum/orbital_object/station/alpha_station = new(150, -100, 0, "Alpha Station One", alpha_system)
 
 	// Generate planets for Alpha Centauri system
 	alpha_system.generate_planets(rand(5, 8))

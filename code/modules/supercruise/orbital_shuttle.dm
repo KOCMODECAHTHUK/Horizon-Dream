@@ -38,9 +38,11 @@
 	/// Ships coast at constant speed when no thrust is applied (Newtonian physics)
 	var/space_drag = 0
 
-	/// Target position for autopilot (list: x, y, z)
+	/// Pending autopilot target (set by right-click, requires confirmation)
+	var/list/pending_target = null
+	/// Confirmed autopilot target (list: x, y, z) — engaged after confirmation
 	var/list/target_position = null
-	/// Autopilot enabled
+	/// Autopilot enabled (confirmed and flying)
 	var/autopilot_enabled = FALSE
 
 	/// Position history for trail rendering (list of position lists)
@@ -81,13 +83,11 @@
 
 /datum/orbital_object/shuttle/process(seconds_per_tick)
 	// Don't process movement if docked
-	// Check both: docked at a station object OR not in transit dock
 	var/obj/docking_port/stationary/current_dock = shuttle_port?.get_docked()
 	var/is_in_transit = istype(current_dock, /obj/docking_port/stationary/transit)
 	var/is_docked = (docked_at != null) || (current_dock && !is_in_transit)
 
 	if(is_docked)
-		// Reset all movement when docked
 		set_velocity(0, 0, 0)
 		thrust_vector = list(0, 0, 0)
 		thrust_power = 0
@@ -95,6 +95,7 @@
 		thrust_pitch = 0
 		autopilot_enabled = FALSE
 		target_position = null
+		pending_target = null
 		return
 
 	// Record position history for trail
@@ -102,20 +103,24 @@
 	if(length(position_history) > max_history)
 		position_history.Cut(1, 2)
 
-	// Handle continuous rotation (only when not on autopilot)
+	// === Handle continuous rotation (manual only, skip if autopilot is on) ===
 	if(!autopilot_enabled)
+		var/is_rotating = FALSE
 		if(rotating_left)
 			thrust_angle = MODULUS(thrust_angle + rotation_rate * seconds_per_tick, 360)
+			is_rotating = TRUE
 		if(rotating_right)
 			thrust_angle = MODULUS(thrust_angle - rotation_rate * seconds_per_tick, 360)
+			is_rotating = TRUE
 		if(rotating_pitch_up)
 			thrust_pitch = clamp(thrust_pitch + rotation_rate * seconds_per_tick, -90, 90)
+			is_rotating = TRUE
 		if(rotating_pitch_down)
 			thrust_pitch = clamp(thrust_pitch - rotation_rate * seconds_per_tick, -90, 90)
+			is_rotating = TRUE
 
-		// Rebuild thrust vector if rotating (even if thrust_power = 0, for UI display)
-		if(rotating_left || rotating_right || rotating_pitch_up || rotating_pitch_down)
-			// Convert spherical coordinates to 3D direction vector
+		// Пересчитываем вектор тяги, даже если thrust_power = 0, чтобы компас вращался
+		if(is_rotating)
 			var/horizontal_component = cos(thrust_pitch)
 			var/tx = cos(thrust_angle) * horizontal_component
 			var/ty = sin(thrust_angle) * horizontal_component
@@ -126,39 +131,30 @@
 			else
 				thrust_vector = list(0, 0, 0)
 
-	// Update heading when thrust is applied (or when rotating)
-	if(thrust_power > 0 || rotating_left || rotating_right || rotating_pitch_up || rotating_pitch_down)
-		// Update facing direction to match thrust direction
-		heading = thrust_angle
-		heading_pitch = thrust_pitch
+			// Обновляем направление носа корабля
+			heading = thrust_angle
+			heading_pitch = thrust_pitch
 
-	// Calculate target velocity based on control mode
-	var/list/target_velocity = list(0, 0, 0)
-	var/target_speed = 0
+	// === Determine thrust direction and power ===
+	var/list/thrust_dir = list(0, 0, 0)
+	var/effective_thrust_power = 0
 
 	// Handle autopilot to target position
 	if(autopilot_enabled && target_position)
-		thrust_vector = list(0, 0, 0) // Disable manual thrust while on autopilot
-		thrust_power = 0
-		stop_all_rotation() // Disable rotation while on autopilot
-
 		var/target_x = target_position[1]
 		var/target_y = target_position[2]
 		var/target_z = target_position[3]
 
-		// Calculate direction and distance to target (full 3D)
 		var/dx = target_x - position[1]
 		var/dy = target_y - position[2]
 		var/dz = target_z - position[3]
 		var/distance = sqrt(dx*dx + dy*dy + dz*dz)
 
 		if(distance > arrival_threshold)
-			// Normalize direction
 			var/dir_x = dx / distance
 			var/dir_y = dy / distance
 			var/dir_z = dz / distance
 
-			// Update heading to face the target
 			heading = MODULUS(ATAN2(dir_y, dir_x), 360)
 			var/horizontal_mag = sqrt(dir_x * dir_x + dir_y * dir_y)
 			if(horizontal_mag > 0.001)
@@ -166,64 +162,65 @@
 			else
 				heading_pitch = dir_z > 0 ? 90 : -90
 
-			// Calculate desired speed based on distance (slow down as we approach)
-			if(distance > slowdown_distance)
-				target_speed = max_speed
-			else
-				// Linear interpolation: speed decreases from max_speed to 0
-				target_speed = max_speed * (distance / slowdown_distance)
-				target_speed = max(target_speed, 5) // Minimum speed to avoid crawling
+			var/desired_speed = max_speed
+			if(distance < slowdown_distance)
+				desired_speed = max_speed * (distance / slowdown_distance)
+				desired_speed = max(desired_speed, 2)
 
-			// Set target velocity in the direction of target
-			target_velocity[1] = dir_x * target_speed
-			target_velocity[2] = dir_y * target_speed
-			target_velocity[3] = dir_z * target_speed
+			var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
+			var/dot_vel_dir = velocity[1]*dir_x + velocity[2]*dir_y + velocity[3]*dir_z
+
+			if(dot_vel_dir >= 0 && current_speed > desired_speed)
+				if(current_speed > 0.01)
+					thrust_dir = list(-velocity[1]/current_speed, -velocity[2]/current_speed, -velocity[3]/current_speed)
+				effective_thrust_power = 100
+			else
+				thrust_dir = list(dir_x, dir_y, dir_z)
+				var/speed_diff = desired_speed - dot_vel_dir
+				effective_thrust_power = clamp(speed_diff / max_speed * 100, 10, 100)
 		else
-			// Arrived!
 			autopilot_enabled = FALSE
 			target_position = null
 
-	// Handle manual 3D thrust vector control
+	// Handle manual thrust (срабатывает, если автопилот выключен)
 	else if(thrust_power > 0)
-		var/thrust_speed = (thrust_power / 100) * max_speed
-		// thrust_vector is already a normalized direction * power fraction
-		// Multiply by max_speed to get target velocity
-		target_velocity[1] = thrust_vector[1] * max_speed
-		target_velocity[2] = thrust_vector[2] * max_speed
-		target_velocity[3] = thrust_vector[3] * max_speed
-		target_speed = thrust_speed
+		thrust_dir = thrust_vector.Copy()
+		effective_thrust_power = thrust_power
+		// Если мы даём ручную тягу, нос смотрит туда же (только если не вращаемся кнопками,
+		// чтобы не перетирать heading, который уже обновлён в блоке вращения выше)
+		if(!rotating_left && !rotating_right && !rotating_pitch_up && !rotating_pitch_down)
+			heading = thrust_angle
+			heading_pitch = thrust_pitch
 
-	// No thrust and no autopilot - pure inertia (no target velocity change)
-	// Ships maintain their current velocity indefinitely in space
+	// === Apply acceleration ===
+	if(effective_thrust_power > 0)
+		var/dir_mag = sqrt(thrust_dir[1]*thrust_dir[1] + thrust_dir[2]*thrust_dir[2] + thrust_dir[3]*thrust_dir[3])
+		if(dir_mag > 0.001)
+			thrust_dir[1] /= dir_mag
+			thrust_dir[2] /= dir_mag
+			thrust_dir[3] /= dir_mag
 
-	// Apply velocity changes only if we have a target velocity (thrust or autopilot)
-	if(target_speed > 0 || (autopilot_enabled && target_position))
-		// Smoothly adjust current velocity toward target velocity
-		var/vel_diff_x = target_velocity[1] - velocity[1]
-		var/vel_diff_y = target_velocity[2] - velocity[2]
-		var/vel_diff_z = target_velocity[3] - velocity[3]
-		var/vel_diff_mag = sqrt(vel_diff_x*vel_diff_x + vel_diff_y*vel_diff_y + vel_diff_z*vel_diff_z)
+		var/effective_accel = (effective_thrust_power / 100) * acceleration
+		var/dv_x = thrust_dir[1] * effective_accel * seconds_per_tick
+		var/dv_y = thrust_dir[2] * effective_accel * seconds_per_tick
+		var/dv_z = thrust_dir[3] * effective_accel * seconds_per_tick
 
-		if(vel_diff_mag > 0.1)
-			// Determine if we're accelerating or decelerating
-			var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
-			var/is_decelerating = (target_speed < current_speed) || (target_speed == 0)
-
-			// Use appropriate rate
-			var/change_rate = is_decelerating ? deceleration : acceleration
-			var/max_change = change_rate * seconds_per_tick
-
-			if(vel_diff_mag <= max_change)
-				// Can reach target velocity this tick
-				velocity[1] = target_velocity[1]
-				velocity[2] = target_velocity[2]
-				velocity[3] = target_velocity[3]
+		velocity[1] += dv_x
+		velocity[2] += dv_y
+		velocity[3] += dv_z
+	else
+		var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
+		if(current_speed > 0.01)
+			var/drag = space_drag * seconds_per_tick
+			if(drag >= current_speed)
+				velocity[1] = 0
+				velocity[2] = 0
+				velocity[3] = 0
 			else
-				// Move toward target velocity at change_rate
-				var/change_ratio = max_change / vel_diff_mag
-				velocity[1] += vel_diff_x * change_ratio
-				velocity[2] += vel_diff_y * change_ratio
-				velocity[3] += vel_diff_z * change_ratio
+				var/drag_ratio = 1 - (drag / current_speed)
+				velocity[1] *= drag_ratio
+				velocity[2] *= drag_ratio
+				velocity[3] *= drag_ratio
 
 	// Enforce speed limit
 	var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
@@ -246,13 +243,14 @@
 	data["heading"] = heading
 	data["heading_pitch"] = heading_pitch
 	data["max_speed"] = max_speed
-	// Add separate position/velocity fields for tgui
-	data["position_x"] = position[1]
-	data["position_y"] = position[2]
-	data["position_z"] = position[3]
-	data["velocity_x"] = velocity[1]
-	data["velocity_y"] = velocity[2]
-	data["velocity_z"] = velocity[3]
+	data["autopilot_enabled"] = autopilot_enabled
+	if(pending_target)
+		data["pendingTargetX"] = pending_target[1]
+		data["pendingTargetY"] = pending_target[2]
+		data["pendingTargetZ"] = pending_target[3]
+		data["hasPendingTarget"] = TRUE
+	else
+		data["hasPendingTarget"] = FALSE
 	return data
 
 /**
