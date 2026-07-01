@@ -1,4 +1,3 @@
-// SupercruiseMapUtils.jsx
 export const FPS = 30;
 export const DEG2RAD = Math.PI / 180;
 

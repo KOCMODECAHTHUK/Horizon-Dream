@@ -1,13 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useBackend } from '../../backend';
 import { Box, Button, Flex, NoticeBox, Section } from 'tgui-core/components';
 import { Window } from '../../layouts';
-import { SupercruiseMapCanvas } from './components/SupercruiseMapCanvas';
+import { SupercruiseMapCanvas } from './components/MapCanvas';
 import { SupercruiseMapData } from './types';
 import { FlightControls } from './screens/FlightControls';
 import { NavigationStatus } from './screens/NavigationStatus';
 import { NearbyContacts } from './screens/NearbyContacts';
 import { JumpDrivePanel } from './screens/JumpDrivePanel';
+import { useShuttleControls } from './ShuttleControls';
 
 export const SupercruiseMap = () => {
   const { act, data } = useBackend<SupercruiseMapData>();
@@ -46,9 +47,6 @@ export const SupercruiseMap = () => {
     lastActionError = '',
   } = data;
 
-  const [cameraYaw, setCameraYaw] = useState(45);
-  const [cameraPitch, setCameraPitch] = useState(30);
-  const [zoomScale, setZoomScale] = useState(1);
   const [selectedJumpDestination, setSelectedJumpDestination] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
 
@@ -60,57 +58,11 @@ export const SupercruiseMap = () => {
     }
   }, [lastActionError, update_index]);
 
-  const ourPos = ourObject
-    ? (ourObject.position || [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0])
-    : [0, 0, 0];
-
+  const { cameraYaw, cameraPitch, zoomScale, rotateCamera, handleZoom } = useShuttleControls(act, linkedToShuttle, isDocked, shuttleAngle, shuttlePitch, shuttleThrust);
+  const ourPos = ourObject ? (ourObject.position || [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0]) : [0, 0, 0];
   const focusX = linkedToShuttle ? ourPos[0] : 0;
   const focusY = linkedToShuttle ? ourPos[1] : 0;
   const focusZ = linkedToShuttle ? ourPos[2] : 0;
-
-  // Keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!linkedToShuttle || isDocked) return;
-      if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
-
-      const key = event.key.toLowerCase();
-      if (['w', 'ц'].includes(key)) { event.preventDefault(); act('toggle_rotate_pitch_up', { enable: true }); }
-      else if (['s', 'ы'].includes(key)) { event.preventDefault(); act('toggle_rotate_pitch_down', { enable: true }); }
-      else if (['a', 'ф'].includes(key)) { event.preventDefault(); act('toggle_rotate_left', { enable: true }); }
-      else if (['d', 'в'].includes(key)) { event.preventDefault(); act('toggle_rotate_right', { enable: true }); }
-      else if (key === 'q') { event.preventDefault(); act('set_thrust', { angle: shuttleAngle, power: Math.max(shuttleThrust - 10, 0), pitch: shuttlePitch || 0 }); }
-      else if (key === 'e') { event.preventDefault(); act('set_thrust', { angle: shuttleAngle, power: Math.min(shuttleThrust + 10, 100), pitch: shuttlePitch || 0 }); }
-      else if (key === 'x') { event.preventDefault(); act('kill_thrust'); }
-    };
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (!linkedToShuttle || isDocked) return;
-      const key = event.key.toLowerCase();
-      if (['w', 'ц'].includes(key)) act('toggle_rotate_pitch_up', { enable: false });
-      else if (['s', 'ы'].includes(key)) act('toggle_rotate_pitch_down', { enable: false });
-      else if (['a', 'ф'].includes(key)) act('toggle_rotate_left', { enable: false });
-      else if (['d', 'в'].includes(key)) act('toggle_rotate_right', { enable: false });
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [linkedToShuttle, isDocked, act, shuttleAngle, shuttlePitch, shuttleThrust]);
-
-  const clampPitch = (value: number) => Math.max(5, Math.min(85, value));
-
-  const rotateCamera = useCallback((dyaw: number, dpitch: number) => {
-    setCameraYaw((prev) => (prev + dyaw + 360) % 360);
-    setCameraPitch((prev) => clampPitch(prev + dpitch));
-  }, []);
-
-  const handleZoom = useCallback((factor: number) => {
-    setZoomScale((prev) => Math.max(0.1, Math.min(10, prev * factor)));
-  }, []);
 
   const canvasMapObjects = map_objects.map((obj) => {
     const pos = obj.position && Array.isArray(obj.position) ? obj.position : [obj.position_x || 0, obj.position_y || 0, obj.position_z || 0];
