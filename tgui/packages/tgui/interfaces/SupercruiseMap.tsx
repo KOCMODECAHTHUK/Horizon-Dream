@@ -28,6 +28,9 @@ interface MapObject {
   thrust_angle?: number;
   thrust_pitch?: number;
   thrust_power?: number;
+  heading?: number;
+  heading_pitch?: number;
+  max_speed?: number;
 }
 
 interface NearbyObject {
@@ -51,6 +54,9 @@ interface SupercruiseMapData {
   shuttleAngle: number;
   shuttlePitch: number;
   shuttleThrust: number;
+  shuttleHeading: number;
+  shuttleHeadingPitch: number;
+  shuttleMaxSpeed: number;
   shuttleVelX: number;
   shuttleVelY: number;
   shuttleVelZ: number;
@@ -71,6 +77,7 @@ interface SupercruiseMapData {
   jumpCooldownRemaining: number;
   jumpDestinations: JumpDestination[];
   currentSystemName: string;
+  lastActionError: string;
 }
 
 /**
@@ -86,6 +93,9 @@ export const SupercruiseMap = (props) => {
     shuttleAngle = 0,
     shuttlePitch = 0,
     shuttleThrust = 0,
+    shuttleHeading = 0,
+    shuttleHeadingPitch = 0,
+    shuttleMaxSpeed = 50,
     shuttleVelX = 0,
     shuttleVelY = 0,
     shuttleVelZ = 0,
@@ -105,6 +115,7 @@ export const SupercruiseMap = (props) => {
     jumpCooldownRemaining = 0,
     jumpDestinations = [],
     currentSystemName = 'Unknown',
+    lastActionError = '',
   } = data;
 
   // Camera state
@@ -112,6 +123,16 @@ export const SupercruiseMap = (props) => {
   const [cameraPitch, setCameraPitch] = useState(30);
   const [zoomScale, setZoomScale] = useState(1);
   const [selectedJumpDestination, setSelectedJumpDestination] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
+
+  // Update action error from backend
+  useEffect(() => {
+    if (lastActionError) {
+      setActionError(lastActionError);
+      const timer = setTimeout(() => setActionError(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastActionError, update_index]);
 
   // Our shuttle position for camera focus
   const ourPos = ourObject
@@ -123,7 +144,7 @@ export const SupercruiseMap = (props) => {
   const focusY = linkedToShuttle ? ourPos[1] : 0;
   const focusZ = linkedToShuttle ? ourPos[2] : 0;
 
-  // Keyboard controls for altitude and kill thrust
+  // Keyboard controls for altitude, kill thrust, and rotation toggles
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!linkedToShuttle || isDocked) return;
@@ -144,11 +165,58 @@ export const SupercruiseMap = (props) => {
           event.preventDefault();
           act('kill_thrust');
           break;
+        case 'a':
+        case 'ф':
+          event.preventDefault();
+          act('toggle_rotate_left', { enable: true });
+          break;
+        case 'd':
+        case 'в':
+          event.preventDefault();
+          act('toggle_rotate_right', { enable: true });
+          break;
+        case 'w':
+        case 'ц':
+          event.preventDefault();
+          act('toggle_rotate_pitch_up', { enable: true });
+          break;
+        case 's':
+        case 'ы':
+          event.preventDefault();
+          act('toggle_rotate_pitch_down', { enable: true });
+          break;
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (!linkedToShuttle || isDocked) return;
+
+      switch (event.key.toLowerCase()) {
+        case 'a':
+        case 'ф':
+          act('toggle_rotate_left', { enable: false });
+          break;
+        case 'd':
+        case 'в':
+          act('toggle_rotate_right', { enable: false });
+          break;
+        case 'w':
+        case 'ц':
+          act('toggle_rotate_pitch_up', { enable: false });
+          break;
+        case 's':
+        case 'ы':
+          act('toggle_rotate_pitch_down', { enable: false });
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
   }, [linkedToShuttle, isDocked, act]);
 
   const clampPitch = (value: number) => Math.max(5, Math.min(85, value));
@@ -214,6 +282,9 @@ export const SupercruiseMap = (props) => {
                 shuttleAngle={shuttleAngle}
                 shuttlePitch={shuttlePitch}
                 shuttleThrust={shuttleThrust}
+                shuttleHeading={shuttleHeading}
+                shuttleHeadingPitch={shuttleHeadingPitch}
+                shuttleMaxSpeed={shuttleMaxSpeed}
                 ourObject={ourObjectNormalized}
                 targetX={targetX}
                 targetY={targetY}
@@ -226,115 +297,105 @@ export const SupercruiseMap = (props) => {
                 focusX={focusX}
                 focusY={focusY}
                 focusZ={focusZ}
+                shuttleVelX={shuttleVelX}
+                shuttleVelY={shuttleVelY}
+                shuttleVelZ={shuttleVelZ}
+                shuttleAlt={shuttleAlt}
                 onRotate={rotateCamera}
                 onZoom={handleZoom}
-                onMapClick={(worldX, worldY, clickType, altKey) => {
+                onMapClick={(worldX, worldY, clickType, altKey, objectId) => {
                   if (isDocked) return;
                   if (clickType === 'right') {
+                    // Use shuttle's current Z for autopilot target altitude
+                    const targetZ = ourPos[2] || 0;
                     if (altKey) {
-                      act('setTargetCoords', { x: worldX, y: worldY, z: focusZ, altKey: true });
+                      act('setTargetCoords', { x: worldX, y: worldY, z: targetZ, altKey: true });
                     } else {
-                      act('setTargetCoords', { x: worldX, y: worldY, z: focusZ });
+                      act('setTargetCoords', { x: worldX, y: worldY, z: targetZ });
                     }
+                  }
+                  if (clickType === 'double' && objectId) {
+                    act('dock', { stationId: objectId });
                   }
                 }}
               />
             </Box>
           </Flex.Item>
 
-          <Flex.Item width="280px" style={{ overflowY: 'auto', maxHeight: '100%' }}>
+          <Flex.Item width="240px" style={{ overflowY: 'auto', maxHeight: '100%' }}>
             <Section title="Flight Controls" height="100%">
               {!linkedToShuttle ? (
-                <NoticeBox>No shuttle linked to console</NoticeBox>
+                <NoticeBox>No shuttle linked</NoticeBox>
               ) : (
                 <>
-                  <Box bold mb={1} fontSize="1.1em">
+                  {actionError && (
+                    <NoticeBox color="red" mb={0.5} fontSize="0.8em">
+                      {actionError}
+                    </NoticeBox>
+                  )}
+                  <Box bold mb={0.5} fontSize="1em" color="cyan">
                     {shuttleName}
                   </Box>
 
-                  {/* Position & Velocity */}
-                  <Box mb={1} fontSize="0.9em">
-                    <Box>
-                      <Box as="span" color="label">POS:</Box>{' '}
-                      {ourPos[0]?.toFixed(1)}, {ourPos[1]?.toFixed(1)}, Z{ourPos[2]?.toFixed(1)}
-                    </Box>
-                    <Box>
-                      <Box as="span" color="label">VEL:</Box>{' '}
-                      {shuttleVelX.toFixed(1)}, {shuttleVelY.toFixed(1)}, {shuttleVelZ.toFixed(1)}
-                    </Box>
-                    <Box color="cyan">
-                      {velocity3D.toFixed(1)} km/s @ {velocityAngle.toFixed(0)}° pitch {velocityPitchAngle.toFixed(0)}°
-                    </Box>
+                  {/* Compact position readout */}
+                  <Box mb={0.5} fontSize="0.8em" color="label">
+                    POS {ourPos[0]?.toFixed(0)},{ourPos[1]?.toFixed(0)},Z{ourPos[2]?.toFixed(0)}
                   </Box>
 
-                  {/* Altitude */}
-                  <Box mb={1}>
-                    <Box bold fontSize="0.9em">
-                      Altitude: {shuttleAlt.toFixed(1)} km
-                    </Box>
-                    <div style={{
-                      width: '100%', height: '8px', background: '#111',
-                      border: '1px solid #444', borderRadius: '4px', position: 'relative',
-                    }}>
-                      <div style={{
-                        position: 'absolute', left: '50%', top: 0, bottom: 0,
-                        width: '2px', background: '#555',
-                      }} />
-                      <div style={{
-                        position: 'absolute',
-                        left: `${50 + Math.max(-45, Math.min(45, shuttleAlt / 2))}%`,
-                        top: 0, bottom: 0, width: '4px', background: '#ff88ff',
-                        transform: 'translateX(-50%)',
-                      }} />
-                    </div>
-                    <Flex mt={0.5}>
-                      <Button
-                        compact
-                        icon="arrow-up"
-                        disabled={isDocked}
-                        onClick={() => act('adjust_altitude', { dz: 10 })}
-                        tooltip="Ascend (Q/Space)"
-                      />
-                      <Button
-                        compact
-                        icon="arrow-down"
-                        disabled={isDocked}
-                        onClick={() => act('adjust_altitude', { dz: -10 })}
-                        tooltip="Descend (E/C)"
-                      />
-                    </Flex>
-                  </Box>
-
-                  {/* Thrust Controls */}
-                  <Box mb={1}>
-                    <Box bold fontSize="0.9em">
-                      Thrust: {shuttleAngle}° / {shuttlePitch || 0}° @ {shuttleThrust}%
-                    </Box>
-                    <Flex mt={0.5} wrap="wrap">
+                  {/* Thrust Controls — toggle buttons for rotation */}
+                  <Box mb={0.5}>
+                    <Flex wrap="wrap" gap={0.5} mb={0.5}>
+                      <Box bold fontSize="0.75em" color="label" style={{ width: '100%' }}>Rotation (hold):</Box>
                       <Button
                         compact
                         icon="rotate-left"
+                        color="yellow"
                         disabled={isDocked}
-                        onClick={() => act('set_thrust', {
-                          angle: (shuttleAngle - 15 + 360) % 360,
-                          power: shuttleThrust,
-                          pitch: shuttlePitch || 0,
-                        })}
+                        onMouseDown={() => act('toggle_rotate_left', { enable: true })}
+                        onMouseUp={() => act('toggle_rotate_left', { enable: false })}
+                        onMouseLeave={() => act('toggle_rotate_left', { enable: false })}
+                        tooltip="Hold to rotate left (A)"
                       >
-                        -15°
+                        ←
                       </Button>
                       <Button
                         compact
                         icon="rotate-right"
+                        color="yellow"
                         disabled={isDocked}
-                        onClick={() => act('set_thrust', {
-                          angle: (shuttleAngle + 15) % 360,
-                          power: shuttleThrust,
-                          pitch: shuttlePitch || 0,
-                        })}
+                        onMouseDown={() => act('toggle_rotate_right', { enable: true })}
+                        onMouseUp={() => act('toggle_rotate_right', { enable: false })}
+                        onMouseLeave={() => act('toggle_rotate_right', { enable: false })}
+                        tooltip="Hold to rotate right (D)"
                       >
-                        +15°
+                        →
                       </Button>
+                      <Button
+                        compact
+                        icon="angle-double-up"
+                        color="yellow"
+                        disabled={isDocked}
+                        onMouseDown={() => act('toggle_rotate_pitch_up', { enable: true })}
+                        onMouseUp={() => act('toggle_rotate_pitch_up', { enable: false })}
+                        onMouseLeave={() => act('toggle_rotate_pitch_up', { enable: false })}
+                        tooltip="Hold to pitch up (W)"
+                      >
+                        ↑
+                      </Button>
+                      <Button
+                        compact
+                        icon="angle-double-down"
+                        color="yellow"
+                        disabled={isDocked}
+                        onMouseDown={() => act('toggle_rotate_pitch_down', { enable: true })}
+                        onMouseUp={() => act('toggle_rotate_pitch_down', { enable: false })}
+                        onMouseLeave={() => act('toggle_rotate_pitch_down', { enable: false })}
+                        tooltip="Hold to pitch down (S)"
+                      >
+                        ↓
+                      </Button>
+                    </Flex>
+                    <Flex wrap="wrap" gap={0.5}>
                       <Button
                         compact
                         icon="arrow-up"
@@ -344,6 +405,7 @@ export const SupercruiseMap = (props) => {
                           power: Math.min(shuttleThrust + 10, 100),
                           pitch: shuttlePitch || 0,
                         })}
+                        tooltip="Thrust +10%"
                       >
                         +Pwr
                       </Button>
@@ -356,10 +418,32 @@ export const SupercruiseMap = (props) => {
                           power: Math.max(shuttleThrust - 10, 0),
                           pitch: shuttlePitch || 0,
                         })}
+                        tooltip="Thrust -10%"
                       >
                         -Pwr
                       </Button>
                       <Button
+                        compact
+                        icon="arrow-up"
+                        color="teal"
+                        disabled={isDocked}
+                        onClick={() => act('adjust_altitude', { dz: 10 })}
+                        tooltip="Ascend (Q/Space)"
+                      >
+                        ↑Alt
+                      </Button>
+                      <Button
+                        compact
+                        icon="arrow-down"
+                        color="teal"
+                        disabled={isDocked}
+                        onClick={() => act('adjust_altitude', { dz: -10 })}
+                        tooltip="Descend (E/C)"
+                      >
+                        ↓Alt
+                      </Button>
+                      <Button
+                        fluid
                         compact
                         icon="xmark"
                         color="red"
@@ -369,167 +453,131 @@ export const SupercruiseMap = (props) => {
                       >
                         STOP
                       </Button>
-                      <Button
-                        compact
-                        icon="angle-double-up"
-                        disabled={isDocked}
-                        onClick={() => act('set_thrust', {
-                          angle: shuttleAngle,
-                          power: shuttleThrust,
-                          pitch: Math.min((shuttlePitch || 0) + 15, 90),
-                        })}
-                      >
-                        Pitch+
-                      </Button>
-                      <Button
-                        compact
-                        icon="angle-double-down"
-                        disabled={isDocked}
-                        onClick={() => act('set_thrust', {
-                          angle: shuttleAngle,
-                          power: shuttleThrust,
-                          pitch: Math.max((shuttlePitch || 0) - 15, -90),
-                        })}
-                      >
-                        Pitch-
-                      </Button>
                     </Flex>
                   </Box>
 
                   {/* Zoom */}
-                  <Flex mb={1}>
-                    <Flex.Item grow>
-                      <Box bold fontSize="0.9em">Zoom</Box>
-                    </Flex.Item>
-                    <Flex.Item>
-                      <Button compact icon="search-plus" onClick={() => handleZoom(1.3)} />
-                      <Button compact icon="search-minus" onClick={() => handleZoom(0.7)} />
-                    </Flex.Item>
+                  <Flex mb={0.5}>
+                    <Button compact icon="search-plus" onClick={() => handleZoom(1.3)} tooltip="Zoom In" />
+                    <Button compact icon="search-minus" onClick={() => handleZoom(0.7)} tooltip="Zoom Out" />
+                    <Box as="span" ml={1} fontSize="0.8em" color="label" lineHeight="22px">
+                      Zoom: {zoomScale.toFixed(1)}x
+                    </Box>
                   </Flex>
 
                   {/* Status */}
-                  <Box mt={1} mb={1}>
-                    {isDocked ? (
-                      <NoticeBox color="red" fontSize="0.85em">
-                        DOCKED — Flight controls locked
-                      </NoticeBox>
-                    ) : (
-                      <NoticeBox color={autopilotEnabled ? 'green' : 'purple'} fontSize="0.85em">
-                        {autopilotEnabled
-                          ? `AUTOPILOT → (${targetX?.toFixed(0)}, ${targetY?.toFixed(0)}, Z${(targetZ || 0).toFixed(0)})`
-                          : 'Right-click map to fly. Alt+Click to cancel.'}
-                      </NoticeBox>
-                    )}
-                  </Box>
+                  {isDocked ? (
+                    <NoticeBox color="red" fontSize="0.8em" mt={0.5}>
+                      DOCKED — {dockedStation}
+                    </NoticeBox>
+                  ) : (
+                    <NoticeBox color={autopilotEnabled ? 'green' : 'purple'} fontSize="0.8em" mt={0.5}>
+                      {autopilotEnabled
+                        ? `AUTOPILOT → (${targetX?.toFixed(0)}, ${targetY?.toFixed(0)}, Z${(targetZ || 0).toFixed(0)})`
+                        : 'Right-click map → autopilot'}
+                    </NoticeBox>
+                  )}
 
-                  {/* Docking/Interaction */}
-                  <Box mt={1}>
-                    {isDocked ? (
-                      <>
-                        <NoticeBox color="teal" fontSize="0.85em">
-                          Docked at {dockedStation}
-                        </NoticeBox>
-                        <Button
-                          fluid
-                          icon="anchor"
-                          color="red"
-                          onClick={() => act('undock')}
-                        >
-                          Undock
-                        </Button>
-                      </>
-                    ) : nearbyObjects?.length > 0 ? (
-                      <>
-                        <Box bold mb={0.5} fontSize="0.9em">Nearby Objects:</Box>
-                        {nearbyObjects.map((obj) => (
-                          <Box key={obj.id} mb={0.5} fontSize="0.85em">
-                            <Flex align="center" justify="space-between">
-                              <Flex.Item>
-                                {obj.name}{' '}
-                                <Box as="span" color={
-                                  obj.type === 'station' ? 'blue' :
-                                  obj.type === 'planet' ? 'green' : 'gray'
-                                }>
-                                  [{obj.type}]
-                                </Box>
-                              </Flex.Item>
-                              <Flex.Item>
-                                <Button
-                                  compact
-                                  icon={obj.type === 'station' ? 'anchor' : 'hand-pointer'}
-                                  disabled={obj.occupied && obj.type === 'station'}
-                                  onClick={() => act('dock', { stationId: obj.id })}
-                                >
-                                  {obj.distance}km
-                                </Button>
-                              </Flex.Item>
-                            </Flex>
+                  {isDocked && (
+                    <Button
+                      fluid
+                      icon="anchor"
+                      color="red"
+                      mt={0.5}
+                      onClick={() => act('undock')}
+                    >
+                      Undock
+                    </Button>
+                  )}
+
+                  {/* Nearby Objects — compact list */}
+                  {!isDocked && nearbyObjects?.length > 0 && (
+                    <Box mt={0.5}>
+                      <Box bold fontSize="0.8em" color="label">Contacts:</Box>
+                      {nearbyObjects.map((obj) => (
+                        <Flex key={obj.id} align="center" justify="space-between" mb={0.25}>
+                          <Box fontSize="0.8em">
+                            <Box as="span" color={
+                              obj.type === 'station' ? 'blue' :
+                              obj.type === 'planet' ? 'green' : 'gray'
+                            }>●</Box>{' '}
+                            {obj.name}
+                            <Box as="span" color="label" ml={1}>{obj.distance}km</Box>
                           </Box>
-                        ))}
-                      </>
-                    ) : (
-                      <Box color="gray" fontSize="0.85em">No objects in range</Box>
-                    )}
-                  </Box>
+                          {obj.type === 'station' && (
+                            <Button
+                              compact
+                              fontSize="0.75em"
+                              icon="anchor"
+                              disabled={obj.occupied || obj.distance > 20}
+                              onClick={() => act('dock', { stationId: obj.id })}
+                            >
+                              {obj.occupied ? 'Occupied' : obj.distance > 20 ? 'Too far' : 'Dock'}
+                            </Button>
+                          )}
+                        </Flex>
+                      ))}
+                    </Box>
+                  )}
 
                   {/* Jump Drive */}
                   {hasJumpDrive && (
-                    <Box mt={1}>
-                      <Box bold mb={0.5} fontSize="0.9em">Jump Drive</Box>
-                      <Box fontSize="0.85em" color="cyan" mb={0.5}>
-                        System: {currentSystemName}
+                    <Box mt={0.5}>
+                      <Box bold fontSize="0.8em" color="label">
+                        Jump Drive: {currentSystemName}
                       </Box>
                       {isJumping ? (
-                        <NoticeBox color="orange" fontSize="0.85em">Jump in progress...</NoticeBox>
+                        <Box color="orange" fontSize="0.8em">Jump in progress...</Box>
                       ) : !jumpReady ? (
-                        <NoticeBox color="red" fontSize="0.85em">
-                          Cooldown: {Math.ceil(jumpCooldownRemaining)}s
-                        </NoticeBox>
+                        <Box color="red" fontSize="0.8em">Cooldown: {Math.ceil(jumpCooldownRemaining)}s</Box>
                       ) : isDocked ? (
-                        <NoticeBox color="red" fontSize="0.85em">Undock first</NoticeBox>
+                        <Box color="red" fontSize="0.8em">Undock first</Box>
                       ) : jumpDestinations.length === 0 ? (
-                        <Box color="gray" fontSize="0.85em">No destinations</Box>
+                        <Box color="gray" fontSize="0.8em">No destinations</Box>
                       ) : (
-                        <>
-                          <select
-                            style={{
-                              width: '100%', padding: '4px',
-                              backgroundColor: '#1a1a2e', color: '#fff',
-                              border: '1px solid #444', borderRadius: '3px',
-                              fontSize: '0.85em',
-                            }}
-                            value={selectedJumpDestination || ''}
-                            onChange={(e) => setSelectedJumpDestination(e.target.value)}
-                          >
-                            <option value="">-- Select System --</option>
-                            {jumpDestinations.map((dest) => (
-                              <option key={dest.id} value={dest.id}>{dest.name}</option>
-                            ))}
-                          </select>
-                          {selectedJumpDestination && (
-                            <Box fontSize="0.8em" color="gray" italic mt={0.5}>
-                              {jumpDestinations.find(d => d.id === selectedJumpDestination)?.description}
-                            </Box>
-                          )}
-                          <Button
-                            fluid
-                            icon="rocket"
-                            color="purple"
-                            mt={0.5}
-                            disabled={!selectedJumpDestination}
-                            onClick={() => {
-                              if (selectedJumpDestination) {
-                                act('jump', { systemId: selectedJumpDestination });
-                                setSelectedJumpDestination(null);
-                              }
-                            }}
-                          >
-                            Initiate Jump
-                          </Button>
-                        </>
+                        <Flex mt={0.5}>
+                          <Flex.Item grow>
+                            <select
+                              style={{
+                                width: '100%', padding: '2px',
+                                backgroundColor: '#1a1a2e', color: '#fff',
+                                border: '1px solid #444', borderRadius: '2px',
+                                fontSize: '0.8em',
+                              }}
+                              value={selectedJumpDestination || ''}
+                              onChange={(e) => setSelectedJumpDestination(e.target.value)}
+                            >
+                              <option value="">-- System --</option>
+                              {jumpDestinations.map((dest) => (
+                                <option key={dest.id} value={dest.id}>{dest.name}</option>
+                              ))}
+                            </select>
+                          </Flex.Item>
+                          <Flex.Item ml={0.5}>
+                            <Button
+                              compact
+                              icon="rocket"
+                              color="purple"
+                              disabled={!selectedJumpDestination}
+                              onClick={() => {
+                                if (selectedJumpDestination) {
+                                  act('jump', { systemId: selectedJumpDestination });
+                                  setSelectedJumpDestination(null);
+                                }
+                              }}
+                            >
+                              Jump
+                            </Button>
+                          </Flex.Item>
+                        </Flex>
                       )}
                     </Box>
                   )}
+
+                  <Box mt={1} fontSize="0.7em" color="dim">
+                    Drag=rotate · Wheel=zoom · RClick=fly<br />
+                    WASD=rotate (hold) · Q/Space=ascend · E/C=descend · X=stop
+                  </Box>
                 </>
               )}
             </Section>

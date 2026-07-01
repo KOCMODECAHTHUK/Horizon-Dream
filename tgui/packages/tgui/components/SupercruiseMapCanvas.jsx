@@ -10,6 +10,47 @@ import { Component } from 'react';
 const FPS = 30;
 const DEG2RAD = Math.PI / 180;
 
+/**
+ * Helper functions for color manipulation
+ */
+function hexToRgb(hex) {
+  if (!hex || typeof hex !== 'string') return { r: 128, g: 128, b: 128 };
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 128, g: 128, b: 128 };
+}
+
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(x => {
+    const hex = Math.round(Math.max(0, Math.min(255, x))).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  }).join('');
+}
+
+function lightenColor(hex, percent) {
+  const rgb = hexToRgb(hex);
+  return rgbToHex(
+    rgb.r + (255 - rgb.r) * (percent / 100),
+    rgb.g + (255 - rgb.g) * (percent / 100),
+    rgb.b + (255 - rgb.b) * (percent / 100)
+  );
+}
+
+function darkenColor(hex, percent) {
+  const rgb = hexToRgb(hex);
+  return rgbToHex(
+    rgb.r * (1 - percent / 100),
+    rgb.g * (1 - percent / 100),
+    rgb.b * (1 - percent / 100)
+  );
+}
+
+// Ship color for rendering
+const SHIP_COLOR = '#a4eea4';
+
 export class SupercruiseMapCanvas extends Component {
   constructor(props) {
     super(props);
@@ -18,6 +59,8 @@ export class SupercruiseMapCanvas extends Component {
     this.dragging = false;
     this.lastDragPos = null;
     this.lastClickPos = null;
+    this.hoveredObjectId = null;
+    this.mouseScreenPos = null;
   }
 
   componentDidMount() {
@@ -93,22 +136,27 @@ export class SupercruiseMapCanvas extends Component {
     const y2 = y1 * cosP - z1 * sinP;
     const z2 = y1 * sinP + z1 * cosP;
 
-    // Perspective projection
-    const effectiveDist = cameraDistance / zoomScale;
-    const perspectiveScale = effectiveDist / (effectiveDist + y2);
-    const screenX = (x2 * perspectiveScale) + canvasWidth / 2;
-    const screenY = -(z2 * perspectiveScale) + canvasHeight / 2; // Flip Z for screen coords
+    // Perspective projection with zoom as orthographic scale
+    const effectiveDist = cameraDistance;
+    // Clamp depth to prevent objects behind camera from inverting
+    const clampedDepth = Math.max(y2, -effectiveDist * 0.95);
+    const perspectiveScale = effectiveDist / (effectiveDist + clampedDepth);
+    // Apply zoom as an orthographic scale factor on top of perspective
+    const finalScale = perspectiveScale * zoomScale;
+    const screenX = (x2 * finalScale) + canvasWidth / 2;
+    const screenY = -(z2 * finalScale) + canvasHeight / 2;
 
     return {
       x: screenX,
       y: screenY,
       depth: y2, // Depth for sorting (further = larger depth)
-      scale: perspectiveScale,
+      scale: finalScale,
     };
   }
 
   /**
-   * Unproject a 2D screen point to 3D world coordinates on the Z=0 plane.
+   * Unproject a 2D screen point to 3D world coordinates on the Z=focusZ plane.
+   * Uses proper ray-plane intersection.
    */
   unprojectToGroundPlane(screenX, screenY) {
     const {
@@ -126,78 +174,116 @@ export class SupercruiseMapCanvas extends Component {
     const canvasWidth = canvas ? canvas.width / dpr : 700;
     const canvasHeight = canvas ? canvas.height / dpr : 700;
 
-    const effectiveDist = cameraDistance / zoomScale;
+    const effectiveDist = cameraDistance;
+    const zoomScaleLocal = zoomScale;
 
-    // Convert screen to projected coords
-    const projX = screenX - canvasWidth / 2;
-    const projZ = -(screenY - canvasHeight / 2);
+    // Convert screen coords to normalized device coords
+    // We need to reverse: screenX = x2 * perspectiveScale * zoomScale + cx
+    // So: (screenX - cx) = x2 * (effectiveDist / (effectiveDist + y2)) * zoomScale
+    // ndcX = (screenX - cx) / zoomScale  ... but we need to account for zoom
+    const ndcX = (screenX - canvasWidth / 2) / zoomScaleLocal;
+    const ndcY = -(screenY - canvasHeight / 2) / zoomScaleLocal;
 
-    // Reverse perspective: we need to find world coords on Z=0 plane
-    // This is approximate - assumes we're clicking on the focus Z plane
+    // Camera position in world space (before rotation, camera is at (0, -effectiveDist, 0))
+    const yawRad = cameraYaw * DEG2RAD;
     const pitchRad = cameraPitch * DEG2RAD;
+    const cosY = Math.cos(yawRad);
+    const sinY = Math.sin(yawRad);
     const cosP = Math.cos(pitchRad);
     const sinP = Math.sin(pitchRad);
 
-    // On the Z=0 plane, z1 = 0, so:
-    // y2 = y1 * cosP (since z1=0)
-    // z2 = y1 * sinP
-    // perspectiveScale = effectiveDist / (effectiveDist + y1 * cosP)
-    // projX = x2 * perspectiveScale
-    // projZ = y1 * sinP * perspectiveScale
+    // Camera position in world space:
+    // Start at (0, -effectiveDist, 0), then rotate by pitch and yaw
+    // After pitch rotation around X: (0, -effectiveDist*cosP, effectiveDist*sinP)
+    // After yaw rotation around Z: translate to focus point
+    const camLocalX = 0;
+    const camLocalY = -effectiveDist;
+    const camLocalZ = 0;
 
-    // Solve for y1 from projZ:
-    // projZ = y1 * sinP * (effectiveDist / (effectiveDist + y1 * cosP))
-    // This is complex, so let's use a simpler approach:
-    // Assume the click is on the plane at focusZ
+    // Camera position in rotated space (after pitch)
+    const camPitchY = camLocalY * cosP - camLocalZ * sinP;
+    const camPitchZ = camLocalY * sinP + camLocalZ * cosP;
 
-    // Approximate: use inverse of projection at depth=0
-    const approxScale = 1; // Will be refined
-    const x2 = projX;
-    const y1_approx = effectiveDist * 0; // Start guess
+    // Camera position in world space (after yaw, plus focus offset)
+    const camWorldX = camLocalX * cosY - camPitchY * sinY + focusX;
+    const camWorldY = camLocalX * sinY + camPitchY * cosY + focusY;
+    const camWorldZ = camPitchZ + focusZ;
 
-    // Better approach: iterate to find the ground plane intersection
-    // For now, use a simple approximation assuming moderate pitch angles
-    const yawRad = cameraYaw * DEG2RAD;
-    const cosY = Math.cos(yawRad);
-    const sinY = Math.sin(yawRad);
+    // Ray direction: from camera through screen point
+    // The screen point in view space is (ndcX, 0, ndcY) at depth=0
+    // We need to find the ray direction in world space
+    // In view space, the ray goes from (0, -effectiveDist, 0) through (ndcX, 0, ndcY)
+    // Ray direction in view space: (ndcX, effectiveDist, ndcY) normalized
 
-    // Simple inverse: assume perspective scale ≈ 1 (works for distant camera)
-    const worldX_approx = x2 * cosY + focusX;
-    const worldY_approx = -x2 * sinY + focusY;
+    // Actually, let's use the inverse projection more directly.
+    // We know that projectPoint does:
+    // 1. Translate by -focus
+    // 2. Rotate yaw
+    // 3. Rotate pitch
+    // 4. Perspective divide
+    // So we need to invert this.
 
-    // Refine by computing the actual perspective scale at this depth
-    // ... this is getting complex, let's use a ray-plane intersection approach
+    // For a point on the Z=focusZ plane (worldZ = focusZ):
+    // After subtracting focus: rz = 0
+    // After yaw: x1, y1
+    // After pitch: x2 = x1, y2 = y1*cosP, z2 = y1*sinP
+    // Perspective: screenX = x2 * (effDist/(effDist+y2)) + cx
+    //             screenY = -z2 * (effDist/(effDist+y2)) + cy
 
-    // Ray from camera through screen point
-    const camDist = effectiveDist;
-    // Camera position in rotated space: (0, -camDist, 0) before pitch rotation
-    // After pitch: (0, -camDist*cosP, camDist*sinP)
-    // After yaw: (camDist*sinY*0 + ...) -- actually camera is at origin looking down -Y
+    // So: ndcX = x2 * effDist / (effDist + y2)
+    //     ndcY = -z2 * effDist / (effDist + y2)
+    // Where: x2 = x1, y2 = y1*cosP, z2 = y1*sinP
+    // And: x1 = rx*cosY - ry*sinY, y1 = rx*sinY + ry*cosY, where rx = worldX-focusX, ry = worldY-focusY
 
-    // Simplified: project back using average scale factor
-    const avgScale = effectiveDist / (effectiveDist + 0);
+    // For z2=0 (on the focusZ plane): y1*sinP = 0 => y1 = 0 (if sinP != 0)
+    // Wait, z2 = y1*sinP + rz*cosP, and rz = 0, so z2 = y1*sinP
 
-    // Reverse the projection for the ground plane (z1 = 0):
-    // screenX = x2 * scale + cx
-    // screenY = -(y1 * sinP * scale) + cy
-    // x2 = x1 (no yaw change on x)
-    // y1 * cosP = depth component
+    // Let's solve properly. We have:
+    // ndcX = x2 * s where s = effDist/(effDist+y2)
+    // ndcY = -z2 * s
 
-    // For ground plane clicks, we need to find x1, y1 such that:
-    // x1 = (projX) / avgScale
-    // y1 = -(projZ) / (sinP * avgScale) ... approximately
+    // x2 = x1 = (worldX-focusX)*cosY - (worldY-focusY)*sinY
+    // y2 = y1*cosP - 0*sinP = y1*cosP = ((worldX-focusX)*sinY + (worldY-focusY)*cosY)*cosP
+    // z2 = y1*sinP + 0*cosP = y1*sinP
 
-    // Let's just do it properly with ray casting
-    // Camera pos in view space: (0, -camDist, 0)
-    // Screen point in view space: (projX/scale, 0, projZ/scale) at depth=0
+    // From ndcY: ndcY = -y1*sinP * s = -y1*sinP * effDist/(effDist + y1*cosP)
+    // From ndcX: ndcX = x1 * s = x1 * effDist/(effDist + y1*cosP)
 
-    // For now, use the simpler unproject that works for moderate pitch:
-    const groundX1 = projX / avgScale;
-    const groundY1 = -projZ / (sinP * avgScale + cosP * 0.01);
+    // Let's denote y1 = ((worldX-focusX)*sinY + (worldY-focusY)*cosY)
+    // We need to find worldX, worldY on the Z=focusZ plane.
 
-    // Rotate back by yaw
-    const worldX = groundX1 * cosY + groundY1 * sinY + focusX;
-    const worldY = -groundX1 * sinY + groundY1 * cosY + focusY;
+    // Step 1: Find y1 from ndcY
+    // ndcY = -y1*sinP * effDist / (effDist + y1*cosP)
+    // ndcY * (effDist + y1*cosP) = -y1*sinP*effDist
+    // ndcY*effDist + ndcY*y1*cosP = -y1*sinP*effDist
+    // ndcY*effDist = -y1*sinP*effDist - ndcY*y1*cosP
+    // ndcY*effDist = -y1*(sinP*effDist + ndcY*cosP)
+    // y1 = -ndcY*effDist / (sinP*effDist + ndcY*cosP)
+
+    const denom = sinP * effectiveDist + ndcY * cosP;
+    let y1;
+    if (Math.abs(denom) < 0.001) {
+      // Nearly horizontal view - can't determine depth, use approximate
+      y1 = 0;
+    } else {
+      y1 = -ndcY * effectiveDist / denom;
+    }
+
+    // Step 2: Find x1 from ndcX
+    // ndcX = x1 * effDist / (effDist + y1*cosP)
+    const s = effectiveDist / (effectiveDist + y1 * cosP);
+    const x1 = ndcX / s;
+
+    // Step 3: Rotate back from view space to world space (inverse yaw)
+    // x1 = rx*cosY - ry*sinY
+    // y1 = rx*sinY + ry*cosY
+    // Solve for rx, ry:
+    const rx = x1 * cosY + y1 * sinY;
+    const ry = -x1 * sinY + y1 * cosY;
+
+    // Step 4: Add focus offset
+    const worldX = rx + focusX;
+    const worldY = ry + focusY;
 
     return { worldX, worldY, worldZ: focusZ };
   }
@@ -218,6 +304,8 @@ export class SupercruiseMapCanvas extends Component {
       shuttleAngle = 0,
       shuttlePitch = 0,
       shuttleThrust = 0,
+      shuttleHeading = 0,
+      shuttleHeadingPitch = 0,
       ourObject = null,
       targetX = null,
       targetY = null,
@@ -228,6 +316,11 @@ export class SupercruiseMapCanvas extends Component {
       cameraPitch = 30,
       onMapClick = null,
       onRotate = null,
+      onObjectClick = null,
+      shuttleVelX = 0,
+      shuttleVelY = 0,
+      shuttleVelZ = 0,
+      shuttleAlt = 0,
     } = this.props;
 
     // Clear canvas
@@ -367,38 +460,110 @@ export class SupercruiseMapCanvas extends Component {
         ctx.fillRect(projected.x - halfR, projected.y - halfR, halfR * 2, halfR * 2);
         ctx.strokeRect(projected.x - halfR, projected.y - halfR, halfR * 2, halfR * 2);
       } else if (isPlanet) {
-        // Planet: filled circle with glow
-        ctx.globalAlpha = 0.15;
-        ctx.fillStyle = color;
+        // Planet: sphere with gradient shading
+        const planetRadius = Math.max(8, (obj.radius || 20) * projected.scale);
+
+        // Glow behind planet
+        ctx.globalAlpha = 0.2;
+        const glowGradient = ctx.createRadialGradient(
+          ground.x, ground.y, 0,
+          ground.x, ground.y, planetRadius * 1.5
+        );
+        glowGradient.addColorStop(0, color);
+        glowGradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = glowGradient;
         ctx.beginPath();
-        ctx.arc(ground.x, ground.y, r + 3, 0, Math.PI * 2);
+        ctx.arc(ground.x, ground.y, planetRadius * 1.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
 
-        ctx.fillStyle = color;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
+        // Sphere gradient (light from top-left)
+        const sphereGradient = ctx.createRadialGradient(
+          projected.x - r * 0.3, projected.y - r * 0.3, r * 0.2,
+          projected.x, projected.y, r
+        );
+        sphereGradient.addColorStop(0, lightenColor(color, 40));
+        sphereGradient.addColorStop(0.3, color);
+        sphereGradient.addColorStop(1, darkenColor(color, 40));
+
+        ctx.fillStyle = sphereGradient;
         ctx.beginPath();
-        ctx.arc(projected.x, projected.y, r, 0, Math.PI * 2);
+        ctx.arc(projected.x, projected.y, planetRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Atmosphere glow
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.4;
+        ctx.beginPath();
+        ctx.arc(projected.x, projected.y, planetRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      } else if (isOurShuttle) {
+        // Our shuttle: triangle oriented by heading
+        const shuttleWidth = r * 2;
+        const shuttleHeight = r * 1.5;
+
+        // Calculate rotation from heading angle (convert to radians, 0 = right)
+        const headingRad = ((shuttleHeading || 0) - 90) * DEG2RAD;
+
+        ctx.save();
+        ctx.translate(projected.x, projected.y);
+        ctx.rotate(headingRad);
+
+        // Shuttle body (triangle pointing up in local coords)
+        ctx.fillStyle = color || SHIP_COLOR;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+
+        // Draw triangle centered at origin, pointing up
+        ctx.beginPath();
+        ctx.moveTo(0, -shuttleHeight);  // Nose (top)
+        ctx.lineTo(-shuttleWidth * 0.5, shuttleHeight * 0.5);  // Back left
+        ctx.lineTo(shuttleWidth * 0.5, shuttleHeight * 0.5);  // Back right
+        ctx.closePath();
         ctx.fill();
         ctx.stroke();
-      } else {
-        // Shuttle or other object
-        if (!(isDocked && isOurShuttle)) {
-          // Shadow on ground
-          ctx.globalAlpha = 0.25;
-          ctx.fillStyle = color;
+
+        // Engine glow when thrusting
+        if (shuttleThrust > 0) {
+          const flicker = 0.6 + 0.4 * Math.sin(Date.now() / 100);
+          ctx.globalAlpha = flicker;
+          ctx.fillStyle = '#ff6600';
           ctx.beginPath();
-          ctx.arc(ground.x, ground.y, r * 0.6, 0, Math.PI * 2);
+          ctx.moveTo(-shuttleWidth * 0.3, shuttleHeight * 0.3);
+          ctx.lineTo(-shuttleWidth * 0.5, shuttleHeight * 0.8 + shuttleThrust * 0.05);
+          ctx.lineTo(shuttleWidth * 0.5, shuttleHeight * 0.8 + shuttleThrust * 0.05);
+          ctx.lineTo(shuttleWidth * 0.3, shuttleHeight * 0.3);
+          ctx.closePath();
           ctx.fill();
           ctx.globalAlpha = 1;
-
-          // Object dot
-          ctx.fillStyle = color;
-          ctx.beginPath();
-          ctx.arc(projected.x, projected.y, r, 0, Math.PI * 2);
-          ctx.fill();
         }
+
+        ctx.restore();
+      } else {
+        // Other shuttle or object: simple triangle
+        const objWidth = r * 1.5;
+        const objHeight = r * 1.2;
+        const objHeading = ((obj.heading || 0) - 90) * DEG2RAD;
+
+        ctx.save();
+        ctx.translate(projected.x, projected.y);
+        ctx.rotate(objHeading);
+
+        ctx.fillStyle = color || '#888';
+        ctx.strokeStyle = color || '#888';
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+        ctx.moveTo(0, -objHeight);
+        ctx.lineTo(-objWidth * 0.5, objHeight * 0.5);
+        ctx.lineTo(objWidth * 0.5, objHeight * 0.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
       }
 
       // Draw velocity vector (cyan) for our shuttle
@@ -425,6 +590,46 @@ export class SupercruiseMapCanvas extends Component {
           // Arrow head
           this.drawArrowHead(ctx, projected.x, projected.y, velEnd.x, velEnd.y, '#00ffff');
         }
+
+        // Draw heading indicator (white triangle showing nose direction)
+        // This persists even when thrust is 0
+        const headingRad = shuttleHeading * DEG2RAD;
+        const headingPitchRad = shuttleHeadingPitch * DEG2RAD;
+        const headingScale = 20;
+        const fwdX = Math.cos(headingRad) * Math.cos(headingPitchRad);
+        const fwdY = Math.sin(headingRad) * Math.cos(headingPitchRad);
+        const fwdZ = Math.sin(headingPitchRad);
+        const headingEnd = this.projectPoint(
+          worldX + fwdX * headingScale,
+          worldY + fwdY * headingScale,
+          worldZ + fwdZ * headingScale
+        );
+
+        // Draw heading line (white dashed)
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(projected.x, projected.y);
+        ctx.lineTo(headingEnd.x, headingEnd.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw heading triangle at the tip
+        const triAngle = Math.atan2(headingEnd.y - projected.y, headingEnd.x - projected.x);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(headingEnd.x, headingEnd.y);
+        ctx.lineTo(
+          headingEnd.x - 8 * Math.cos(triAngle - 0.4),
+          headingEnd.y - 8 * Math.sin(triAngle - 0.4)
+        );
+        ctx.lineTo(
+          headingEnd.x - 8 * Math.cos(triAngle + 0.4),
+          headingEnd.y - 8 * Math.sin(triAngle + 0.4)
+        );
+        ctx.closePath();
+        ctx.fill();
 
         // Draw thrust vector (yellow)
         if (shuttleThrust > 0) {
@@ -502,8 +707,42 @@ export class SupercruiseMapCanvas extends Component {
       ctx.stroke();
     }
 
-    // Draw altitude legend
-    this.drawAltitudeLegend(ctx, canvasWidth, canvasHeight);
+    // Draw hovered object highlight
+    if (this.hoveredObjectId) {
+      const hovItem = drawItems.find(i => i.obj && i.obj.id === this.hoveredObjectId);
+      if (hovItem) {
+        const hr = Math.max(6, (hovItem.obj.radius || 5) * hovItem.projected.scale + 4);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.arc(hovItem.projected.x, hovItem.projected.y, hr, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Info tooltip near object
+        const tipX = hovItem.projected.x + hr + 8;
+        const tipY = hovItem.projected.y - 20;
+        const tipW = 160;
+        const tipH = 48;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(tipX, tipY, tipW, tipH);
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(tipX, tipY, tipW, tipH);
+        ctx.fillStyle = '#fff';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(hovItem.obj.name || 'Unknown', tipX + 4, tipY + 14);
+        ctx.fillStyle = '#aaa';
+        ctx.font = '10px monospace';
+        ctx.fillText(`X:${hovItem.worldX.toFixed(0)} Y:${hovItem.worldY.toFixed(0)}`, tipX + 4, tipY + 28);
+        ctx.fillText(`Z:${hovItem.worldZ.toFixed(0)} R:${hovItem.obj.radius || 5}`, tipX + 4, tipY + 40);
+      }
+    }
+
+    // Draw HUD overlay
+    this.drawHUD(ctx, canvasWidth, canvasHeight);
   }
 
   drawArrowHead(ctx, fromX, fromY, toX, toY, color) {
@@ -547,44 +786,352 @@ export class SupercruiseMapCanvas extends Component {
   }
 
   drawAltitudeLegend(ctx, canvasWidth, canvasHeight) {
-    const x = canvasWidth - 130;
-    const y = 10;
+    // Replaced by mini-altimeter in HUD
+  }
 
-    ctx.fillStyle = 'rgba(10, 10, 26, 0.85)';
-    ctx.fillRect(x, y, 120, 85);
-    ctx.strokeStyle = '#444';
+  /**
+   * Draw Homeworld-style HUD overlay: 3D sphere compass at bottom center, speed indicators
+   */
+  drawHUD(ctx, canvasWidth, canvasHeight) {
+    const {
+      shuttleAngle = 0,
+      shuttlePitch = 0,
+      shuttleThrust = 0,
+      shuttleHeading = 0,
+      shuttleHeadingPitch = 0,
+      shuttleMaxSpeed = 50,
+      shuttleVelX = 0,
+      shuttleVelY = 0,
+      shuttleVelZ = 0,
+      shuttleAlt = 0,
+      cameraYaw = 45,
+      cameraPitch = 30,
+      isDocked = false,
+      autopilotEnabled = false,
+      ourObject = null,
+    } = this.props;
+
+    const velMag = Math.sqrt(shuttleVelX * shuttleVelX + shuttleVelY * shuttleVelY + shuttleVelZ * shuttleVelZ);
+
+    // === Bottom-center: 3D Sphere Compass ===
+    const compassX = canvasWidth / 2;
+    const compassY = canvasHeight - 50;
+    const compassRadius = 45;
+    this.drawSphereCompass(
+      ctx,
+      compassX,
+      compassY,
+      compassRadius,
+      cameraYaw,
+      cameraPitch,
+      shuttleHeading,
+      shuttleHeadingPitch,
+      shuttleThrust,
+      shuttleAngle,
+      velMag,
+      shuttleVelX,
+      shuttleVelY,
+      shuttleVelZ
+    );
+
+    // === Top-left: Speed & thrust info ===
+    const bx = 10;
+    const by = 10;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(bx, by, 140, 70);
+    ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, 120, 85);
+    ctx.strokeRect(bx, by, 140, 70);
+
+    // Speed
+    ctx.fillStyle = '#00ffff';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`SPD: ${velMag.toFixed(1)} km/s`, bx + 6, by + 18);
+
+    // Speed bar
+    const speedFrac = Math.min(velMag / shuttleMaxSpeed, 1);
+    ctx.fillStyle = '#004444';
+    ctx.fillRect(bx + 6, by + 24, 128, 8);
+    ctx.fillStyle = velMag >= shuttleMaxSpeed * 0.9 ? '#ff4444' : '#00ffff';
+    ctx.fillRect(bx + 6, by + 24, 128 * speedFrac, 8);
+
+    // Thrust
+    ctx.fillStyle = shuttleThrust > 0 ? '#ffff00' : '#666';
+    ctx.fillText(`THR: ${shuttleThrust}%`, bx + 6, by + 48);
+
+    // Thrust bar
+    ctx.fillStyle = '#444400';
+    ctx.fillRect(bx + 6, by + 54, 128, 8);
+    ctx.fillStyle = shuttleThrust > 0 ? '#ffff00' : '#666';
+    ctx.fillRect(bx + 6, by + 54, 128 * (shuttleThrust / 100), 8);
+
+    // Altitude
+    ctx.fillStyle = '#ff88ff';
+    ctx.fillText(`ALT: ${shuttleAlt >= 0 ? '+' : ''}${shuttleAlt.toFixed(0)}`, bx + 6, by + 66);
+
+    // === Top-right: Heading & Pitch numeric ===
+    const tx = canvasWidth - 150;
+    const ty = 10;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(tx, ty, 140, 50);
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(tx, ty, 140, 50);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '11px sans-serif';
+    ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Altitude', x + 8, y + 16);
+    ctx.fillText(`HDG: ${Math.round(shuttleHeading)}°`, tx + 6, ty + 20);
+    ctx.fillText(`PIT: ${Math.round(shuttleHeadingPitch)}°`, tx + 6, ty + 38);
 
-    ctx.strokeStyle = '#ff88ff';
+    // === Status indicator ===
+    if (isDocked) {
+      ctx.fillStyle = 'rgba(200, 0, 0, 0.8)';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('DOCKED', canvasWidth / 2, 25);
+    } else if (autopilotEnabled) {
+      ctx.fillStyle = 'rgba(0, 200, 0, 0.8)';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('AUTOPILOT ACTIVE', canvasWidth / 2, 25);
+    }
+  }
+
+  /**
+   * Draw 3D sphere compass at bottom center
+   * Shows ship orientation as a 3D wireframe sphere with heading indicator
+   */
+  drawSphereCompass(ctx, cx, cy, radius, cameraYaw, cameraPitch, shipHeading, shipHeadingPitch, shuttleThrust, shuttleAngle, velMag, velX, velY, velZ) {
+    const yawRad = cameraYaw * DEG2RAD;
+    const pitchRad = cameraPitch * DEG2RAD;
+    const cosY = Math.cos(yawRad);
+    const sinY = Math.sin(yawRad);
+    const cosP = Math.cos(pitchRad);
+    const sinP = Math.sin(pitchRad);
+    const sphereScale = radius * 0.85;
+
+    const rotateToCamera = ({ x, y, z }) => {
+      const x1 = x * cosY - y * sinY;
+      const y1 = x * sinY + y * cosY;
+      const z1 = z;
+      return {
+        x: x1,
+        y: y1 * cosP - z1 * sinP,
+        z: y1 * sinP + z1 * cosP,
+      };
+    };
+
+    const project = ({ x, y, z }) => ({
+      x: cx + x * sphereScale,
+      y: cy - z * sphereScale,
+      depth: y,
+    });
+
+    const projectWorld = (point) => project(rotateToCamera(point));
+
+    const drawArrow = (end, color, width = 2, dash = []) => {
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      if (dash.length) ctx.setLineDash(dash);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      if (dash.length) ctx.setLineDash([]);
+
+      const angle = Math.atan2(end.y - cy, end.x - cx);
+      const headSize = 6;
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - headSize * Math.cos(angle - 0.4), end.y - headSize * Math.sin(angle - 0.4));
+      ctx.lineTo(end.x - headSize * Math.cos(angle + 0.4), end.y - headSize * Math.sin(angle + 0.4));
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    const normalize = (v) => {
+      const len = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+      return len > 0 ? { x: v.x / len, y: v.y / len, z: v.z / len } : { x: 0, y: 0, z: 0 };
+    };
+
+    // Background glow
+    const glowGradient = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius * 1.3);
+    glowGradient.addColorStop(0, 'rgba(0, 100, 150, 0.3)');
+    glowGradient.addColorStop(1, 'transparent');
+    ctx.fillStyle = glowGradient;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 1.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sphere background
+    ctx.fillStyle = 'rgba(0, 20, 40, 0.85)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sphere border
+    ctx.strokeStyle = 'rgba(100, 150, 200, 0.65)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(x + 15, y + 30);
-    ctx.lineTo(x + 15, y + 60);
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.fillStyle = '#ff88ff';
+    // Draw XY plane disk
+    const planePoints = [];
+    for (let a = 0; a <= 360; a += 10) {
+      const rad = a * DEG2RAD;
+      planePoints.push(projectWorld({ x: Math.cos(rad), y: Math.sin(rad), z: 0 }));
+    }
+    ctx.fillStyle = 'rgba(0, 140, 220, 0.08)';
     ctx.beginPath();
-    ctx.arc(x + 15, y + 30, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x + 15, y + 60, 3, 0, Math.PI * 2);
+    planePoints.forEach((pt, index) => {
+      if (index === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '10px sans-serif';
-    ctx.fillText('+ above plane', x + 24, y + 34);
-    ctx.fillText('− below plane', x + 24, y + 64);
+    ctx.strokeStyle = 'rgba(120, 190, 255, 0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    planePoints.forEach((pt, index) => {
+      if (index === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-    ctx.fillStyle = '#888';
+    // Draw X and Y axes on the XY plane
+    const xPos = projectWorld({ x: 1, y: 0, z: 0 });
+    const xNeg = projectWorld({ x: -1, y: 0, z: 0 });
+    const yPos = projectWorld({ x: 0, y: 1, z: 0 });
+    const yNeg = projectWorld({ x: 0, y: -1, z: 0 });
+
+    ctx.strokeStyle = 'rgba(180, 220, 255, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xNeg.x, xNeg.y);
+    ctx.lineTo(xPos.x, xPos.y);
+    ctx.moveTo(yNeg.x, yNeg.y);
+    ctx.lineTo(yPos.x, yPos.y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#88ccff';
     ctx.font = '9px sans-serif';
-    ctx.fillText('Z height shown on all objects', x + 4, y + 80);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('X', xPos.x, xPos.y - 10);
+    ctx.fillText('-X', xNeg.x, xNeg.y + 10);
+    ctx.fillText('Y', yPos.x + 10, yPos.y);
+    ctx.fillText('-Y', yNeg.x - 10, yNeg.y);
+
+    // Draw Z axis indicator
+    const zPos = projectWorld({ x: 0, y: 0, z: 1 });
+    const zNeg = projectWorld({ x: 0, y: 0, z: -1 });
+    ctx.strokeStyle = 'rgba(255, 180, 120, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(zNeg.x, zNeg.y);
+    ctx.lineTo(zPos.x, zPos.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(zPos.x, zPos.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffcc88';
+    ctx.fill();
+    ctx.fillText('Z', zPos.x, zPos.y - 10);
+
+    // Draw sphere wireframe using camera orientation
+    ctx.strokeStyle = 'rgba(100, 150, 200, 0.2)';
+    ctx.lineWidth = 1;
+    for (let lat = -60; lat <= 60; lat += 30) {
+      const latRad = lat * DEG2RAD;
+      const ring = [];
+      for (let lon = 0; lon <= 360; lon += 10) {
+        const lonRad = lon * DEG2RAD;
+        ring.push(projectWorld({
+          x: Math.cos(latRad) * Math.cos(lonRad),
+          y: Math.cos(latRad) * Math.sin(lonRad),
+          z: Math.sin(latRad),
+        }));
+      }
+      ctx.beginPath();
+      ring.forEach((pt, index) => {
+        if (index === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+    }
+
+    // Ship heading vector
+    const headingRad = shipHeading * DEG2RAD;
+    const pitchHeadingRad = shipHeadingPitch * DEG2RAD;
+    const shipDir = normalize({
+      x: Math.cos(pitchHeadingRad) * Math.cos(headingRad),
+      y: Math.cos(pitchHeadingRad) * Math.sin(headingRad),
+      z: Math.sin(pitchHeadingRad),
+    });
+    const shipEnd = projectWorld(shipDir);
+    drawArrow(shipEnd, '#00ff80', 3);
+    ctx.fillStyle = '#00ff80';
+    ctx.fillText('NOSE', shipEnd.x, shipEnd.y - 12);
+
+    // Velocity vector
+    if (velMag > 0.5) {
+      const velDir = normalize({ x: velX, y: velY, z: velZ });
+      const velEnd = projectWorld(velDir);
+      drawArrow(velEnd, '#00ffff', 2, [3, 3]);
+      ctx.fillStyle = '#00ffff';
+      ctx.fillText('VEL', velEnd.x, velEnd.y - 12);
+    }
+
+    // Thrust vector
+    if (shuttleThrust > 0) {
+      const thrustYawRad = shuttleAngle * DEG2RAD;
+      const thrustPitchRad = shipHeadingPitch * DEG2RAD;
+      const thrDir = normalize({
+        x: Math.cos(thrustPitchRad) * Math.cos(thrustYawRad),
+        y: Math.cos(thrustPitchRad) * Math.sin(thrustYawRad),
+        z: Math.sin(thrustPitchRad),
+      });
+      const thrEnd = projectWorld(thrDir);
+      drawArrow(thrEnd, '#ffff00', 2, [5, 4]);
+      ctx.fillStyle = '#ffff00';
+      ctx.fillText('THR', thrEnd.x, thrEnd.y + 14);
+    }
+
+    // Cardinal labels projected through camera rotation
+    const cardinalDirs = [
+      { label: 'N', vector: { x: 0, y: 1, z: 0 } },
+      { label: 'E', vector: { x: 1, y: 0, z: 0 } },
+      { label: 'S', vector: { x: 0, y: -1, z: 0 } },
+      { label: 'W', vector: { x: -1, y: 0, z: 0 } },
+    ];
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px sans-serif';
+    cardinalDirs.forEach((card) => {
+      const pos = projectWorld(card.vector);
+      ctx.fillText(card.label, pos.x, pos.y);
+    });
+
+    // Center dot with interior highlight
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pitch text below sphere
+    ctx.fillStyle = '#aaa';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`PIT: ${Math.round(shipHeadingPitch)}°`, cx, cy + radius + 14);
   }
+
+
 
   handleMouseDown = (e) => {
     if (e.button === 0) {
@@ -597,11 +1144,52 @@ export class SupercruiseMapCanvas extends Component {
   };
 
   handleMouseMove = (e) => {
-    if (!this.dragging || !this.lastDragPos || !this.props.onRotate) return;
-    const dx = e.clientX - this.lastDragPos.x;
-    const dy = e.clientY - this.lastDragPos.y;
-    this.lastDragPos = { x: e.clientX, y: e.clientY };
-    this.props.onRotate(dx * 0.3, dy * 0.25);
+    if (this.dragging && this.lastDragPos && this.props.onRotate) {
+      const dx = e.clientX - this.lastDragPos.x;
+      const dy = e.clientY - this.lastDragPos.y;
+      this.lastDragPos = { x: e.clientX, y: e.clientY };
+      this.props.onRotate(dx * 0.3, dy * 0.25);
+    } else {
+      // Hover detection
+      const canvas = this.canvasRef;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      this.mouseScreenPos = { x: mx, y: my };
+
+      // Find closest object under cursor
+      const dpr = window.devicePixelRatio || 1;
+      let closestId = null;
+      let closestDist = 15; // pixel threshold
+      const { map_objects = [], ourObject = null, focusX = 0, focusY = 0, focusZ = 0 } = this.props;
+      for (const obj of map_objects) {
+        const posX = obj.position_x ?? 0;
+        const posY = obj.position_y ?? 0;
+        const posZ = obj.position_z ?? 0;
+        const isStatic = obj.render_mode === 'station' || obj.render_mode === 'planet';
+        const velX = isStatic ? 0 : (obj.velocity_x ?? 0);
+        const velY = isStatic ? 0 : (obj.velocity_y ?? 0);
+        const velZ = isStatic ? 0 : (obj.velocity_z ?? 0);
+        const elapsed = 0.3;
+        const wx = posX + velX * elapsed;
+        const wy = posY + velY * elapsed;
+        const wz = posZ + velZ * elapsed;
+        const proj = this.projectPoint(wx, wy, wz);
+        const dx2 = proj.x - mx;
+        const dy2 = proj.y - my;
+        const dist = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+        const hitRadius = Math.max(10, (obj.radius || 5) * proj.scale + 5);
+        if (dist < hitRadius && dist < closestDist) {
+          closestDist = dist;
+          closestId = obj.id;
+        }
+      }
+      if (this.hoveredObjectId !== closestId) {
+        this.hoveredObjectId = closestId;
+        canvas.style.cursor = closestId ? 'pointer' : 'grab';
+      }
+    }
   };
 
   handleMouseUp = () => {
@@ -626,7 +1214,10 @@ export class SupercruiseMapCanvas extends Component {
     const clickY = e.clientY - rect.top;
     const { worldX, worldY, worldZ } = this.unprojectToGroundPlane(clickX, clickY);
 
-    this.props.onMapClick(worldX, worldY, 'right', e.altKey);
+    // Check if clicking on an object
+    const objectId = this.hoveredObjectId;
+
+    this.props.onMapClick(worldX, worldY, 'right', e.altKey, objectId);
   };
 
   handleDoubleClick = (e) => {
@@ -638,7 +1229,9 @@ export class SupercruiseMapCanvas extends Component {
     const clickY = e.clientY - rect.top;
     const { worldX, worldY, worldZ } = this.unprojectToGroundPlane(clickX, clickY);
 
-    this.props.onMapClick(worldX, worldY, 'double', e.altKey);
+    const objectId = this.hoveredObjectId;
+
+    this.props.onMapClick(worldX, worldY, 'double', e.altKey, objectId);
   };
 
   render() {

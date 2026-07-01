@@ -71,6 +71,12 @@
 		"name" = name,
 		"position" = position.Copy(),
 		"velocity" = velocity.Copy(),
+		"position_x" = position[1],
+		"position_y" = position[2],
+		"position_z" = position[3],
+		"velocity_x" = velocity[1],
+		"velocity_y" = velocity[2],
+		"velocity_z" = velocity[3],
 		"radius" = radius,
 		"render_mode" = render_mode,
 		"vel_mult" = 1, // Velocity multiplier for UI interpolation

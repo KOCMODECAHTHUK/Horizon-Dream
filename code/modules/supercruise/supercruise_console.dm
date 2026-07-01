@@ -11,6 +11,8 @@
 
 	/// The shuttle we're controlling
 	var/datum/orbital_object/shuttle/controlled_shuttle
+	/// Last action error message for UI display
+	var/last_action_error = ""
 
 /obj/machinery/computer/supercruise/Initialize(mapload)
 	. = ..()
@@ -75,6 +77,9 @@
 		data["shuttleAngle"] = controlled_shuttle.thrust_angle
 		data["shuttlePitch"] = controlled_shuttle.thrust_pitch
 		data["shuttleThrust"] = controlled_shuttle.thrust_power
+		data["shuttleHeading"] = controlled_shuttle.heading
+		data["shuttleHeadingPitch"] = controlled_shuttle.heading_pitch
+		data["shuttleMaxSpeed"] = controlled_shuttle.max_speed
 		data["shuttleVelocity"] = controlled_shuttle.get_velocity()
 		data["shuttlePosition"] = controlled_shuttle.get_position()
 		data["shuttleVelX"] = controlled_shuttle.get_velocity()[1]
@@ -146,6 +151,10 @@
 		data["currentSystemName"] = controlled_shuttle.star_system?.system_name || "Unknown"
 	else
 		data["linkedToShuttle"] = FALSE
+
+	// Send last action error to UI (then clear it)
+	data["lastActionError"] = last_action_error
+	last_action_error = ""
 
 	return data
 
@@ -239,28 +248,61 @@
 				return FALSE
 			controlled_shuttle.kill_thrust()
 			return TRUE
+
+		if("toggle_rotate_left")
+			if(is_docked)
+				return FALSE
+			var/enable = text2num(params["enable"])
+			controlled_shuttle.toggle_rotate_left(enable)
+			return TRUE
+
+		if("toggle_rotate_right")
+			if(is_docked)
+				return FALSE
+			var/enable = text2num(params["enable"])
+			controlled_shuttle.toggle_rotate_right(enable)
+			return TRUE
+
+		if("toggle_rotate_pitch_up")
+			if(is_docked)
+				return FALSE
+			var/enable = text2num(params["enable"])
+			controlled_shuttle.toggle_rotate_pitch_up(enable)
+			return TRUE
+
+		if("toggle_rotate_pitch_down")
+			if(is_docked)
+				return FALSE
+			var/enable = text2num(params["enable"])
+			controlled_shuttle.toggle_rotate_pitch_down(enable)
+			return TRUE
 		if("dock")
 			var/object_id = params["stationId"]
 			if(!object_id)
+				last_action_error = "No target specified"
 				return FALSE
 
 			// Find object in the shuttle's current system
 			var/datum/overmap_star_system/current_system = SSsupercruise.get_current_system(controlled_shuttle)
 			var/datum/orbital_object/target_object = SSsupercruise.find_object(object_id, current_system)
 			if(!target_object)
+				last_action_error = "Object not found in current system"
 				to_chat(usr, span_warning("Object not found in current system!"))
 				return FALSE
 
 			var/interact_result = target_object.interact(controlled_shuttle, usr)
 			if(interact_result)
-				to_chat(usr, span_warning("Interaction failed: [interact_result]"))
+				last_action_error = interact_result
+				to_chat(usr, span_warning("Docking failed: [interact_result]"))
 			return TRUE
 
 		if("undock")
 			var/undock_result = controlled_shuttle.undock_from_station()
 			if(undock_result)
+				last_action_error = undock_result
 				to_chat(usr, span_warning("Undocking failed: [undock_result]"))
 			else
+				last_action_error = ""
 				to_chat(usr, span_notice("Undocked successfully"))
 			return TRUE
 

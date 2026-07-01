@@ -96,7 +96,7 @@
 			// Random position within system bounds
 			x_pos = rand(min_height, max_height)
 			y_pos = rand(min_height, max_height)
-			z_pos = rand(min_height, max_height)
+			z_pos = rand(min_height, max_height / 3)
 
 			// Check if too close to any existing object in this system
 			valid_position = TRUE
