@@ -1,3 +1,4 @@
+// CanvasHUD.jsx
 import { DEG2RAD } from './MapUtils';
 
 /**
@@ -141,9 +142,9 @@ function drawEquatorSegments(ctx, projectWorld, pointFn) {
 }
 
 /**
- * Отрисовка 3D компаса
+ * Отрисовка 3D компаса и индикаторов скорости/тяги
  */
-function drawSphereCompass(ctx, cx, cy, radius, cameraYaw, cameraPitch, shipHeading, shipHeadingPitch, shuttleThrust, shuttleAngle, velMag, velX, velY, velZ) {
+function drawSphereCompass(ctx, cx, cy, radius, cameraYaw, cameraPitch, shipHeading, shipHeadingPitch, shuttleThrust, shuttleAngle, velMag, velX, velY, velZ, maxSpeed) {
   const cosY = Math.cos(cameraYaw * DEG2RAD);
   const sinY = Math.sin(cameraYaw * DEG2RAD);
   const cosP = Math.cos(cameraPitch * DEG2RAD);
@@ -163,6 +164,7 @@ function drawSphereCompass(ctx, cx, cy, radius, cameraYaw, cameraPitch, shipHead
     return len > 0 ? { x: v.x / len, y: v.y / len, z: v.z / len } : { x: 0, y: 0, z: 0 };
   };
 
+  // Сфера компаса
   ctx.fillStyle = 'rgba(50, 100, 255, 0.2)';
   ctx.beginPath();
   ctx.arc(cx, cy, sphereScale, 0, Math.PI * 2);
@@ -239,6 +241,89 @@ function drawSphereCompass(ctx, cx, cy, radius, cameraYaw, cameraPitch, shipHead
     ctx.globalAlpha = 1;
   }
 
+  // === ИНДИКАТОРЫ СКОРОСТИ И ТЯГИ ===
+  const barHeight = sphereScale * 1.8;
+  const barLength = 28;
+  const barTopY = cy - barHeight / 2;
+  const barBotY = cy + barHeight / 2;
+  const barWidth = 4;
+
+  ctx.lineCap = 'round';
+  ctx.lineWidth = barWidth;
+
+  // 1. Левая шкала (Скорость)
+  const velX = cx - sphereScale - barLength;
+  const velPct = Math.min(100, (velMag / (maxSpeed || 50)) * 100);
+  const velFillTop = barBotY - (barHeight) * (velPct / 100);
+
+  // Фон шкалы
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.beginPath();
+  ctx.moveTo(velX, barTopY);
+  ctx.lineTo(velX, barBotY);
+  ctx.stroke();
+
+  // Заполнение шкалы (голубым)
+  ctx.strokeStyle = '#00ffff';
+  ctx.beginPath();
+  ctx.moveTo(velX, barBotY);
+  ctx.lineTo(velX, velFillTop);
+  ctx.stroke();
+
+  // Маркер (треугольник, указывающий на текущее значение)
+  ctx.fillStyle = '#00ffff';
+  ctx.beginPath();
+  ctx.moveTo(velX - 2, velFillTop);
+  ctx.lineTo(velX - 8, velFillTop - 4);
+  ctx.lineTo(velX - 8, velFillTop + 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Текст (Значение и единицы измерения)
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${Math.round(velMag * 10)}`, velX - 12, barTopY + 4); // Умножаем на 10 для эстетики км/ч
+  ctx.font = '8px monospace';
+  ctx.fillStyle = 'rgba(0, 255, 255, 0.7)';
+  ctx.fillText('км/ч', velX - 12, barTopY + 14);
+
+  // 2. Правая шкала (Ускорение/Тяга)
+  const thrX = cx + sphereScale + barLength;
+  const thrPct = Math.min(100, shuttleThrust);
+  const thrFillTop = barBotY - (barHeight) * (thrPct / 100);
+
+  // Фон шкалы
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.beginPath();
+  ctx.moveTo(thrX, barTopY);
+  ctx.lineTo(thrX, barBotY);
+  ctx.stroke();
+
+  // Заполнение шкалы (желтым)
+  ctx.strokeStyle = '#ffff00';
+  ctx.beginPath();
+  ctx.moveTo(thrX, barBotY);
+  ctx.lineTo(thrX, thrFillTop);
+  ctx.stroke();
+
+  // Маркер (треугольник, указывающий на текущее значение)
+  ctx.fillStyle = '#ffff00';
+  ctx.beginPath();
+  ctx.moveTo(thrX + 2, thrFillTop);
+  ctx.lineTo(thrX + 8, thrFillTop - 4);
+  ctx.lineTo(thrX + 8, thrFillTop + 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Текст (Значение и единицы измерения)
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffff00';
+  ctx.fillText(`${Math.round(thrPct)}`, thrX + 12, barTopY + 4);
+  ctx.font = '8px monospace';
+  ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
+  ctx.fillText('тяга %', thrX + 12, barTopY + 14);
+
   ctx.fillStyle = '#aaa';
   ctx.font = '9px monospace';
   ctx.textAlign = 'center';
@@ -263,6 +348,7 @@ export function drawHUD(ctx, props, canvasWidth, canvasHeight) {
   const {
     shuttleAngle = 0, shuttleThrust = 0, shuttleHeading = 0, shuttleHeadingPitch = 0,
     shuttleVelX = 0, shuttleVelY = 0, shuttleVelZ = 0,
+    shuttleMaxSpeed = 50,
     cameraYaw = 45, cameraPitch = 30, isDocked = false, autopilotEnabled = false, hasPendingTarget = false,
     fuelLevel = 100, fuelMax = 100,
     targetDistance = null, targetETA = null,
@@ -276,7 +362,7 @@ export function drawHUD(ctx, props, canvasWidth, canvasHeight) {
   const compassY = canvasHeight - 50;
   const compassRadius = 45;
   drawSphereCompass(ctx, compassX, compassY, compassRadius, cameraYaw, cameraPitch,
-    shuttleHeading, shuttleHeadingPitch, shuttleThrust, shuttleAngle, velMag, shuttleVelX, shuttleVelY, shuttleVelZ);
+    shuttleHeading, shuttleHeadingPitch, shuttleThrust, shuttleAngle, velMag, shuttleVelX, shuttleVelY, shuttleVelZ, shuttleMaxSpeed);
 
   // --- Левая панель (Топливо / Тяга) ---
   const lx = 10;
@@ -295,13 +381,6 @@ export function drawHUD(ctx, props, canvasWidth, canvasHeight) {
   ctx.fillRect(lx + 6, ly + 20, pw - 12, 8);
   ctx.fillStyle = fuelPct > 20 ? '#ffaa00' : '#ff3333';
   ctx.fillRect(lx + 6, ly + 20, (pw - 12) * (fuelPct / 100), 8);
-
-  ctx.fillStyle = '#ffff00';
-  ctx.fillText(`THR: ${shuttleThrust}%`, lx + 6, ly + 42);
-  ctx.fillStyle = '#333300';
-  ctx.fillRect(lx + 6, ly + 46, pw - 12, 8);
-  ctx.fillStyle = '#ffff00';
-  ctx.fillRect(lx + 6, ly + 46, (pw - 12) * (shuttleThrust / 100), 8);
 
   // --- Правая панель (Цели / Радар) ---
   const rx = canvasWidth - 145;
