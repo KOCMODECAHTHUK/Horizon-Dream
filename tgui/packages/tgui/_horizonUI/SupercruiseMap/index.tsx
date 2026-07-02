@@ -130,7 +130,7 @@ export const SupercruiseMap = () => {
                   {actionError && <NoticeBox color="red" mb={0.5} fontSize="0.8em">{actionError}</NoticeBox>}
                   <Box bold mb={0.5} fontSize="1em" color="cyan">{shuttleName}</Box>
                   <Box mb={0.5} fontSize="0.8em" color="label">
-                    POS {ourPos[0]?.toFixed(0)},{ourPos[1]?.toFixed(0)},{ourPos[2]?.toFixed(0)}
+                    POS: {ourPos[0]?.toFixed(0)}, {ourPos[1]?.toFixed(0)}, {ourPos[2]?.toFixed(0)}
                   </Box>
 
                   <FlightControls

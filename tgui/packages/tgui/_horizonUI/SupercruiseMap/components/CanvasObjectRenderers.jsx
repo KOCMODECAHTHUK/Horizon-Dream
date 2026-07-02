@@ -26,7 +26,7 @@ export function drawAltitudeLine(ctx, item) {
 
   if (Math.abs(altitude) > 0.5 || isOurShuttle) {
     ctx.strokeStyle = '#ff88ff';
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.15;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(ground.x, ground.y);
@@ -597,20 +597,39 @@ function drawShuttleVectors(ctx, item, props, projectPoint) {
 }
 
 /**
+ * Проверка пересечения прямоугольников (для текста)
+ */
+function checkLabelCollision(bbox, drawnLabels) {
+  for (const l of drawnLabels) {
+    if (bbox.x < l.x + l.w && bbox.x + bbox.w > l.x && bbox.y < l.y + l.h && bbox.y + bbox.h > l.y) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Отрисовка текстовых подписей (имя, высота)
  */
-function drawObjectLabels(ctx, item, isDocked, r) {
+function drawObjectLabels(ctx, item, isDocked, r, drawnLabels) {
   const { obj, projected, worldZ, color, isOurShuttle } = item;
   const altitude = worldZ;
 
   if (isOurShuttle) {
-    const altLabel = `Z:${altitude >= 0 ? '+' : ''}${altitude.toFixed(0)}`;
+    const altLabel = ``;
     ctx.fillStyle = '#ff88ff';
     ctx.font = `${Math.min(10 * projected.scale, 11)}px monospace`;
     ctx.textAlign = 'left';
     ctx.globalAlpha = 0.85;
     const labelOffset = -(r + 8);
-    ctx.fillText(altLabel, projected.x + labelOffset, projected.y + 3);
+
+    const textWidth = ctx.measureText(altLabel).width;
+    const bbox = { x: projected.x + labelOffset, y: projected.y - 8, w: textWidth, h: 12 };
+
+    if (!checkLabelCollision(bbox, drawnLabels)) {
+      ctx.fillText(altLabel, projected.x + labelOffset, projected.y + 3);
+      drawnLabels.push(bbox);
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -618,16 +637,26 @@ function drawObjectLabels(ctx, item, isDocked, r) {
     ctx.fillStyle = color;
     ctx.font = `${Math.min(12 * projected.scale, 13)}px sans-serif`;
     ctx.textAlign = 'left';
-    ctx.fillText(obj.name || 'Unknown', projected.x + r + 4, projected.y + 4);
+    const labelText = obj.name || 'Unknown';
+    const textWidth = ctx.measureText(labelText).width;
+    const bbox = { x: projected.x + r + 4, y: projected.y - 8, w: textWidth, h: 12 };
+    if (!checkLabelCollision(bbox, drawnLabels)) {
+      ctx.fillText(labelText, projected.x + r + 4, projected.y + 4);
+      drawnLabels.push(bbox);
+    }
   }
 }
 
 /**
  * Главный диспетчер отрисовки объекта
  */
-export function renderMapObject(ctx, item, props, projectPoint) {
+export function renderMapObject(ctx, item, props, projectPoint, drawnLabels) {
   const { obj, projected, isOurShuttle } = item;
   const r = Math.max(2, (obj.radius || 5) * projected.scale);
+
+  if (isOurShuttle && props.isDocked) {
+    return;
+  }
 
   drawHistoryTrail(ctx, item, projectPoint);
 
@@ -658,5 +687,5 @@ export function renderMapObject(ctx, item, props, projectPoint) {
     drawShuttleVectors(ctx, item, props, projectPoint);
   }
 
-  drawObjectLabels(ctx, item, props.isDocked, r);
+  drawObjectLabels(ctx, item, props.isDocked, r, drawnLabels);
 }

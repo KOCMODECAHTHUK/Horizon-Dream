@@ -114,9 +114,11 @@ export class SupercruiseMapCanvas extends Component {
 
     const drawItems = this.prepareDrawItems(map_objects);
 
+    const drawnLabels = [];
     for (const item of drawItems) {
       drawAltitudeLine(ctx, item);
-      renderMapObject(ctx, item, this.props, this.projectPoint.bind(this));
+      if (item.type !== 'object') continue;
+      renderMapObject(ctx, item, this.props, this.projectPoint.bind(this), drawnLabels);
     }
 
     this.drawTargetMarkers(ctx, focusZ);
@@ -245,11 +247,16 @@ export class SupercruiseMapCanvas extends Component {
     ctx.arc(hovItem.projected.x, hovItem.projected.y, hr, 0, Math.PI * 2);
     ctx.stroke();
     ctx.globalAlpha = 1;
+    const groupedItems = drawItems.filter(i =>
+      i.type === 'object' &&
+      Math.hypot(i.projected.x - hovItem.projected.x, i.projected.y - hovItem.projected.y) < 15
+    );
 
     const tipX = hovItem.projected.x + hr + 8;
     const tipY = hovItem.projected.y - 20;
     const tipW = 160;
-    const tipH = 48;
+
+    const tipH = 14 + groupedItems.length * 14 + 20;
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.fillRect(tipX, tipY, tipW, tipH);
@@ -257,15 +264,18 @@ export class SupercruiseMapCanvas extends Component {
     ctx.lineWidth = 1;
     ctx.strokeRect(tipX, tipY, tipW, tipH);
 
+    ctx.textAlign = 'left';
     ctx.fillStyle = '#fff';
     ctx.font = '11px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(hovItem.obj.name || 'Unknown', tipX + 4, tipY + 14);
+    groupedItems.forEach((gItem, index) => {
+      ctx.fillText(gItem.obj.name || 'Unknown', tipX + 4, tipY + 14 + index * 14);
+    });
 
     ctx.fillStyle = '#aaa';
     ctx.font = '10px monospace';
-    ctx.fillText(`X:${hovItem.worldX.toFixed(0)} Y:${hovItem.worldY.toFixed(0)} Z:${hovItem.worldZ.toFixed(0)}`, tipX + 4, tipY + 28);
-    ctx.fillText(`Radius:${hovItem.obj.radius || 5}`, tipX + 4, tipY + 40);
+    const coordsY = tipY + 14 + groupedItems.length * 14 + 4;
+    ctx.fillText(`X:${hovItem.worldX.toFixed(0)} Y:${hovItem.worldY.toFixed(0)} Z:${hovItem.worldZ.toFixed(0)}`, tipX + 4, coordsY);
+    ctx.fillText(`Radius:${hovItem.obj.radius || 5}`, tipX + 4, coordsY + 12);
   }
 
   drawZAdjustment(ctx, focusZ) {
