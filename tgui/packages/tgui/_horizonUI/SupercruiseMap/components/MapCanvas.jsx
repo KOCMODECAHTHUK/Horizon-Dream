@@ -3,6 +3,7 @@ import { FPS, DEG2RAD, projectPoint as projectPointUtil, unprojectToGroundPlane 
 import { renderMapObject, drawAltitudeLine } from './CanvasObjectRenderers';
 import { drawHUD } from './CanvasHUD';
 import { CanvasMouseController } from './CanvasMouseController';
+import { drawStarfield } from './CanvasBackground';
 
 /*
  * Renders orbital objects on a Canvas2D with full 3D projection.
@@ -106,6 +107,7 @@ export class SupercruiseMapCanvas extends Component {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    drawStarfield(ctx, this.props.cameraYaw || 45, this.props.cameraPitch || 30, canvasWidth, canvasHeight);
 
     this.drawGrid(ctx, canvasWidth, canvasHeight);
     this.drawOrbits(ctx, map_objects);
@@ -332,7 +334,7 @@ export class SupercruiseMapCanvas extends Component {
 
   drawGrid(ctx, canvasWidth, canvasHeight) {
     const gridSpacing = 50;
-    const gridRange = 300;
+    const gridRange = 3000;
     ctx.strokeStyle = '#303050';
     ctx.lineWidth = 0.5;
     ctx.globalAlpha = 0.4;
