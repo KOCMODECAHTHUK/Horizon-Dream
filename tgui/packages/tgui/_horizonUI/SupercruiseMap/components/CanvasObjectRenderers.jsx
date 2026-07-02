@@ -546,6 +546,7 @@ function drawShuttleVectors(ctx, item, props, projectPoint) {
     drawArrowHead(ctx, projected.x, projected.y, velEnd.x, velEnd.y, '#00ffff');
   }
 
+/*
   // Вектор курса (Heading)
   const headingRad = shuttleHeading * DEG2RAD;
   const headingPitchRad = shuttleHeadingPitch * DEG2RAD;
@@ -572,6 +573,7 @@ function drawShuttleVectors(ctx, item, props, projectPoint) {
   ctx.lineTo(headingEnd.x - 8 * Math.cos(triAngle + 0.4), headingEnd.y - 8 * Math.sin(triAngle + 0.4));
   ctx.closePath();
   ctx.fill();
+*/
 
   // Вектор тяги (Thrust vector)
   if (shuttleThrust > 0) {
