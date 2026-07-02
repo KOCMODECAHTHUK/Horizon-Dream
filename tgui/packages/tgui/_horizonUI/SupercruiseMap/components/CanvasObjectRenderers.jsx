@@ -228,80 +228,157 @@ function drawStation(ctx, item, props, projectPoint) {
 /**
  * Отрисовка планеты (3D-сфера с освещением)
  */
-function drawPlanet(ctx, item, r, props, projectPoint) {
-  const { projected, ground, color, obj, worldX, worldY, worldZ } = item;
-  const planetRadius = Math.max(8, (obj.radius || 20) * projected.scale);
+// Кэш для вершин сферы, чтобы не генерировать их каждый кадр
+let planetSphereCache = null;
 
-  ctx.globalAlpha = 0.2;
-  const glowGradient = ctx.createRadialGradient(ground.x, ground.y, planetRadius * 0.9, ground.x, ground.y, planetRadius * 1.5);
-  glowGradient.addColorStop(0, color);
-  glowGradient.addColorStop(1, 'transparent');
-  ctx.fillStyle = glowGradient;
-  ctx.beginPath();
-  ctx.arc(projected.x, projected.y, planetRadius * 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
+function getSphereMesh(segments = 10, rings = 5) {
+  if (planetSphereCache) return planetSphereCache;
 
-  // 2. Поиск источника света (звезды) для 3D-эффекта
-  let lightDir = { x: -0.5, y: -0.5 }; // Запасной вариант (свет сверху-слева)
-  const mapObjects = props.map_objects || [];
-  const star = mapObjects.find(o => o.render_mode === 'star' || o.render_mode === 'sun');
+  const verts = [];
+  const faces = [];
 
-  if (star) {
-    const sX = star.position_x ?? 0;
-    const sY = star.position_y ?? 0;
-    const sZ = star.position_z ?? 0;
-    const starProj = projectPoint(sX, sY, sZ);
-
-    const dx = starProj.x - projected.x;
-    const dy = starProj.y - projected.y;
-    const len = Math.hypot(dx, dy);
-    if (len > 0) {
-      lightDir = { x: dx / len, y: dy / len };
+  for (let y = 0; y <= rings; y++) {
+    const v = y / rings;
+    const phi = v * Math.PI;
+    for (let x = 0; x <= segments; x++) {
+      const u = x / segments;
+      const theta = u * Math.PI * 2;
+      verts.push({
+        x: Math.cos(theta) * Math.sin(phi),
+        y: Math.sin(theta) * Math.sin(phi),
+        z: Math.cos(phi)
+      });
     }
   }
 
-  // Координаты начала (светлая сторона) и конца (темная сторона) градиента
-  const lightX = projected.x + lightDir.x * planetRadius * 0.8;
-  const lightY = projected.y + lightDir.y * planetRadius * 0.8;
-  const darkX = projected.x - lightDir.x * planetRadius * 0.8;
-  const darkY = projected.y - lightDir.y * planetRadius * 0.8;
+  for (let y = 0; y < rings; y++) {
+    for (let x = 0; x < segments; x++) {
+      const i = y * (segments + 1) + x;
+      const a = i;
+      const b = i + 1;
+      const c = i + segments + 1;
+      const d = i + segments + 2;
+      faces.push([a, b, d]); // Треугольник 1
+      faces.push([a, d, c]); // Треугольник 2
+    }
+  }
 
-  // 3. Освещение сферы (Линейный градиент дня и ночи)
-  const sphereGradient = ctx.createLinearGradient(lightX, lightY, darkX, darkY);
-  sphereGradient.addColorStop(0, lightenColor(color, 40));
-  sphereGradient.addColorStop(0.4, color);
-  sphereGradient.addColorStop(0.7, darkenColor(color, 30));
-  sphereGradient.addColorStop(1, darkenColor(color, 80));
-
-  ctx.fillStyle = sphereGradient;
-  ctx.beginPath();
-  ctx.arc(projected.x, projected.y, planetRadius, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 4. Тонировка краев (Лимб) и блик
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(projected.x, projected.y, planetRadius, 0, Math.PI * 2);
-  ctx.clip();
-
-  // Затемняем края, чтобы подчеркнуть сферу
-  const limbGrad = ctx.createRadialGradient(projected.x, projected.y, planetRadius * 0.5, projected.x, projected.y, planetRadius);
-  limbGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  limbGrad.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
-  ctx.fillStyle = limbGrad;
-  ctx.fillRect(projected.x - planetRadius, projected.y - planetRadius, planetRadius * 2, planetRadius * 2);
-
-  // Атмосферный блик со стороны звезды
-  const specGrad = ctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, planetRadius * 0.6);
-  specGrad.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-  specGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-  ctx.fillStyle = specGrad;
-  ctx.fillRect(projected.x - planetRadius, projected.y - planetRadius, planetRadius * 2, planetRadius * 2);
-
-  ctx.restore();
+  planetSphereCache = { verts, faces };
+  return planetSphereCache;
 }
 
+/**
+ * Отрисовка планеты (Полноценный 3D-меш сферы)
+ */
+function drawPlanet(ctx, item, r, props, projectPoint) {
+  const { projected, ground, color, obj, worldX, worldY, worldZ } = item;
+  const worldRadius = obj.radius || 20;
+  const planetRadius2D = Math.max(8, worldRadius * projected.scale);
+
+  // 1. Атмосферный ореол (Halo) - оставляем 2D, это дешевле и выглядит отлично
+  ctx.globalAlpha = 0.3;
+  const glowGrad = ctx.createRadialGradient(ground.x, ground.y, planetRadius2D * 0.9, ground.x, ground.y, planetRadius2D * 1.4);
+  glowGrad.addColorStop(0, color);
+  glowGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = glowGrad;
+  ctx.beginPath();
+  ctx.arc(projected.x, projected.y, planetRadius2D * 1.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // 2. Получаем 3D-меш сферы
+  const { verts, faces } = getSphereMesh(24, 12); // 12 сегментов, 6 колец = 144 полигона
+
+  // 3. Проецируем все вершины в 2D
+  const projData = verts.map(v => {
+    const wx = worldX + v.x * worldRadius;
+    const wy = worldY + v.y * worldRadius;
+    const wz = worldZ + v.z * worldRadius;
+    return {
+      proj: projectPoint(wx, wy, wz),
+      local: v
+    };
+  });
+
+  // 4. Вычисляем 3D вектор света (от планеты к звезде)
+  let lightDir = { x: -0.5, y: -0.5, z: 0.8 };
+  const mapObjects = props.map_objects || [];
+  const star = mapObjects.find(o => o.render_mode === 'star' || o.render_mode === 'sun');
+  if (star) {
+    const dx = (star.position_x ?? 0) - worldX;
+    const dy = (star.position_y ?? 0) - worldY;
+    const dz = (star.position_z ?? 0) - worldZ;
+    const len = Math.hypot(dx, dy, dz);
+    if (len > 0) lightDir = { x: dx / len, y: dy / len, z: dz / len };
+  }
+
+  const renderFaces = [];
+
+  // 5. Обрабатываем грани
+  for (const face of faces) {
+    const p0 = projData[face[0]];
+    const p1 = projData[face[1]];
+    const p2 = projData[face[2]];
+
+    const avgDepth = (p0.proj.depth + p1.proj.depth + p2.proj.depth) / 3;
+
+    // Нормаль грани (усредняем локальные координаты вершин)
+    const nx = (p0.local.x + p1.local.x + p2.local.x) / 3;
+    const ny = (p0.local.y + p1.local.y + p2.local.y) / 3;
+    const nz = (p0.local.z + p1.local.z + p2.local.z) / 3;
+    const nLen = Math.hypot(nx, ny, nz);
+    const normal = { x: nx / nLen, y: ny / nLen, z: nz / nLen };
+
+    // Уровень освещенности (0.1 - глубокая ночь, 1.0 - яркий день)
+    let lightFactor = normal.x * lightDir.x + normal.y * lightDir.y + normal.z * lightDir.z;
+    lightFactor = Math.max(0.1, lightFactor);
+
+    let faceColor;
+    if (lightFactor > 0.5) {
+      faceColor = lightenColor(color, (lightFactor - 0.5) * 80);
+    } else {
+      faceColor = darkenColor(color, (0.5 - lightFactor) * 90);
+    }
+
+    renderFaces.push({
+      projVerts: [p0.proj, p1.proj, p2.proj],
+      faceColor,
+      avgDepth
+    });
+  }
+
+  // 6. Сортировка от дальней к ближней
+  renderFaces.sort((a, b) => b.avgDepth - a.avgDepth);
+
+  // 7. Отрисовка полигонов
+  for (const rf of renderFaces) {
+    ctx.fillStyle = rf.faceColor;
+    // Делаем цвет линий таким же, как цвет заливки.
+    // Это убирает "сетку" и маскирует микро-зазоры между треугольниками (anti-aliasing seams).
+    ctx.strokeStyle = rf.faceColor;
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    ctx.moveTo(rf.projVerts[0].x, rf.projVerts[0].y);
+    ctx.lineTo(rf.projVerts[1].x, rf.projVerts[1].y);
+    ctx.lineTo(rf.projVerts[2].x, rf.projVerts[2].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // 8. Легкое затемнение краев (Лимб) для объема
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(projected.x, projected.y, planetRadius2D, 0, Math.PI * 2);
+  ctx.clip();
+  const limbGrad = ctx.createRadialGradient(projected.x, projected.y, planetRadius2D * 0.6, projected.x, projected.y, planetRadius2D);
+  limbGrad.addColorStop(0, 'rgba(0,0,0,0)');
+  limbGrad.addColorStop(1, 'rgba(0,0,0,0.6)');
+  ctx.fillStyle = limbGrad;
+  ctx.fillRect(projected.x - planetRadius2D, projected.y - planetRadius2D, planetRadius2D * 2, planetRadius2D * 2);
+  ctx.restore();
+}
 /**
  * Отрисовка звезды / солнца
  */
