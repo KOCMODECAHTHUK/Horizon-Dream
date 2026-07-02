@@ -333,26 +333,54 @@ export class SupercruiseMapCanvas extends Component {
   }
 
   drawGrid(ctx, canvasWidth, canvasHeight) {
+    const { focusX = 0, focusY = 0 } = this.props;
     const gridSpacing = 50;
-    const gridRange = 3000;
+    const fadeRange = 1000;
+    const baseAlpha = 0.4;
+    const drawRange = fadeRange + gridSpacing;
+    const segments = 12;
     ctx.strokeStyle = '#303050';
     ctx.lineWidth = 0.5;
-    ctx.globalAlpha = 0.4;
+    const startX = Math.floor((focusX - drawRange) / gridSpacing) * gridSpacing;
+    const endX = Math.floor((focusX + drawRange) / gridSpacing) * gridSpacing;
+    const startY = Math.floor((focusY - drawRange) / gridSpacing) * gridSpacing;
+    const endY = Math.floor((focusY + drawRange) / gridSpacing) * gridSpacing;
+    for (let x = startX; x <= endX; x += gridSpacing) {
+      for (let s = 0; s < segments; s++) {
+        const y1 = startY + (s / segments) * (endY - startY);
+        const y2 = startY + ((s + 1) / segments) * (endY - startY);
+        const midY = (y1 + y2) / 2;
+        const dist = Math.hypot(x - focusX, midY - focusY);
+        const alpha = Math.max(0, 1 - dist / fadeRange) * baseAlpha;
 
-    for (let i = -gridRange; i <= gridRange; i += gridSpacing) {
-      const start = this.projectPoint(i, -gridRange, 0);
-      const end = this.projectPoint(i, gridRange, 0);
-      ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.stroke();
-
-      const start2 = this.projectPoint(-gridRange, i, 0);
-      const end2 = this.projectPoint(gridRange, i, 0);
-      ctx.beginPath();
-      ctx.moveTo(start2.x, start2.y);
-      ctx.lineTo(end2.x, end2.y);
-      ctx.stroke();
+        if (alpha > 0) {
+          ctx.globalAlpha = alpha;
+          const p1 = this.projectPoint(x, y1, 0);
+          const p2 = this.projectPoint(x, y2, 0);
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      }
+    }
+    for (let y = startY; y <= endY; y += gridSpacing) {
+      for (let s = 0; s < segments; s++) {
+        const x1 = startX + (s / segments) * (endX - startX);
+        const x2 = startX + ((s + 1) / segments) * (endX - startX);
+        const midX = (x1 + x2) / 2;
+        const dist = Math.hypot(midX - focusX, y - focusY);
+        const alpha = Math.max(0, 1 - dist / fadeRange) * baseAlpha;
+        if (alpha > 0) {
+          ctx.globalAlpha = alpha;
+          const p1 = this.projectPoint(x1, y, 0);
+          const p2 = this.projectPoint(x2, y, 0);
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      }
     }
     ctx.globalAlpha = 1;
   }
