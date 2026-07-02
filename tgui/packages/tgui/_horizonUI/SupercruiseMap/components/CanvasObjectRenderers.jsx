@@ -69,63 +69,237 @@ function drawHistoryTrail(ctx, item, projectPoint) {
 }
 
 /**
- * Отрисовка станции
+ * Отрисовка станции (3D-цилиндр из полигонов)
  */
-function drawStation(ctx, item, r) {
-  const { obj, projected, ground, color } = item;
-  const dockingRange = (obj.docking_range || 20) * projected.scale;
+function drawStation(ctx, item, props, projectPoint) {
+  const { obj, ground, color, worldX, worldY, worldZ } = item;
+  const stationRadius = obj.radius / 2 || 10;
+  const stationHeight = stationRadius * 2;
+  const dockRange = obj.docking_range || 30;
+  const dockProj = projectPoint(worldX + dockRange, worldY, 0);
+  const dockRadius2D = Math.hypot(dockProj.x - ground.x, dockProj.y - ground.y);
 
   ctx.strokeStyle = '#88aaff';
   ctx.lineWidth = 1;
   ctx.globalAlpha = 0.3;
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
-  ctx.arc(ground.x, ground.y, dockingRange, 0, Math.PI * 2);
+  ctx.arc(ground.x, ground.y, dockRadius2D, 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.globalAlpha = 1;
 
-  const halfR = r * 0.7;
+  // 2. Геометрия цилиндра (8 граней)
+  const segments = 8;
+  const topZ = worldZ + stationHeight / 2;
+  const botZ = worldZ - stationHeight / 2;
+  const topPts = [];
+  const botPts = [];
+  const walls = [];
+  for (let i = 0; i < segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    const x = worldX + Math.cos(a) * stationRadius;
+    const y = worldY + Math.sin(a) * stationRadius;
+    const tP = projectPoint(x, y, topZ);
+    const bP = projectPoint(x, y, botZ);
+    topPts.push(tP);
+    botPts.push(bP);
+  }
+
+  // Формируем 4-угольники (грани) и считаем их среднюю глубину
+  for (let i = 0; i < segments; i++) {
+    const ni = (i + 1) % segments;
+    const p1 = topPts[i], p2 = topPts[ni], p3 = botPts[ni], p4 = botPts[i];
+    const avgDepth = (p1.depth + p2.depth + p3.depth + p4.depth) / 4;
+    walls.push({ p1, p2, p3, p4, depth: avgDepth, angle: (i + 0.5) * (Math.PI * 2 / segments) });
+  }
+  // Сортируем стенки от дальних к ближним (Painter's algorithm)
+  walls.sort((a, b) => b.depth - a.depth);
+
+  // 3. Определяем, какая крышка ближе к камере
+  const topCenter = projectPoint(worldX, worldY, topZ);
+  const botCenter = projectPoint(worldX, worldY, botZ);
+  const topIsFront = topCenter.depth < botCenter.depth;
+
+  const backPts = topIsFront ? botPts : topPts;
+  const frontPts = topIsFront ? topPts : botPts;
+  const frontZ = topIsFront ? topZ : botZ;
+
+  // 4. Рисуем заднюю крышку (темная)
+  ctx.fillStyle = darkenColor(color, 60);
+  ctx.beginPath();
+  ctx.moveTo(backPts[0].x, backPts[0].y);
+  for (let i = 1; i < segments; i++) ctx.lineTo(backPts[i].x, backPts[i].y);
+  ctx.closePath();
+  ctx.fill();
+
+  // 5. Рисуем стенки цилиндра
+  for (const w of walls) {
+    // Симулируем свет
+    const lightFactor = Math.cos(w.angle - Math.PI);
+    let shade;
+    if (lightFactor > 0) {
+      shade = lightenColor(color, lightFactor * 40);
+    } else {
+      shade = darkenColor(color, Math.abs(lightFactor) * 50);
+    }
+
+    ctx.fillStyle = shade;
+    ctx.beginPath();
+    ctx.moveTo(w.p1.x, w.p1.y);
+    ctx.lineTo(w.p2.x, w.p2.y);
+    ctx.lineTo(w.p3.x, w.p3.y);
+    ctx.lineTo(w.p4.x, w.p4.y);
+    ctx.closePath();
+    ctx.fill();
+
+    // Разделительная линия между панелями
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(w.p1.x, w.p1.y);
+    ctx.lineTo(w.p4.x, w.p4.y);
+    ctx.stroke();
+  }
+
+  // 6. Рисуем переднюю крышку
   ctx.fillStyle = color;
-  ctx.strokeStyle = '#88aaff';
+  ctx.beginPath();
+  ctx.moveTo(frontPts[0].x, frontPts[0].y);
+  for (let i = 1; i < segments; i++) ctx.lineTo(frontPts[i].x, frontPts[i].y);
+  ctx.closePath();
+  ctx.fill();
+
+  // Контур передней крышки
+  ctx.strokeStyle = darkenColor(color, 30);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 7. Рисуем шлюз (3D-круг на передней крышке)
+  // Внешнее кольцо шлюза
+  const innerR1 = stationRadius * 0.5;
+  const innerPts1 = [];
+  for (let i = 0; i < segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    const x = worldX + Math.cos(a) * innerR1;
+    const y = worldY + Math.sin(a) * innerR1;
+    innerPts1.push(projectPoint(x, y, frontZ));
+  }
+  ctx.strokeStyle = darkenColor(color, 50);
   ctx.lineWidth = 2;
-  ctx.fillRect(projected.x - halfR, projected.y - halfR, halfR * 2, halfR * 2);
-  ctx.strokeRect(projected.x - halfR, projected.y - halfR, halfR * 2, halfR * 2);
+  ctx.beginPath();
+  ctx.moveTo(innerPts1[0].x, innerPts1[0].y);
+  for (let i = 1; i < segments; i++) ctx.lineTo(innerPts1[i].x, innerPts1[i].y);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Внутренняя часть шлюза (темное отверстие)
+  const innerR2 = stationRadius * 0.2;
+  const innerPts2 = [];
+  for (let i = 0; i < segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    const x = worldX + Math.cos(a) * innerR2;
+    const y = worldY + Math.sin(a) * innerR2;
+    innerPts2.push(projectPoint(x, y, frontZ));
+  }
+  ctx.fillStyle = darkenColor(color, 70);
+  ctx.beginPath();
+  ctx.moveTo(innerPts2[0].x, innerPts2[0].y);
+  for (let i = 1; i < segments; i++) ctx.lineTo(innerPts2[i].x, innerPts2[i].y);
+  ctx.closePath();
+  ctx.fill();
+
+  // 8. Мигающие сигнальные огни на краях цилиндра
+  const blink = (Math.sin(Date.now() / 1000) + 1) / 2;
+  const light1 = topIsFront ? topPts[0] : botPts[0];
+  const light2 = topIsFront ? topPts[segments / 2] : botPts[segments / 2];
+
+  ctx.fillStyle = `rgba(255, 50, 50, ${blink})`;
+  ctx.beginPath();
+  ctx.arc(light1.x, light1.y, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = `rgba(50, 150, 255, ${1 - blink})`;
+  ctx.beginPath();
+  ctx.arc(light2.x, light2.y, 2.5, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 /**
- * Отрисовка планеты
+ * Отрисовка планеты (3D-сфера с освещением)
  */
-function drawPlanet(ctx, item, r) {
-  const { projected, ground, color } = item;
-  const planetRadius = Math.max(8, (item.obj.radius || 20) * projected.scale);
+function drawPlanet(ctx, item, r, props, projectPoint) {
+  const { projected, ground, color, obj, worldX, worldY, worldZ } = item;
+  const planetRadius = Math.max(8, (obj.radius || 20) * projected.scale);
 
   ctx.globalAlpha = 0.2;
-  const glowGradient = ctx.createRadialGradient(ground.x, ground.y, 0, ground.x, ground.y, planetRadius * 1.5);
+  const glowGradient = ctx.createRadialGradient(ground.x, ground.y, planetRadius * 0.9, ground.x, ground.y, planetRadius * 1.5);
   glowGradient.addColorStop(0, color);
   glowGradient.addColorStop(1, 'transparent');
   ctx.fillStyle = glowGradient;
   ctx.beginPath();
-  ctx.arc(ground.x, ground.y, planetRadius * 1.5, 0, Math.PI * 2);
+  ctx.arc(projected.x, projected.y, planetRadius * 1.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  const sphereGradient = ctx.createRadialGradient(projected.x - r * 0.3, projected.y - r * 0.3, r * 0.2, projected.x, projected.y, r);
+  // 2. Поиск источника света (звезды) для 3D-эффекта
+  let lightDir = { x: -0.5, y: -0.5 }; // Запасной вариант (свет сверху-слева)
+  const mapObjects = props.map_objects || [];
+  const star = mapObjects.find(o => o.render_mode === 'star' || o.render_mode === 'sun');
+
+  if (star) {
+    const sX = star.position_x ?? 0;
+    const sY = star.position_y ?? 0;
+    const sZ = star.position_z ?? 0;
+    const starProj = projectPoint(sX, sY, sZ);
+
+    const dx = starProj.x - projected.x;
+    const dy = starProj.y - projected.y;
+    const len = Math.hypot(dx, dy);
+    if (len > 0) {
+      lightDir = { x: dx / len, y: dy / len };
+    }
+  }
+
+  // Координаты начала (светлая сторона) и конца (темная сторона) градиента
+  const lightX = projected.x + lightDir.x * planetRadius * 0.8;
+  const lightY = projected.y + lightDir.y * planetRadius * 0.8;
+  const darkX = projected.x - lightDir.x * planetRadius * 0.8;
+  const darkY = projected.y - lightDir.y * planetRadius * 0.8;
+
+  // 3. Освещение сферы (Линейный градиент дня и ночи)
+  const sphereGradient = ctx.createLinearGradient(lightX, lightY, darkX, darkY);
   sphereGradient.addColorStop(0, lightenColor(color, 40));
-  sphereGradient.addColorStop(0.3, color);
-  sphereGradient.addColorStop(1, darkenColor(color, 40));
+  sphereGradient.addColorStop(0.4, color);
+  sphereGradient.addColorStop(0.7, darkenColor(color, 30));
+  sphereGradient.addColorStop(1, darkenColor(color, 80));
+
   ctx.fillStyle = sphereGradient;
   ctx.beginPath();
   ctx.arc(projected.x, projected.y, planetRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.globalAlpha = 0.4;
+  // 4. Тонировка краев (Лимб) и блик
+  ctx.save();
   ctx.beginPath();
   ctx.arc(projected.x, projected.y, planetRadius, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
+  ctx.clip();
+
+  // Затемняем края, чтобы подчеркнуть сферу
+  const limbGrad = ctx.createRadialGradient(projected.x, projected.y, planetRadius * 0.5, projected.x, projected.y, planetRadius);
+  limbGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  limbGrad.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+  ctx.fillStyle = limbGrad;
+  ctx.fillRect(projected.x - planetRadius, projected.y - planetRadius, planetRadius * 2, planetRadius * 2);
+
+  // Атмосферный блик со стороны звезды
+  const specGrad = ctx.createRadialGradient(lightX, lightY, 0, lightX, lightY, planetRadius * 0.6);
+  specGrad.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+  specGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = specGrad;
+  ctx.fillRect(projected.x - planetRadius, projected.y - planetRadius, planetRadius * 2, planetRadius * 2);
+
+  ctx.restore();
 }
 
 /**
@@ -173,42 +347,154 @@ function drawStar(ctx, item, r) {
 }
 
 /**
- * Отрисовка нашего шаттла
+ * Отрисовка нашего шаттла (Полноценный 3D-меш)
  */
-function drawShuttle(ctx, item, r, shuttleHeading, shuttleThrust) {
-  const { projected, color } = item;
-  const shuttleWidth = r * 2;
-  const shuttleHeight = r * 1.5;
-  const headingRad = ((shuttleHeading || 0) - 90) * DEG2RAD;
+function drawShuttle(ctx, item, r, props, projectPoint) {
+  const { projected, color, worldX, worldY, worldZ, obj } = item;
+  const { shuttleHeading = 0, shuttleHeadingPitch = 0, shuttleThrust = 0 } = props;
 
-  ctx.save();
-  ctx.translate(projected.x, projected.y);
-  ctx.rotate(headingRad);
-  ctx.fillStyle = color || SHIP_COLOR;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(0, -shuttleHeight);
-  ctx.lineTo(-shuttleWidth * 0.5, shuttleHeight * 0.5);
-  ctx.lineTo(shuttleWidth * 0.5, shuttleHeight * 0.5);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
+  const scale = (obj.radius / 2 || 5);
 
+  // 1. Поиск источника света (звезды)
+  let lightDir = { x: -0.5, y: -0.5, z: 0.8 };
+  const mapObjects = props.map_objects || [];
+  const star = mapObjects.find(o => o.render_mode === 'star' || o.render_mode === 'sun');
+  if (star) {
+    const dx = (star.position_x ?? 0) - worldX;
+    const dy = (star.position_y ?? 0) - worldY;
+    const dz = (star.position_z ?? 0) - worldZ;
+    const len = Math.hypot(dx, dy, dz);
+    if (len > 0) lightDir = { x: dx / len, y: dy / len, z: dz / len };
+  }
+
+  // 2. Математика вращения (0 = Восток (+X), 90 = Север (+Y))
+  const yawRad = shuttleHeading * DEG2RAD;
+  const pitchRad = shuttleHeadingPitch * DEG2RAD;
+
+  const transformPoint = (lx, ly, lz) => {
+    let x1 = lx * Math.cos(pitchRad) - lz * Math.sin(pitchRad);
+    let z1 = lx * Math.sin(pitchRad) + lz * Math.cos(pitchRad);
+    let y1 = ly;
+    let x2 = x1 * Math.cos(yawRad) - y1 * Math.sin(yawRad);
+    let y2 = x1 * Math.sin(yawRad) + y1 * Math.cos(yawRad);
+    let z2 = z1;
+    return {
+      x: worldX + x2 * scale,
+      y: worldY + y2 * scale,
+      z: worldZ + z2 * scale
+    };
+  };
+
+  // 3. Вершины 3D-модели "Дротик" (Нос = +X, Правое крыло = -Y, Верх = +Z)
+  const v = {
+    nose:       transformPoint(2.5, 0, 0),
+    tailTop:    transformPoint(-1.5, 0, 0.6),
+    tailBot:    transformPoint(-1.5, 0, -0.6),
+    rightWing:  transformPoint(-0.5, -1.5, 0),
+    leftWing:   transformPoint(-0.5, 1.5, 0),
+  };
+
+  // 4. Грани корабля (Строго треугольники)
+  const faces = [
+    { verts: [v.nose, v.rightWing, v.tailTop] }, // Правый верх
+    { verts: [v.nose, v.tailTop, v.leftWing] },  // Левый верх
+    { verts: [v.nose, v.tailBot, v.rightWing] }, // Правый низ
+    { verts: [v.nose, v.leftWing, v.tailBot] },  // Левый низ
+    { verts: [v.rightWing, v.tailBot, v.tailTop] }, // Правый борт
+    { verts: [v.leftWing, v.tailTop, v.tailBot] }   // Левый борт
+  ];
+
+  const renderFaces = [];
+
+  for (const face of faces) {
+    const w0 = face.verts[0], w1 = face.verts[1], w2 = face.verts[2];
+    const cx = (w0.x + w1.x + w2.x) / 3;
+    const cy = (w0.y + w1.y + w2.y) / 3;
+    const cz = (w0.z + w1.z + w2.z) / 3;
+    const e1 = { x: w1.x - w0.x, y: w1.y - w0.y, z: w1.z - w0.z };
+    const e2 = { x: w2.x - w0.x, y: w2.y - w0.y, z: w2.z - w0.z };
+    let normal = {
+      x: e1.y * e2.z - e1.z * e2.y,
+      y: e1.z * e2.x - e1.x * e2.z,
+      z: e1.x * e2.y - e1.y * e2.x
+    };
+    const nLen = Math.hypot(normal.x, normal.y, normal.z);
+    if (nLen === 0) continue;
+    normal.x /= nLen; normal.y /= nLen; normal.z /= nLen;
+    const toCenter = { x: worldX - cx, y: worldY - cy, z: worldZ - cz };
+    if (normal.x * toCenter.x + normal.y * toCenter.y + normal.z * toCenter.z > 0) {
+      normal.x = -normal.x; normal.y = -normal.y; normal.z = -normal.z;
+    }
+    const proj0 = projectPoint(w0.x, w0.y, w0.z);
+    const proj1 = projectPoint(w1.x, w1.y, w1.z);
+    const proj2 = projectPoint(w2.x, w2.y, w2.z);
+    const avgDepth = (proj0.depth + proj1.depth + proj2.depth) / 3;
+    let lightFactor = normal.x * lightDir.x + normal.y * lightDir.y + normal.z * lightDir.z;
+    lightFactor = Math.max(0.2, lightFactor);
+    let faceColor = lightFactor > 0.5
+      ? lightenColor(color, (lightFactor - 0.5) * 80)
+      : darkenColor(color, (0.5 - lightFactor) * 80);
+    renderFaces.push({
+      projVerts: [proj0, proj1, proj2],
+      faceColor,
+      avgDepth
+    });
+  }
+
+  // 5. Сортировка от дальней к ближней (Без отсечения, просто закрашиваем)
+  renderFaces.sort((a, b) => b.avgDepth - a.avgDepth);
+
+  // 6. Отрисовка
+  for (const rf of renderFaces) {
+    ctx.fillStyle = rf.faceColor;
+    ctx.strokeStyle = darkenColor(rf.faceColor, 30);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(rf.projVerts[0].x, rf.projVerts[0].y);
+    ctx.lineTo(rf.projVerts[1].x, rf.projVerts[1].y);
+    ctx.lineTo(rf.projVerts[2].x, rf.projVerts[2].y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // 7. 3D-Пламя двигателей
   if (shuttleThrust > 0) {
     const flicker = 0.6 + 0.4 * Math.sin(Date.now() / 100);
-    ctx.globalAlpha = flicker;
-    ctx.fillStyle = '#ff6600';
+    const thrustLen = (shuttleThrust / 100) * 3 * flicker;
+
+    const engineL = transformPoint(-1.5, 0.3, 0);
+    const engineR = transformPoint(-1.5, -0.3, 0);
+    const endL = transformPoint(-1.5 - thrustLen, 0.3, 0);
+    const endR = transformPoint(-1.5 - thrustLen, -0.3, 0);
+    const endC = transformPoint(-1.5 - thrustLen * 1.2, 0, 0);
+
+    const pEL = projectPoint(engineL.x, engineL.y, engineL.z);
+    const pER = projectPoint(engineR.x, engineR.y, engineR.z);
+    const pEndL = projectPoint(endL.x, endL.y, endL.z);
+    const pEndR = projectPoint(endR.x, endR.y, endR.z);
+    const pEndC = projectPoint(endC.x, endC.y, endC.z);
+
+    ctx.globalAlpha = 0.7 * flicker;
+    ctx.fillStyle = '#ff5500';
     ctx.beginPath();
-    ctx.moveTo(-shuttleWidth * 0.3, shuttleHeight * 0.3);
-    ctx.lineTo(-shuttleWidth * 0.5, shuttleHeight * 0.8 + shuttleThrust * 0.05);
-    ctx.lineTo(shuttleWidth * 0.5, shuttleHeight * 0.8 + shuttleThrust * 0.05);
-    ctx.lineTo(shuttleWidth * 0.3, shuttleHeight * 0.3);
+    ctx.moveTo(pEL.x, pEL.y);
+    ctx.lineTo(pEndC.x, pEndC.y);
+    ctx.lineTo(pER.x, pER.y);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.globalAlpha = 0.9 * flicker;
+    ctx.fillStyle = '#ffff00';
+    ctx.beginPath();
+    ctx.moveTo(pEL.x, pEL.y);
+    ctx.lineTo(pEndL.x, pEndL.y);
+    ctx.lineTo(pER.x, pER.y);
+    ctx.lineTo(pEndR.x, pEndR.y);
     ctx.closePath();
     ctx.fill();
     ctx.globalAlpha = 1;
   }
-  ctx.restore();
 }
 
 /**
@@ -345,10 +631,10 @@ export function renderMapObject(ctx, item, props, projectPoint) {
 
   switch (obj.render_mode) {
     case 'station':
-      drawStation(ctx, item, r);
+      drawStation(ctx, item, props, projectPoint);
       break;
     case 'planet':
-      drawPlanet(ctx, item, r);
+      drawPlanet(ctx, item, r, props, projectPoint);
       break;
     case 'star':
     case 'sun':
@@ -356,7 +642,7 @@ export function renderMapObject(ctx, item, props, projectPoint) {
       break;
     case 'shuttle':
       if (isOurShuttle) {
-        drawShuttle(ctx, item, r, props.shuttleHeading, props.shuttleThrust);
+        drawShuttle(ctx, item, r, props, projectPoint);
       } else {
         drawGenericObject(ctx, item, r);
       }
