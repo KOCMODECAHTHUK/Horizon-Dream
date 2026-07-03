@@ -1,14 +1,12 @@
 export interface MapObject {
   id: string;
   name: string;
-  position: number[];
-  position_x?: number;
-  position_y?: number;
-  position_z?: number;
-  velocity: number[];
-  velocity_x?: number;
-  velocity_y?: number;
-  velocity_z?: number;
+  position_x: number;
+  position_y: number;
+  position_z: number;
+  velocity_x: number;
+  velocity_y: number;
+  velocity_z: number;
   radius: number;
   render_mode: string;
   vel_mult: number;
@@ -16,8 +14,10 @@ export interface MapObject {
   supercruise_color: string;
   system_id?: string;
   docking_range?: number;
-  position_history?: Array<number[]>;
-  thrust_vector?: number[];
+  position_history?: Array<number>;
+  thrust_x?: number;
+  thrust_y?: number;
+  thrust_z?: number;
   thrust_angle?: number;
   thrust_pitch?: number;
   thrust_power?: number;

@@ -40,9 +40,9 @@
 /datum/orbital_object/station/proc/in_docking_range(datum/orbital_object/shuttle/target_shuttle)
 	if(!target_shuttle)
 		return FALSE
-	var/dx = target_shuttle.position[1] - position[1]
-	var/dy = target_shuttle.position[2] - position[2]
-	var/dz = target_shuttle.position[3] - position[3]
+	var/dx = target_shuttle.pos_x - pos_x
+	var/dy = target_shuttle.pos_y - pos_y
+	var/dz = target_shuttle.pos_z - pos_z
 	var/distance = sqrt(dx*dx + dy*dy + dz*dz)
 	if(distance > docking_range)
 		return FALSE

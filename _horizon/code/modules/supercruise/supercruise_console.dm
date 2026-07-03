@@ -80,11 +80,12 @@
 		data["shuttleHeading"] = controlled_shuttle.heading
 		data["shuttleHeadingPitch"] = controlled_shuttle.heading_pitch
 		data["shuttleMaxSpeed"] = controlled_shuttle.max_speed
-		data["shuttleVelocity"] = controlled_shuttle.get_velocity()
-		data["shuttlePosition"] = controlled_shuttle.get_position()
-		data["shuttleVelX"] = controlled_shuttle.get_velocity()[1]
-		data["shuttleVelY"] = controlled_shuttle.get_velocity()[2]
-		data["shuttleVelZ"] = controlled_shuttle.get_velocity()[3]
+		data["shuttleVelX"] = controlled_shuttle.vel_x
+		data["shuttleVelY"] = controlled_shuttle.vel_y
+		data["shuttleVelZ"] = controlled_shuttle.vel_z
+		data["shuttlePosX"] = controlled_shuttle.pos_x
+		data["shuttlePosY"] = controlled_shuttle.pos_y
+		data["shuttlePosZ"] = controlled_shuttle.pos_z
 		data["ourObject"] = controlled_shuttle.get_map_data()
 		data["autopilotEnabled"] = controlled_shuttle.autopilot_enabled
 
@@ -109,9 +110,9 @@
 		// Get nearby stations (only in current system)
 		var/list/nearby_stations = list()
 		for(var/datum/orbital_object/station/station in controlled_shuttle.get_nearby_stations())
-			var/dx = station.position[1] - controlled_shuttle.position[1]
-			var/dy = station.position[2] - controlled_shuttle.position[2]
-			var/dz = station.position[3] - controlled_shuttle.position[3]
+			var/dx = station.pos_x - controlled_shuttle.pos_x
+			var/dy = station.pos_y - controlled_shuttle.pos_y
+			var/dz = station.pos_z - controlled_shuttle.pos_z
 			nearby_stations += list(list(
 				"id" = station.unique_id,
 				"name" = station.station_name,
@@ -123,9 +124,9 @@
 		// Get ALL nearby interactable objects (generic, only in current system)
 		var/list/nearby_objects = list()
 		for(var/datum/orbital_object/obj in controlled_shuttle.get_nearby_objects(30))
-			var/dx = obj.position[1] - controlled_shuttle.position[1]
-			var/dy = obj.position[2] - controlled_shuttle.position[2]
-			var/dz = obj.position[3] - controlled_shuttle.position[3]
+			var/dx = obj.pos_x - controlled_shuttle.pos_x
+			var/dy = obj.pos_y - controlled_shuttle.pos_y
+			var/dz = obj.pos_z - controlled_shuttle.pos_z
 			nearby_objects += list(list(
 				"id" = obj.unique_id,
 				"name" = obj.name,
@@ -135,16 +136,16 @@
 			))
 		data["nearbyObjects"] = nearby_objects
 
-		if(controlled_shuttle.target_position)
-			data["targetX"] = controlled_shuttle.target_position[1]
-			data["targetY"] = controlled_shuttle.target_position[2]
-			data["targetZ"] = controlled_shuttle.target_position[3]
+		if(controlled_shuttle.has_target_position)
+			data["targetX"] = controlled_shuttle.target_pos_x
+			data["targetY"] = controlled_shuttle.target_pos_y
+			data["targetZ"] = controlled_shuttle.target_pos_z
 
 		// Pending autopilot target (set by right-click, requires confirmation)
-		if(controlled_shuttle.pending_target)
-			data["pendingTargetX"] = controlled_shuttle.pending_target[1]
-			data["pendingTargetY"] = controlled_shuttle.pending_target[2]
-			data["pendingTargetZ"] = controlled_shuttle.pending_target[3]
+		if(controlled_shuttle.has_pending_target)
+			data["pendingTargetX"] = controlled_shuttle.pending_target_x
+			data["pendingTargetY"] = controlled_shuttle.pending_target_y
+			data["pendingTargetZ"] = controlled_shuttle.pending_target_z
 			data["hasPendingTarget"] = TRUE
 		else
 			data["hasPendingTarget"] = FALSE
@@ -215,9 +216,9 @@
 			var/new_y = text2num(params["y"])
 			var/new_z = text2num(params["z"])
 			if(!isnull(new_x) && !isnull(new_y))
-				var/dx = new_x - controlled_shuttle.position[1]
-				var/dy = new_y - controlled_shuttle.position[2]
-				var/dz = (isnull(new_z) ? 0 : new_z) - controlled_shuttle.position[3]
+				var/dx = new_x - controlled_shuttle.pos_x
+				var/dy = new_y - controlled_shuttle.pos_y
+				var/dz = (isnull(new_z) ? 0 : new_z) - controlled_shuttle.pos_z
 				var/mag = sqrt(dx*dx + dy*dy + dz*dz)
 				if(mag > 0.001)
 					controlled_shuttle.set_thrust_3d(dx / mag, dy / mag, dz / mag, controlled_shuttle.thrust_power)
@@ -231,27 +232,33 @@
 
 			if(altKey) // Alt+Click clears target and stops thrust
 				controlled_shuttle.autopilot_enabled = FALSE
-				controlled_shuttle.target_position = null
-				controlled_shuttle.pending_target = null
+				controlled_shuttle.has_target_position = FALSE
+				controlled_shuttle.has_pending_target = FALSE
 				controlled_shuttle.kill_thrust()
 			else if(!isnull(x) && !isnull(y) && !isnull(z))
-				controlled_shuttle.pending_target = list(x, y, z)
+				controlled_shuttle.pending_target_x = x
+				controlled_shuttle.pending_target_y = y
+				controlled_shuttle.pending_target_z = z
+				controlled_shuttle.has_pending_target = TRUE
 			return TRUE
 
 		if("confirmAutopilot")
-			if(!controlled_shuttle.pending_target)
+			if(!controlled_shuttle.has_pending_target)
 				last_action_error = "No pending target to confirm"
 				return FALSE
-			controlled_shuttle.target_position = controlled_shuttle.pending_target.Copy()
+			controlled_shuttle.target_pos_x = controlled_shuttle.pending_target_x
+			controlled_shuttle.target_pos_y = controlled_shuttle.pending_target_y
+			controlled_shuttle.target_pos_z = controlled_shuttle.pending_target_z
+			controlled_shuttle.has_target_position = TRUE
 			controlled_shuttle.autopilot_enabled = TRUE
-			controlled_shuttle.pending_target = null
+			controlled_shuttle.has_pending_target = FALSE
 			return TRUE
 
 		if("clearPendingTarget")
-			controlled_shuttle.pending_target = null
+			controlled_shuttle.has_pending_target = FALSE
 			if(controlled_shuttle.autopilot_enabled)
 				controlled_shuttle.autopilot_enabled = FALSE
-				controlled_shuttle.target_position = null
+				controlled_shuttle.has_target_position = FALSE
 			return TRUE
 
 		if("adjust_altitude")

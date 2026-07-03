@@ -18,5 +18,15 @@
 // END_PREFERENCES
 
 // BEGIN_INCLUDE
+#include "code\controllers\subsystem\OrbitalMap.dm"
 #include "code\modules\admin\all_verb_panel.dm"
+#include "code\modules\supercruise\orbital_object.dm"
+#include "code\modules\supercruise\orbital_planet.dm"
+#include "code\modules\supercruise\orbital_shuttle.dm"
+#include "code\modules\supercruise\orbital_station.dm"
+#include "code\modules\supercruise\overmap_star_system.dm"
+#include "code\modules\supercruise\supercruise_console.dm"
+#include "code\modules\supercruise\object_types\star.dm"
+#include "code\modules\supercruise\object_types\planets.dm"
+#include "code\modules\supercruise\object_types\orbital_outpost.dm"
 // END_INCLUDE

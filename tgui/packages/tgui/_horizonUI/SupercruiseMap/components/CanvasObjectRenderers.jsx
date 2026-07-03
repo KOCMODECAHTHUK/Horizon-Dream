@@ -47,7 +47,7 @@ export function drawAltitudeLine(ctx, item) {
  */
 function drawHistoryTrail(ctx, item, projectPoint) {
   const { obj, isOurShuttle } = item;
-  if (!isOurShuttle || !obj.position_history || obj.position_history.length <= 1) return;
+  if (!isOurShuttle || !obj.position_history || obj.position_history.length < 3) return;
 
   ctx.strokeStyle = '#a4eea4';
   ctx.lineWidth = 1.5;
@@ -55,11 +55,11 @@ function drawHistoryTrail(ctx, item, projectPoint) {
   ctx.beginPath();
 
   const history = obj.position_history;
-  for (let i = 0; i < history.length; i++) {
-    const pos = history[i];
-    const hx = Array.isArray(pos) ? (pos[0] || pos[1] || 0) : (pos.x || 0);
-    const hy = Array.isArray(pos) ? (pos[1] || pos.y || 0) : (pos.y || 0);
-    const hz = Array.isArray(pos) ? (pos[2] || pos[3] || 0) : (pos.z || 0);
+  // position_history is a flat list: [x1, y1, z1, x2, y2, z2, ...]
+  for (let i = 0; i < history.length; i += 3) {
+    const hx = history[i] || 0;
+    const hy = history[i + 1] || 0;
+    const hz = history[i + 2] || 0;
     const hProj = projectPoint(hx, hy, hz);
     if (i === 0) ctx.moveTo(hProj.x, hProj.y);
     else ctx.lineTo(hProj.x, hProj.y);
@@ -287,7 +287,7 @@ function drawPlanet(ctx, item, r, props, projectPoint) {
   ctx.globalAlpha = 1;
 
   // 2. Получаем 3D-меш сферы
-  const { verts, faces } = getSphereMesh(24, 12); // 12 сегментов, 6 колец = 144 полигона
+  const { verts, faces } = getSphereMesh(12, 6); // 12 сегментов, 6 колец = 144 полигона
 
   // 3. Проецируем все вершины в 2D
   const projData = verts.map(v => {
@@ -654,10 +654,9 @@ function drawShuttleVectors(ctx, item, props, projectPoint) {
 
   // Вектор тяги (Thrust vector)
   if (shuttleThrust > 0) {
-    const tv = obj.thrust_vector;
-    const tx = Array.isArray(tv) ? tv[0] : 0;
-    const ty = Array.isArray(tv) ? tv[1] : 0;
-    const tz = Array.isArray(tv) ? tv[2] : 0;
+    const tx = obj.thrust_x || 0;
+    const ty = obj.thrust_y || 0;
+    const tz = obj.thrust_z || 0;
     const thrustMag = Math.sqrt(tx * tx + ty * ty + tz * tz);
     if (thrustMag > 0.001) {
       const thrustScale = 25;

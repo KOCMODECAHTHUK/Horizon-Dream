@@ -15,4 +15,5 @@
 
 // BEGIN_INCLUDE
 #include "code\__DEFINES\test_defines.dm"
+#include "code\__DEFINES\orbit_defines.dm"
 // END_INCLUDE

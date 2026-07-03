@@ -165,7 +165,7 @@ SUBSYSTEM_DEF(supercruise)
 		var/datum/orbital_object/shuttle/shuttle = obj
 		shuttle.set_velocity(0, 0, 0)
 		shuttle.autopilot_enabled = FALSE
-		shuttle.target_position = null
+		shuttle.has_target_position = FALSE
 		shuttle.kill_thrust()
 
 	return TRUE

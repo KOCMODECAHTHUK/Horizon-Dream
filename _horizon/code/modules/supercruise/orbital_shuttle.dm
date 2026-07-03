@@ -10,9 +10,11 @@
 	radius = 5
 
 	/// 3D thrust vector: normalized direction scaled by power (0-1)
-	/// thrust_vector magnitude = thrust power fraction
-	/// thrust_vector direction = thrust direction in 3D
-	var/list/thrust_vector = list(0, 0, 0)
+	/// thrust_x/y/z magnitude = thrust power fraction
+	/// thrust_x/y/z direction = thrust direction in 3D
+	var/thrust_x = 0
+	var/thrust_y = 0
+	var/thrust_z = 0
 
 	/// Thrust power (0-100) for UI display convenience
 	var/thrust_power = 0
@@ -38,10 +40,16 @@
 	/// Ships coast at constant speed when no thrust is applied (Newtonian physics)
 	var/space_drag = 0
 
-	/// Pending autopilot target (set by right-click, requires confirmation)
-	var/list/pending_target = null
-	/// Confirmed autopilot target (list: x, y, z) — engaged after confirmation
-	var/list/target_position = null
+	/// Pending autopilot target coordinates (set by right-click, requires confirmation)
+	var/pending_target_x = 0
+	var/pending_target_y = 0
+	var/pending_target_z = 0
+	var/has_pending_target = FALSE
+	/// Confirmed autopilot target coordinates (x, y, z) — engaged after confirmation
+	var/target_pos_x = 0
+	var/target_pos_y = 0
+	var/target_pos_z = 0
+	var/has_target_position = FALSE
 	/// Autopilot enabled (confirmed and flying)
 	var/autopilot_enabled = FALSE
 
@@ -89,17 +97,19 @@
 
 	if(is_docked)
 		set_velocity(0, 0, 0)
-		thrust_vector = list(0, 0, 0)
+		thrust_x = 0
+		thrust_y = 0
+		thrust_z = 0
 		thrust_power = 0
 		thrust_angle = 0
 		thrust_pitch = 0
 		autopilot_enabled = FALSE
-		target_position = null
-		pending_target = null
+		has_target_position = FALSE
+		has_pending_target = FALSE
 		return
 
 	// Record position history for trail
-	position_history += list(position.Copy())
+	position_history += list(pos_x, pos_y, pos_z)
 	if(length(position_history) > max_history)
 		position_history.Cut(1, 2)
 
@@ -127,27 +137,33 @@
 			var/tz = sin(thrust_pitch)
 			var/mag = sqrt(tx*tx + ty*ty + tz*tz)
 			if(mag > 0.001)
-				thrust_vector = list(tx / mag, ty / mag, tz / mag)
+				thrust_x = tx / mag
+				thrust_y = ty / mag
+				thrust_z = tz / mag
 			else
-				thrust_vector = list(0, 0, 0)
+				thrust_x = 0
+				thrust_y = 0
+				thrust_z = 0
 
 			// Обновляем направление носа корабля
 			heading = thrust_angle
 			heading_pitch = thrust_pitch
 
 	// === Determine thrust direction and power ===
-	var/list/thrust_dir = list(0, 0, 0)
+	var/thrust_dir_x = 0
+	var/thrust_dir_y = 0
+	var/thrust_dir_z = 0
 	var/effective_thrust_power = 0
 
 	// Handle autopilot to target position
-	if(autopilot_enabled && target_position)
-		var/target_x = target_position[1]
-		var/target_y = target_position[2]
-		var/target_z = target_position[3]
+	if(autopilot_enabled && has_target_position)
+		var/target_x = target_pos_x
+		var/target_y = target_pos_y
+		var/target_z = target_pos_z
 
-		var/dx = target_x - position[1]
-		var/dy = target_y - position[2]
-		var/dz = target_z - position[3]
+		var/dx = target_x - pos_x
+		var/dy = target_y - pos_y
+		var/dz = target_z - pos_z
 		var/distance = sqrt(dx*dx + dy*dy + dz*dz)
 
 		if(distance > arrival_threshold)
@@ -167,24 +183,30 @@
 				desired_speed = max_speed * (distance / slowdown_distance)
 				desired_speed = max(desired_speed, 2)
 
-			var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
-			var/dot_vel_dir = velocity[1]*dir_x + velocity[2]*dir_y + velocity[3]*dir_z
+			var/current_speed = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z)
+			var/dot_vel_dir = vel_x*dir_x + vel_y*dir_y + vel_z*dir_z
 
 			if(dot_vel_dir >= 0 && current_speed > desired_speed)
 				if(current_speed > 0.01)
-					thrust_dir = list(-velocity[1]/current_speed, -velocity[2]/current_speed, -velocity[3]/current_speed)
+					thrust_dir_x = -vel_x/current_speed
+					thrust_dir_y = -vel_y/current_speed
+					thrust_dir_z = -vel_z/current_speed
 				effective_thrust_power = 100
 			else
-				thrust_dir = list(dir_x, dir_y, dir_z)
+				thrust_dir_x = dir_x
+				thrust_dir_y = dir_y
+				thrust_dir_z = dir_z
 				var/speed_diff = desired_speed - dot_vel_dir
 				effective_thrust_power = clamp(speed_diff / max_speed * 100, 10, 100)
 		else
 			autopilot_enabled = FALSE
-			target_position = null
+			has_target_position = FALSE
 
 	// Handle manual thrust (срабатывает, если автопилот выключен)
 	else if(thrust_power > 0)
-		thrust_dir = thrust_vector.Copy()
+		thrust_dir_x = thrust_x
+		thrust_dir_y = thrust_y
+		thrust_dir_z = thrust_z
 		effective_thrust_power = thrust_power
 		// Если мы даём ручную тягу, нос смотрит туда же (только если не вращаемся кнопками,
 		// чтобы не перетирать heading, который уже обновлён в блоке вращения выше)
@@ -194,40 +216,40 @@
 
 	// === Apply acceleration ===
 	if(effective_thrust_power > 0)
-		var/dir_mag = sqrt(thrust_dir[1]*thrust_dir[1] + thrust_dir[2]*thrust_dir[2] + thrust_dir[3]*thrust_dir[3])
+		var/dir_mag = sqrt(thrust_dir_x*thrust_dir_x + thrust_dir_y*thrust_dir_y + thrust_dir_z*thrust_dir_z)
 		if(dir_mag > 0.001)
-			thrust_dir[1] /= dir_mag
-			thrust_dir[2] /= dir_mag
-			thrust_dir[3] /= dir_mag
+			thrust_dir_x /= dir_mag
+			thrust_dir_y /= dir_mag
+			thrust_dir_z /= dir_mag
 
 		var/effective_accel = (effective_thrust_power / 100) * acceleration
-		var/dv_x = thrust_dir[1] * effective_accel * seconds_per_tick
-		var/dv_y = thrust_dir[2] * effective_accel * seconds_per_tick
-		var/dv_z = thrust_dir[3] * effective_accel * seconds_per_tick
+		var/dv_x = thrust_dir_x * effective_accel * seconds_per_tick
+		var/dv_y = thrust_dir_y * effective_accel * seconds_per_tick
+		var/dv_z = thrust_dir_z * effective_accel * seconds_per_tick
 
-		velocity[1] += dv_x
-		velocity[2] += dv_y
-		velocity[3] += dv_z
+		vel_x += dv_x
+		vel_y += dv_y
+		vel_z += dv_z
 	else
-		var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
+		var/current_speed = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z)
 		if(current_speed > 0.01)
 			var/drag = space_drag * seconds_per_tick
 			if(drag >= current_speed)
-				velocity[1] = 0
-				velocity[2] = 0
-				velocity[3] = 0
+				vel_x = 0
+				vel_y = 0
+				vel_z = 0
 			else
 				var/drag_ratio = 1 - (drag / current_speed)
-				velocity[1] *= drag_ratio
-				velocity[2] *= drag_ratio
-				velocity[3] *= drag_ratio
+				vel_x *= drag_ratio
+				vel_y *= drag_ratio
+				vel_z *= drag_ratio
 
 	// ГРАВИТАЦИЯ ЗВЕЗДЫ
 	if(star_system && star_system.central_star)
 		var/datum/orbital_object/star/S = star_system.central_star
-		var/dx = S.position[1] - position[1]
-		var/dy = S.position[2] - position[2]
-		var/dz = S.position[3] - position[3]
+		var/dx = S.pos_x - pos_x
+		var/dy = S.pos_y - pos_y
+		var/dz = S.pos_z - pos_z
 		var/dist_sq = dx*dx + dy*dy + dz*dz
 		var/dist = sqrt(dist_sq)
 
@@ -235,25 +257,27 @@
 		// Можно изменить делитель (1000) ниже, чтобы сделать гравитацию слабее/сильнее.
 		if(dist > 0.01 && dist < 1000) // Гравитация работает только в радиусе 1000 км
 			var/pull_strength = (S.gravity_mass / max(dist_sq, 1)) / 1000
-			velocity[1] += (dx / dist) * pull_strength * seconds_per_tick
-			velocity[2] += (dy / dist) * pull_strength * seconds_per_tick
-			velocity[3] += (dz / dist) * pull_strength * seconds_per_tick
+			vel_x += (dx / dist) * pull_strength * seconds_per_tick
+			vel_y += (dy / dist) * pull_strength * seconds_per_tick
+			vel_z += (dz / dist) * pull_strength * seconds_per_tick
 
 	// Enforce speed limit
-	var/current_speed = sqrt(velocity[1]*velocity[1] + velocity[2]*velocity[2] + velocity[3]*velocity[3])
+	var/current_speed = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z)
 	if(current_speed > max_speed && current_speed > 0)
 		var/scale = max_speed / current_speed
-		velocity[1] *= scale
-		velocity[2] *= scale
-		velocity[3] *= scale
+		vel_x *= scale
+		vel_y *= scale
+		vel_z *= scale
 
 	..()
 
 /datum/orbital_object/shuttle/get_map_data()
 	var/list/data = ..()
-	data["priority"] = 10 // Shuttles render on top
+	data["priority"] = 10
 	data["position_history"] = position_history.Copy()
-	data["thrust_vector"] = thrust_vector.Copy()
+	data["thrust_x"] = thrust_x
+	data["thrust_y"] = thrust_y
+	data["thrust_z"] = thrust_z
 	data["thrust_angle"] = thrust_angle
 	data["thrust_pitch"] = thrust_pitch
 	data["thrust_power"] = thrust_power
@@ -261,10 +285,10 @@
 	data["heading_pitch"] = heading_pitch
 	data["max_speed"] = max_speed
 	data["autopilot_enabled"] = autopilot_enabled
-	if(pending_target)
-		data["pendingTargetX"] = pending_target[1]
-		data["pendingTargetY"] = pending_target[2]
-		data["pendingTargetZ"] = pending_target[3]
+	if(has_pending_target)
+		data["pendingTargetX"] = pending_target_x
+		data["pendingTargetY"] = pending_target_y
+		data["pendingTargetZ"] = pending_target_z
 		data["hasPendingTarget"] = TRUE
 	else
 		data["hasPendingTarget"] = FALSE
@@ -278,24 +302,27 @@
 /datum/orbital_object/shuttle/proc/set_thrust_3d(tx, ty, tz, power)
 	thrust_power = clamp(power, 0, 100)
 	if(thrust_power == 0)
-		thrust_vector = list(0, 0, 0)
+		thrust_x = 0
+		thrust_y = 0
+		thrust_z = 0
 		return
 
-	// Normalize the direction
-	var/mag = sqrt(tx*tx + ty*ty + tz*tz)
-	if(mag < 0.001)
-		thrust_vector = list(0, 0, 0)
-		thrust_power = 0
-		return
+		// Normalize the direction
+		var/mag = sqrt(tx*tx + ty*ty + tz*tz)
+		if(mag < 0.001)
+			thrust_x = 0
+			thrust_y = 0
+			thrust_z = 0
+			thrust_power = 0
+			return
 
-	tx /= mag
-	ty /= mag
-	tz /= mag
+		tx /= mag
+		ty /= mag
+		tz /= mag
 
-	thrust_vector = list(tx, ty, tz)
-
-	// Update display angles and heading from direction
-	thrust_angle = MODULUS(ATAN2(ty, tx), 360)
+		thrust_x = tx
+		thrust_y = ty
+		thrust_z = tz
 	heading = thrust_angle
 	// Pitch: -90 (straight down) to 90 (straight up)
 	var/horizontal_mag = sqrt(tx*tx + ty*ty)
@@ -324,7 +351,9 @@
 	heading_pitch = thrust_pitch
 
 	if(thrust_power == 0)
-		thrust_vector = list(0, 0, 0)
+		thrust_x = 0
+		thrust_y = 0
+		thrust_z = 0
 		return
 
 	// Convert spherical coordinates to 3D direction vector
@@ -336,18 +365,22 @@
 	// Normalize
 	var/mag = sqrt(tx*tx + ty*ty + tz*tz)
 	if(mag > 0.001)
-		thrust_vector = list(tx / mag, ty / mag, tz / mag)
+		thrust_x = tx / mag
+		thrust_y = ty / mag
+		thrust_z = tz / mag
 	else
-		thrust_vector = list(0, 0, 0)
+		thrust_x = 0
+		thrust_y = 0
+		thrust_z = 0
 
 /**
  * Set thrust direction toward a target point in 3D space
  * power - thrust power 0-100
  */
 /datum/orbital_object/shuttle/proc/set_thrust_toward(target_x, target_y, target_z, power)
-	var/dx = target_x - position[1]
-	var/dy = target_y - position[2]
-	var/dz = target_z - position[3]
+	var/dx = target_x - pos_x
+	var/dy = target_y - pos_y
+	var/dz = target_z - pos_z
 	var/mag = sqrt(dx*dx + dy*dy + dz*dz)
 	if(mag < 0.001)
 		return
@@ -357,7 +390,9 @@
  * Kill thrust and begin coasting (inertia — velocity is preserved, only thrust is removed)
  */
 /datum/orbital_object/shuttle/proc/kill_thrust()
-	thrust_vector = list(0, 0, 0)
+	thrust_x = 0
+	thrust_y = 0
+	thrust_z = 0
 	thrust_power = 0
 	// heading and heading_pitch are preserved
 	// velocity is preserved for inertia
@@ -406,7 +441,7 @@
 		return "Cannot change altitude while docked"
 
 	// Add vertical velocity impulse
-	velocity[3] += dz
+	vel_z += dz
 	return null
 
 /**
@@ -437,9 +472,11 @@
 
 	// Stop all movement
 	autopilot_enabled = FALSE
-	target_position = null
+	has_target_position = FALSE
 	set_velocity(0, 0, 0)
-	thrust_vector = list(0, 0, 0)
+	thrust_x = 0
+	thrust_y = 0
+	thrust_z = 0
 	thrust_power = 0
 
 	var/obj/docking_port/stationary/target_dock = null
@@ -540,9 +577,9 @@
 	for(var/datum/orbital_object/obj in star_system.orbital_objects)
 		if(obj == src)
 			continue // Don't include ourselves
-		var/dx = obj.position[1] - position[1]
-		var/dy = obj.position[2] - position[2]
-		var/dz = obj.position[3] - position[3]
+		var/dx = obj.pos_x - pos_x
+		var/dy = obj.pos_y - pos_y
+		var/dz = obj.pos_z - pos_z
 		var/dist = sqrt(dx*dx + dy*dy + dz*dz)
 		if(dist <= interaction_range)
 			nearby += obj
@@ -592,7 +629,7 @@
 		to_chat(user, span_notice("Initiating jump to [target_system.system_name]..."))
 
 	// Execute jump using SSsupercruise (preserve Z position)
-	var/jump_result = SSsupercruise.move_to_system(src, target_system, position[1], position[2], position[3])
+	var/jump_result = SSsupercruise.move_to_system(src, target_system, pos_x, pos_y, pos_z)
 
 	if(!jump_result)
 		is_jumping = FALSE

@@ -171,9 +171,9 @@
 	var/final_z = inc_z // Ось Z не меняется при вращении вокруг оси Z
 
 	// Устанавливаем финальную позицию относительно центра (звезды)
-	position[1] = orbit_center.position[1] + final_x
-	position[2] = orbit_center.position[2] + final_y
-	position[3] = orbit_center.position[3] + final_z
+	pos_x = orbit_center.pos_x + final_x
+	pos_y = orbit_center.pos_y + final_y
+	pos_z = orbit_center.pos_z + final_z
 
 /**
  * Override interact to handle planet-specific interactions

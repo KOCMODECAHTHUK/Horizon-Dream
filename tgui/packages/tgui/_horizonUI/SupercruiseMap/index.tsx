@@ -58,20 +58,12 @@ export const SupercruiseMap = () => {
   }, [lastActionError, update_index]);
 
   const { cameraYaw, cameraPitch, zoomScale, rotateCamera, handleZoom } = useShuttleControls(act, linkedToShuttle, isDocked, shuttleAngle, shuttlePitch, shuttleThrust);
-  const ourPos = ourObject?.position ? [ourObject.position[0] || 0, ourObject.position[1] || 0, ourObject.position[2] || 0] : [0, 0, 0];
+  const ourPos = ourObject ? [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0] : [0, 0, 0];
   const focusX = linkedToShuttle ? ourPos[0] : 0;
   const focusY = linkedToShuttle ? ourPos[1] : 0;
   const focusZ = linkedToShuttle ? ourPos[2] : 0;
 
-  const canvasMapObjects = map_objects.map((obj) => ({
-    ...obj,
-    position_x: obj.position?.[0] ?? obj.position_x ?? 0,
-    position_y: obj.position?.[1] ?? obj.position_y ?? 0,
-    position_z: obj.position?.[2] ?? obj.position_z ?? 0,
-    velocity_x: obj.velocity?.[0] ?? obj.velocity_x ?? 0,
-    velocity_y: obj.velocity?.[1] ?? obj.velocity_y ?? 0,
-    velocity_z: obj.velocity?.[2] ?? obj.velocity_z ?? 0,
-  }));
+  const canvasMapObjects = map_objects;
 
   return (
     <Window width={1100} height={750}>

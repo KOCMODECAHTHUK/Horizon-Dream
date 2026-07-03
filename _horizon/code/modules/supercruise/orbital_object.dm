@@ -9,13 +9,20 @@
 	var/unique_id = ""
 	/// Display name
 	var/name = "Unknown Object"
-	/// Radius for rendering/collision (in arbitrary units)
+	/// Mass of the object in solar masses
+	var/mass = 0
+	/// Radius of the object in ~~parsecs~~ arbitary space units
 	var/radius = 1
-	/// Unified 3D vectors for position and velocity
-	var/list/position = list(0, 0, 0)
-	var/list/velocity = list(0, 0, 0)
+	/// Position
+	var/pos_x = 0
+	var/pos_y = 0
+	var/pos_z = 0
+	/// Velocity
+	var/vel_x = 0
+	var/vel_y = 0
+	var/vel_z = 0
 	/// Render mode for UI (default, planet, shuttle, etc)
-	var/render_mode = "default"
+	var/render_mode = RENDER_MODE_DEFAULT
 	/// Color for rendering
 	var/supercruise_color = "#c17a23"
 	///how can a ship interact with the datum TODO!!!!!
@@ -28,23 +35,20 @@
 	unique_id = "\ref[src]"
 	set_position(x_pos, y_pos, z_pos)
 	set_velocity(0, 0, 0)
-	// Add to the specified system, or the default system if none specified
 	if(!spawn_system)
 		spawn_system = SSsupercruise.get_default_system()
 	if(spawn_system)
 		spawn_system.add_object(src)
 
-/datum/orbital_object/proc/set_position(x_pos = 0, y_pos = 0, z_pos = 0)
-	position = list(x_pos, y_pos, z_pos)
+/datum/orbital_object/proc/set_position(x = 0, y = 0, z = 0)
+	pos_x = x
+	pos_y = y
+	pos_z = z
 
-/datum/orbital_object/proc/set_velocity(x_vel = 0, y_vel = 0, z_vel = 0)
-	velocity = list(x_vel, y_vel, z_vel)
-
-/datum/orbital_object/proc/get_position()
-	return position.Copy()
-
-/datum/orbital_object/proc/get_velocity()
-	return velocity.Copy()
+/datum/orbital_object/proc/set_velocity(vx = 0, vy = 0, vz = 0)
+	vel_x = vx
+	vel_y = vy
+	vel_z = vz
 
 /datum/orbital_object/Destroy()
 	// Remove from star system if we belong to one
@@ -52,39 +56,28 @@
 		star_system.remove_object(src)
 	return ..()
 
-/**
- * Called by SSsupercruise to update position based on velocity
- * seconds_per_tick is in seconds (from delta_time / 10)
- */
 /datum/orbital_object/process(seconds_per_tick)
-	// Update position using unified vector math
-	position[1] += velocity[1] * seconds_per_tick
-	position[2] += velocity[2] * seconds_per_tick
-	position[3] += velocity[3] * seconds_per_tick
+	pos_x += vel_x * seconds_per_tick
+	pos_y += vel_y * seconds_per_tick
+	pos_z += vel_z * seconds_per_tick
 
-/**
- * Get data for UI display
- */
 /datum/orbital_object/proc/get_map_data()
 	return list(
 		"id" = unique_id,
 		"name" = name,
-		"position" = position.Copy(),
-		"velocity" = velocity.Copy(),
-		"position_x" = position[1],
-		"position_y" = position[2],
-		"position_z" = position[3],
-		"velocity_x" = velocity[1],
-		"velocity_y" = velocity[2],
-		"velocity_z" = velocity[3],
+		"position_x" = pos_x,
+		"position_y" = pos_y,
+		"position_z" = pos_z,
+		"velocity_x" = vel_x,
+		"velocity_y" = vel_y,
+		"velocity_z" = vel_z,
 		"radius" = radius,
 		"render_mode" = render_mode,
-		"vel_mult" = 1, // Velocity multiplier for UI interpolation
-		"priority" = 0, // For UI sorting
-		"supercruise_color"	= supercruise_color,
+		"vel_mult" = 1,
+		"priority" = 0,
+		"supercruise_color" = supercruise_color,
 		"system_id" = star_system?.system_id
 	)
-
 /**
  * Called when a shuttle tries to interact with this object
  * Override in child classes to provide specific functionality
