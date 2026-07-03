@@ -48,6 +48,7 @@ export const SupercruiseMap = () => {
 
   const [selectedJumpDestination, setSelectedJumpDestination] = useState(null);
   const [actionError, setActionError] = useState('');
+  const [showPanel, setShowPanel] = useState(true);
 
   useEffect(() => {
     if (lastActionError) {
@@ -71,6 +72,14 @@ export const SupercruiseMap = () => {
         <Flex height="100%">
           <Flex.Item grow>
             <Box position="relative" height="100%" backgroundColor="#0a0a1a">
+              <Button
+                icon={showPanel ? 'angle-double-right' : 'angle-double-left'}
+                tooltip={showPanel ? 'Скрыть панель управления' : 'Показать панель управления'}
+                style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}
+                color="primary"
+                onClick={() => setShowPanel(!showPanel)}
+              />
+
               <SupercruiseMapCanvas
                 map_objects={canvasMapObjects}
                 update_index={update_index}
@@ -113,79 +122,81 @@ export const SupercruiseMap = () => {
             </Box>
           </Flex.Item>
 
-          <Flex.Item width="240px" style={{ overflowY: 'auto', maxHeight: '100%' }}>
-            <Section title="Flight Controls" height="100%">
-              {!linkedToShuttle ? (
-                <NoticeBox>No shuttle linked</NoticeBox>
-              ) : (
-                <>
-                  {actionError && <NoticeBox color="red" mb={0.5} fontSize="0.8em">{actionError}</NoticeBox>}
-                  <Box bold mb={0.5} fontSize="1em" color="cyan">{shuttleName}</Box>
-                  <Box mb={0.5} fontSize="0.8em" color="label">
-                    POS: {ourPos[0]?.toFixed(0)}, {ourPos[1]?.toFixed(0)}, {ourPos[2]?.toFixed(0)}
-                  </Box>
-
-                  <FlightControls
-                    isDocked={isDocked}
-                    shuttleAngle={shuttleAngle}
-                    shuttlePitch={shuttlePitch}
-                    shuttleThrust={shuttleThrust}
-                    act={act}
-                  />
-
-                  <Flex mb={0.5}>
-                    <Button compact icon="search-plus" onClick={() => handleZoom(1.3)} tooltip="Zoom In" />
-                    <Button compact icon="search-minus" onClick={() => handleZoom(0.7)} tooltip="Zoom Out" />
-                    <Box as="span" ml={1} fontSize="0.8em" color="label" lineHeight="22px">
-                      Zoom: {zoomScale.toFixed(1)}x
+          {showPanel && (
+            <Flex.Item width="240px" style={{ overflowY: 'auto', maxHeight: '100%' }}>
+              <Section title="Flight Controls" height="100%">
+                {!linkedToShuttle ? (
+                  <NoticeBox>No shuttle linked</NoticeBox>
+                ) : (
+                  <>
+                    {actionError && <NoticeBox color="red" mb={0.5} fontSize="0.8em">{actionError}</NoticeBox>}
+                    <Box bold mb={0.5} fontSize="1em" color="cyan">{shuttleName}</Box>
+                    <Box mb={0.5} fontSize="0.8em" color="label">
+                      POS: {ourPos[0]?.toFixed(0)}, {ourPos[1]?.toFixed(0)}, {ourPos[2]?.toFixed(0)}
                     </Box>
-                  </Flex>
 
-                  <NavigationStatus
-                    isDocked={isDocked}
-                    dockedStation={dockedStation}
-                    hasPendingTarget={hasPendingTarget}
-                    pendingTargetX={pendingTargetX}
-                    pendingTargetY={pendingTargetY}
-                    pendingTargetZ={pendingTargetZ}
-                    autopilotEnabled={autopilotEnabled}
-                    targetX={targetX}
-                    targetY={targetY}
-                    targetZ={targetZ}
-                    act={act}
-                  />
+                    <FlightControls
+                      isDocked={isDocked}
+                      shuttleAngle={shuttleAngle}
+                      shuttlePitch={shuttlePitch}
+                      shuttleThrust={shuttleThrust}
+                      act={act}
+                    />
 
-                  {isDocked && (
-                    <Button fluid icon="anchor" color="red" mt={0.5} onClick={() => act('undock')}>Undock</Button>
-                  )}
+                    <Flex mb={0.5}>
+                      <Button compact icon="search-plus" onClick={() => handleZoom(1.3)} tooltip="Zoom In" />
+                      <Button compact icon="search-minus" onClick={() => handleZoom(0.7)} tooltip="Zoom Out" />
+                      <Box as="span" ml={1} fontSize="0.8em" color="label" lineHeight="22px">
+                        Zoom: {zoomScale.toFixed(1)}x
+                      </Box>
+                    </Flex>
 
-                  {!isDocked && (
-                    <NearbyContacts nearbyObjects={nearbyObjects} act={act} />
-                  )}
+                    <NavigationStatus
+                      isDocked={isDocked}
+                      dockedStation={dockedStation}
+                      hasPendingTarget={hasPendingTarget}
+                      pendingTargetX={pendingTargetX}
+                      pendingTargetY={pendingTargetY}
+                      pendingTargetZ={pendingTargetZ}
+                      autopilotEnabled={autopilotEnabled}
+                      targetX={targetX}
+                      targetY={targetY}
+                      targetZ={targetZ}
+                      act={act}
+                    />
 
-                  <JumpDrivePanel
-                    hasJumpDrive={hasJumpDrive}
-                    currentSystemName={currentSystemName}
-                    isJumping={isJumping}
-                    jumpReady={jumpReady}
-                    isDocked={isDocked}
-                    jumpDestinations={jumpDestinations}
-                    jumpCooldownRemaining={jumpCooldownRemaining}
-                    selectedJumpDestination={selectedJumpDestination}
-                    setSelectedJumpDestination={setSelectedJumpDestination}
-                    act={act}
-                  />
+                    {isDocked && (
+                      <Button fluid icon="anchor" color="red" mt={0.5} onClick={() => act('undock')}>Undock</Button>
+                    )}
 
-                  <Box mt={1} fontSize="0.7em" color="dim">
-                    W A S D — Повороты корпуса<br />
-                    Q — Уменьшить тягу / E — Увеличить тягу<br />
-                    X — Убить тягу<br />
-                    ПКМ=курс · Ctrl+ПКМ=Z · Shift+ПКМ=отмена<br />
-                  </Box>
-                </>
-              )}
-            </Section>
-          </Flex.Item>
+                    {!isDocked && (
+                      <NearbyContacts nearbyObjects={nearbyObjects} act={act} />
+                    )}
+
+                    <JumpDrivePanel
+                      hasJumpDrive={hasJumpDrive}
+                      currentSystemName={currentSystemName}
+                      isJumping={isJumping}
+                      jumpReady={jumpReady}
+                      isDocked={isDocked}
+                      jumpDestinations={jumpDestinations}
+                      jumpCooldownRemaining={jumpCooldownRemaining}
+                      selectedJumpDestination={selectedJumpDestination}
+                      setSelectedJumpDestination={setSelectedJumpDestination}
+                      act={act}
+                    />
+
+                    <Box mt={1} fontSize="0.7em" color="dim">
+                      W A S D — Повороты корпуса<br />
+                      Q — Уменьшить тягу / E — Увеличить тягу<br />
+                      X — Убить тягу<br />
+                      ПКМ=курс · Ctrl+ПКМ=Z · Shift+ПКМ=отмена<br />
+                    </Box>
+                  </>
+                )}
+              </Section>
+            </Flex.Item>
+          )}
         </Flex>
       </Window.Content>
     </Window>

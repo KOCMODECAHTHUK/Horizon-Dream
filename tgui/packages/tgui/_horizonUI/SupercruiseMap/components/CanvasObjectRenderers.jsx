@@ -379,6 +379,7 @@ function drawPlanet(ctx, item, r, props, projectPoint) {
   ctx.fillRect(projected.x - planetRadius2D, projected.y - planetRadius2D, planetRadius2D * 2, planetRadius2D * 2);
   ctx.restore();
 }
+
 /**
  * Отрисовка звезды / солнца
  */
@@ -428,7 +429,9 @@ function drawStar(ctx, item, r) {
  */
 function drawShuttle(ctx, item, r, props, projectPoint) {
   const { projected, color, worldX, worldY, worldZ, obj } = item;
-  const { shuttleHeading = 0, shuttleHeadingPitch = 0, shuttleThrust = 0 } = props;
+  const shuttleHeading = obj.heading || 0;
+  const shuttleHeadingPitch = obj.heading_pitch || 0;
+  const shuttleThrust = obj.thrust_power || 0;
 
   const scale = (obj.radius / 2 || 5);
 
@@ -748,11 +751,7 @@ export function renderMapObject(ctx, item, props, projectPoint, drawnLabels) {
       drawStar(ctx, item, r);
       break;
     case 'shuttle':
-      if (isOurShuttle) {
-        drawShuttle(ctx, item, r, props, projectPoint);
-      } else {
-        drawGenericObject(ctx, item, r);
-      }
+      drawShuttle(ctx, item, r, props, projectPoint);
       break;
     default:
       drawGenericObject(ctx, item, r);

@@ -122,6 +122,7 @@
 		if(10)
 			. += "[pick(GLOB.planet_prefixes)] [pick(GLOB.planet_names)]"
 	return .
+
 /**
  * Get all objects of a specific type in this system
  */

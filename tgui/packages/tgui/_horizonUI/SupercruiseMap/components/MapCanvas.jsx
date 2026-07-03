@@ -10,12 +10,19 @@ import { drawStarfield } from './CanvasBackground';
  * Inspired by Homeworld-style camera and depth sorting.
  * Uses painter's algorithm for proper object occlusion.
  */
-
 export class SupercruiseMapCanvas extends Component {
   constructor(props) {
     super(props);
     this.canvasRef = null;
     this.renderUpdate = null;
+    this.lastUpdateTime = Date.now();
+    this.serverTickInterval = 0.2;
+    this.smoothFocusX = props.focusX || 0;
+    this.smoothFocusY = props.focusY || 0;
+    this.smoothFocusZ = props.focusZ || 0;
+    this.prevServerPos = {};
+    this.renderedPos = {};
+
     this.mouseController = new CanvasMouseController(
       () => this.canvasRef,
       () => this.props,
@@ -53,20 +60,19 @@ export class SupercruiseMapCanvas extends Component {
 
   componentDidUpdate(prevProps) {
     if (prevProps.update_index !== this.props.update_index) {
+      this.lastUpdateTime = Date.now();
       this.draw();
     }
   }
 
-  // Wrapper for external utility
   projectPoint(worldX, worldY, worldZ) {
     const canvas = this.canvasRef;
     const dpr = window.devicePixelRatio || 1;
     const canvasWidth = canvas ? canvas.width / dpr : 700;
     const canvasHeight = canvas ? canvas.height / dpr : 700;
-    return projectPointUtil(worldX, worldY, worldZ, this.props, canvasWidth, canvasHeight);
+    return projectPointUtil(worldX, worldY, worldZ, this.currentRenderProps || this.props, canvasWidth, canvasHeight);
   }
 
-  // Wrapper for external utility
   unprojectToGroundPlane(screenX, screenY, targetZ = 0) {
     const canvas = this.canvasRef;
     const dpr = window.devicePixelRatio || 1;
@@ -75,12 +81,8 @@ export class SupercruiseMapCanvas extends Component {
     return unprojectToGroundPlaneUtil(screenX, screenY, targetZ, this.props, canvasWidth, canvasHeight);
   }
 
-  /**
-   * Получение цвета объекта через switch вместо вложенных тернарников
-   */
   getObjectColor(obj) {
     if (obj.supercruise_color) return obj.supercruise_color;
-
     switch (obj.render_mode) {
       case 'shuttle': return '#a4eea4';
       case 'station': return '#4488ff';
@@ -89,9 +91,6 @@ export class SupercruiseMapCanvas extends Component {
     }
   }
 
-  /**
-   * Главная функция отрисовки, разбитая на логические блоки
-   */
   draw() {
     const canvas = this.canvasRef;
     if (!canvas) return;
@@ -102,58 +101,103 @@ export class SupercruiseMapCanvas extends Component {
     const canvasWidth = canvas.width / dpr;
     const canvasHeight = canvas.height / dpr;
 
-    const { map_objects = [], focusZ = 0 } = this.props;
+    const { map_objects = [], ourObject = null } = this.props;
+    const now = Date.now();
+    let elapsed = (now - this.lastUpdateTime) / 1000;
+    if (elapsed > this.serverTickInterval) {
+      elapsed = this.serverTickInterval;
+    }
+
+    this.mouseController.currentElapsed = elapsed;
+
+    const targetFocusX = (this.props.focusX || 0) + (ourObject?.velocity_x || 0) * elapsed;
+    const targetFocusY = (this.props.focusY || 0) + (ourObject?.velocity_y || 0) * elapsed;
+    const targetFocusZ = (this.props.focusZ || 0) + (ourObject?.velocity_z || 0) * elapsed;
+
+    this.smoothFocusX += (targetFocusX - this.smoothFocusX) * 0.1;
+    this.smoothFocusY += (targetFocusY - this.smoothFocusY) * 0.1;
+    this.smoothFocusZ += (targetFocusZ - this.smoothFocusZ) * 0.1;
+
+    this.currentRenderProps = {
+      ...this.props,
+      focusX: this.smoothFocusX,
+      focusY: this.smoothFocusY,
+      focusZ: this.smoothFocusZ
+    };
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    drawStarfield(ctx, this.props.cameraYaw || 45, this.props.cameraPitch || 30, canvasWidth, canvasHeight);
+    drawStarfield(ctx, this.currentRenderProps.cameraYaw || 45, this.currentRenderProps.cameraPitch || 30, canvasWidth, canvasHeight);
 
     this.drawGrid(ctx, canvasWidth, canvasHeight);
     this.drawOrbits(ctx, map_objects);
 
-    const drawItems = this.prepareDrawItems(map_objects);
+    const drawItems = this.prepareDrawItems(map_objects, elapsed);
 
     const drawnLabels = [];
     for (const item of drawItems) {
       drawAltitudeLine(ctx, item);
       if (item.type !== 'object') continue;
-      renderMapObject(ctx, item, this.props, this.projectPoint.bind(this), drawnLabels);
+      renderMapObject(ctx, item, this.currentRenderProps, this.projectPoint.bind(this), drawnLabels);
     }
 
-    this.drawTargetMarkers(ctx, focusZ);
+    this.drawTargetMarkers(ctx, this.smoothFocusZ);
     this.drawHoverTooltip(ctx, drawItems);
-
-    drawHUD(ctx, this.props, canvasWidth, canvasHeight);
-
-    this.drawZAdjustment(ctx, focusZ);
+    drawHUD(ctx, this.currentRenderProps, canvasWidth, canvasHeight);
+    this.drawZAdjustment(ctx, this.smoothFocusZ);
   }
 
-  prepareDrawItems(map_objects) {
+  prepareDrawItems(map_objects, elapsed) {
     const drawItems = [];
     const { ourObject = null } = this.props;
 
     for (const obj of map_objects) {
-      const isStatic = obj.render_mode === 'station' || obj.render_mode === 'planet';
-      const posX = obj.position_x ?? 0;
-      const posY = obj.position_y ?? 0;
-      const posZ = obj.position_z ?? 0;
-      const velX = isStatic ? 0 : (obj.velocity_x ?? 0);
-      const velY = isStatic ? 0 : (obj.velocity_y ?? 0);
-      const velZ = isStatic ? 0 : (obj.velocity_z ?? 0);
+      const isStatic = obj.render_mode === 'station';
+      const serverX = obj.position_x ?? 0;
+      const serverY = obj.position_y ?? 0;
+      const serverZ = obj.position_z ?? 0;
+      let velX = isStatic ? 0 : (obj.velocity_x ?? 0);
+      let velY = isStatic ? 0 : (obj.velocity_y ?? 0);
+      let velZ = isStatic ? 0 : (obj.velocity_z ?? 0);
 
-      const elapsed = 0.3;
-      const worldX = posX + velX * elapsed;
-      const worldY = posY + velY * elapsed;
-      const worldZ = posZ + velZ * elapsed;
+      // --- МАГИЯ ДЛЯ ПЛАНЕТ (Client-side) ---
+      // Если сервер не дал скорость, но позиция поменялась, вычисляем скорость сами!
+      const prev = this.prevServerPos[obj.id];
+      if (velX === 0 && velY === 0 && velZ === 0 && prev) {
+        velX = (serverX - prev.x) / this.serverTickInterval;
+        velY = (serverY - prev.y) / this.serverTickInterval;
+        velZ = (serverZ - prev.z) / this.serverTickInterval;
+      }
+      this.prevServerPos[obj.id] = { x: serverX, y: serverY, z: serverZ };
 
-      const projected = this.projectPoint(worldX, worldY, worldZ);
-      const ground = this.projectPoint(worldX, worldY, 0);
+      // Целевая позиция с экстраполяцией
+      const targetX = serverX + velX * elapsed;
+      const targetY = serverY + velY * elapsed;
+      const targetZ = serverZ + velZ * elapsed;
+
+      // --- СГЛАЖИВАНИЕ РЫВКОВ  ---
+      let renderX = targetX;
+      let renderY = targetY;
+      let renderZ = targetZ;
+
+      const lastRender = this.renderedPos[obj.id];
+      if (lastRender) {
+        renderX = lastRender.x + (targetX - lastRender.x) * 0.1;
+        renderY = lastRender.y + (targetY - lastRender.y) * 0.1;
+        renderZ = lastRender.z + (targetZ - lastRender.z) * 0.1;
+      }
+      this.renderedPos[obj.id] = { x: renderX, y: renderY, z: renderZ };
+
+      const projected = this.projectPoint(renderX, renderY, renderZ);
+      const ground = this.projectPoint(renderX, renderY, 0);
 
       drawItems.push({
         type: 'object',
         obj,
-        worldX, worldY, worldZ,
+        worldX: renderX,
+        worldY: renderY,
+        worldZ: renderZ,
         projected, ground,
         color: this.getObjectColor(obj),
         isOurShuttle: ourObject && obj.id === ourObject.id,
@@ -161,7 +205,6 @@ export class SupercruiseMapCanvas extends Component {
       });
     }
 
-    // Сортировка по глубине (Painter's algorithm)
     drawItems.sort((a, b) => b.depth - a.depth);
     return drawItems;
   }
@@ -178,7 +221,8 @@ export class SupercruiseMapCanvas extends Component {
    * Единый метод для отрисовки активной и ожидающей целей
    */
   drawTargetMarkers(ctx, focusZ) {
-    const { autopilotEnabled, targetX, targetY, targetZ, hasPendingTarget, pendingTargetX, pendingTargetY, pendingTargetZ } = this.props;
+    const { autopilotEnabled, targetX, targetY, targetZ, hasPendingTarget, pendingTargetX, pendingTargetY, pendingTargetZ, ourObject } = this.props;
+    const elapsed = this.mouseController.currentElapsed || 0;
 
     // Active target
     if (autopilotEnabled && targetX != null && targetY != null) {
@@ -188,6 +232,22 @@ export class SupercruiseMapCanvas extends Component {
       const groundProj = this.projectPoint(targetX, targetY, 0);
 
       this.drawVerticalGuides(ctx, proj, baseProj, groundProj, zVal, focusZ, '#ff00ff', '#ff88ff');
+      // --- ЛИНИЯ ОТ КОРАБЛЯ ДО ЦЕЛИ ---
+      if (ourObject) {
+        const shipX = (ourObject.position_x || 0) + (ourObject.velocity_x || 0) * elapsed;
+        const shipY = (ourObject.position_y || 0) + (ourObject.velocity_y || 0) * elapsed;
+        const shipZ = (ourObject.position_z || 0) + (ourObject.velocity_z || 0) * elapsed;
+        const shipProj = this.projectPoint(shipX, shipY, shipZ);
+
+        ctx.strokeStyle = 'rgba(255, 0, 255, 0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(shipProj.x, shipProj.y);
+        ctx.lineTo(proj.x, proj.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
       const spinRad = ((Date.now() / 20) % 360) * DEG2RAD;
       ctx.strokeStyle = '#ff00ff';
@@ -215,6 +275,23 @@ export class SupercruiseMapCanvas extends Component {
       const pulse = Math.sin(Date.now() / 300) * 0.5 + 0.5;
 
       this.drawVerticalGuides(ctx, proj, baseProj, groundProj, zVal, focusZ, '#ffcc00', '#ffcc00');
+
+      // --- ЛИНИЯ ОТ КОРАБЛЯ ДО ОЖИДАЮЩЕЙ ЦЕЛИ ---
+      if (ourObject) {
+        const shipX = (ourObject.position_x || 0) + (ourObject.velocity_x || 0) * elapsed;
+        const shipY = (ourObject.position_y || 0) + (ourObject.velocity_y || 0) * elapsed;
+        const shipZ = (ourObject.position_z || 0) + (ourObject.velocity_z || 0) * elapsed;
+        const shipProj = this.projectPoint(shipX, shipY, shipZ);
+
+        ctx.strokeStyle = `rgba(255, 200, 0, ${0.3 + pulse * 0.2})`;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 8]);
+        ctx.beginPath();
+        ctx.moveTo(shipProj.x, shipProj.y);
+        ctx.lineTo(proj.x, proj.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
       ctx.strokeStyle = `rgba(255, 200, 0, ${0.5 + pulse * 0.5})`;
       ctx.lineWidth = 2;
@@ -343,7 +420,7 @@ export class SupercruiseMapCanvas extends Component {
   }
 
   drawGrid(ctx, canvasWidth, canvasHeight) {
-    const { focusX = 0, focusY = 0 } = this.props;
+    const { focusX = 0, focusY = 0 } = this.currentRenderProps || this.props;
     const gridSpacing = 50;
     const fadeRange = 1000;
     const baseAlpha = 0.4;

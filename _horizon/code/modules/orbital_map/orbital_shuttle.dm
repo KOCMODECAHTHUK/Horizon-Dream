@@ -111,7 +111,7 @@
 	// Record position history for trail
 	position_history += list(pos_x, pos_y, pos_z)
 	if(length(position_history) > max_history)
-		position_history.Cut(1, 2)
+		position_history.Cut(1, 4)
 
 	// === Handle continuous rotation (manual only, skip if autopilot is on) ===
 	if(!autopilot_enabled)
@@ -171,13 +171,6 @@
 			var/dir_y = dy / distance
 			var/dir_z = dz / distance
 
-			heading = MODULUS(ATAN2(dir_y, dir_x), 360)
-			var/horizontal_mag = sqrt(dir_x * dir_x + dir_y * dir_y)
-			if(horizontal_mag > 0.001)
-				heading_pitch = ATAN2(dir_z, horizontal_mag)
-			else
-				heading_pitch = dir_z > 0 ? 90 : -90
-
 			var/desired_speed = max_speed
 			if(distance < slowdown_distance)
 				desired_speed = max_speed * (distance / slowdown_distance)
@@ -198,6 +191,20 @@
 				thrust_dir_z = dir_z
 				var/speed_diff = desired_speed - dot_vel_dir
 				effective_thrust_power = clamp(speed_diff / max_speed * 100, 10, 100)
+			var/horiz_mag = sqrt(thrust_dir_x*thrust_dir_x + thrust_dir_y*thrust_dir_y)
+			if(horiz_mag > 0.001)
+				heading = MODULUS(ATAN2(thrust_dir_x, thrust_dir_y), 360)
+				heading_pitch = ATAN2(horiz_mag, thrust_dir_z)
+			else
+				heading = 0
+				heading_pitch = thrust_dir_z > 0 ? 90 : -90
+
+			thrust_x = thrust_dir_x
+			thrust_y = thrust_dir_y
+			thrust_z = thrust_dir_z
+			thrust_power = effective_thrust_power
+			thrust_angle = heading
+			thrust_pitch = heading_pitch
 		else
 			autopilot_enabled = FALSE
 			has_target_position = FALSE
@@ -274,7 +281,7 @@
 /datum/orbital_object/shuttle/get_map_data()
 	var/list/data = ..()
 	data["priority"] = 10
-	data["position_history"] = position_history.Copy()
+	data["position_history"] = position_history
 	data["thrust_x"] = thrust_x
 	data["thrust_y"] = thrust_y
 	data["thrust_z"] = thrust_z

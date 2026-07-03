@@ -1,4 +1,3 @@
-// CanvasHUD.jsx
 import { DEG2RAD } from './MapUtils';
 
 /**
