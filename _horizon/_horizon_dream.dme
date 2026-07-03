@@ -18,8 +18,15 @@
 // END_PREFERENCES
 
 // BEGIN_INCLUDE
+#include "code\__HELPERS\virtual_z_level.dm"
+#include "code\_globalvars\supercruise.dm"
+#include "code\_globalvars\lists\strings.dm"
 #include "code\controllers\subsystem\OrbitalMap.dm"
+#include "code\datums\docking_ticket.dm"
+#include "code\datums\map_zones.dm"
+#include "code\modules\admin\verbs\mapping.dm"
 #include "code\modules\admin\all_verb_panel.dm"
+#include "code\modules\mob\dead\dead.dm"
 #include "code\modules\supercruise\orbital_object.dm"
 #include "code\modules\supercruise\orbital_planet.dm"
 #include "code\modules\supercruise\orbital_shuttle.dm"

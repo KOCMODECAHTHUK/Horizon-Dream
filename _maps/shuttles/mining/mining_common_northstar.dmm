@@ -96,7 +96,7 @@
 /turf/open/floor/mineral/plastitanium/pod/light,
 /area/shuttle/mining)
 "P" = (
-/obj/machinery/computer/supercruise,
+/obj/machinery/computer/shuttle_flight,
 /turf/open/floor/mineral/plastitanium/pod/light,
 /area/shuttle/mining)
 "T" = (

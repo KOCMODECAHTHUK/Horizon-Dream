@@ -153,7 +153,7 @@
 /turf/open/floor/iron/dark,
 /area/shuttle/labor)
 "z" = (
-/obj/machinery/computer/supercruise{
+/obj/machinery/computer/shuttle/labor{
 	dir = 4
 	},
 /obj/structure/reagent_dispensers/wall/peppertank/directional/west,
