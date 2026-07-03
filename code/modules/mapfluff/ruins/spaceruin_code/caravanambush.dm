@@ -39,22 +39,22 @@
 	icon_state = MAP_SWITCH("computer", "/obj/machinery/computer/camera_advanced/shuttle_docker/syndicate")
 
 /obj/item/circuitboard/computer/caravan
-	build_path = /obj/machinery/computer/supercruise
+	build_path = /obj/machinery/computer/shuttle_flight
 
 /obj/item/circuitboard/computer/caravan/trade1
-	build_path = /obj/machinery/computer/supercruise
+	build_path = /obj/machinery/computer/shuttle_flight
 
 /obj/item/circuitboard/computer/caravan/pirate
-	build_path = /obj/machinery/computer/supercruise
+	build_path = /obj/machinery/computer/shuttle_flight
 
 /obj/item/circuitboard/computer/caravan/syndicate1
-	build_path = /obj/machinery/computer/supercruise
+	build_path = /obj/machinery/computer/shuttle_flight
 
 /obj/item/circuitboard/computer/caravan/syndicate2
-	build_path = /obj/machinery/computer/supercruise
+	build_path = /obj/machinery/computer/shuttle_flight
 
 /obj/item/circuitboard/computer/caravan/syndicate3
-	build_path = /obj/machinery/computer/supercruise
+	build_path = /obj/machinery/computer/shuttle_flight
 
 /obj/machinery/computer/shuttle/caravan/trade1
 	name = "Small Freighter Shuttle Console"

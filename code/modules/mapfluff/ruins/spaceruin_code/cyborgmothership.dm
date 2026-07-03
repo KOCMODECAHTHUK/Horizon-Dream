@@ -21,15 +21,14 @@
 /obj/item/circuitboard/computer/cyborg_mothership
 	name = "#101011"
 	greyscale_colors = CIRCUIT_COLOR_GENERIC
-	build_path = /obj/machinery/computer/supercruise
+	build_path = /obj/machinery/computer/shuttle_flight
 
 /obj/item/circuitboard/computer/cyborg_mothership/bridge
 	name = "#101011 Bridge"
 	greyscale_colors = CIRCUIT_COLOR_GENERIC
-	build_path = /obj/machinery/computer/supercruise
+	build_path = /obj/machinery/computer/shuttle_flight
 
-// DISABLED for PentestSS13 - Replaced with /obj/machinery/computer/supercruise
-
+// [HORIZON-DISABLED] - Заменено на /obj/machinery/computer/shuttle_flight
 /*
 /obj/machinery/computer/shuttle/cyborg_mothership
 	name = "#101011 Console"

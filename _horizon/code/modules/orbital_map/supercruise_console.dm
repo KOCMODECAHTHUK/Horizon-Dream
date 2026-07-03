@@ -3,7 +3,7 @@
  *
  * Allows controlling a shuttle in supercruise/orbital space.
  */
-/obj/machinery/computer/supercruise
+/obj/machinery/computer/shuttle_flight
 	name = "supercruise flight console"
 	desc = "A console for controlling a vessel in supercruise."
 	icon_screen = "shuttle"
@@ -14,11 +14,11 @@
 	/// Last action error message for UI display
 	var/last_action_error = ""
 
-/obj/machinery/computer/supercruise/Initialize(mapload)
+/obj/machinery/computer/shuttle_flight/Initialize(mapload)
 	. = ..()
 	connect_to_shuttle(SSshuttle.get_containing_shuttle(src))
 
-/obj/machinery/computer/supercruise/connect_to_shuttle(mapload, obj/docking_port/mobile/port, obj/docking_port/stationary/dock)
+/obj/machinery/computer/shuttle_flight/connect_to_shuttle(mapload, obj/docking_port/mobile/port, obj/docking_port/stationary/dock)
 	if(!port)
 		return
 
@@ -44,12 +44,12 @@
 
 	return TRUE
 
-/obj/machinery/computer/supercruise/Destroy()
+/obj/machinery/computer/shuttle_flight/Destroy()
 	// Clean up any open UIs
 	SStgui.close_uis(src)
 	return ..()
 
-/obj/machinery/computer/supercruise/ui_interact(mob/user, datum/tgui/ui)
+/obj/machinery/computer/shuttle_flight/ui_interact(mob/user, datum/tgui/ui)
 	. = ..()
 	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
@@ -58,14 +58,14 @@
 	SSsupercruise.open_orbital_maps |= ui
 	ui.set_autoupdate(FALSE)
 
-/obj/machinery/computer/supercruise/ui_close(mob/user, datum/tgui/ui)
+/obj/machinery/computer/shuttle_flight/ui_close(mob/user, datum/tgui/ui)
 	. = ..()
 	SSsupercruise.open_orbital_maps -= ui
 
-/obj/machinery/computer/supercruise/ui_state(mob/user)
+/obj/machinery/computer/shuttle_flight/ui_state(mob/user)
 	return GLOB.default_state
 
-/obj/machinery/computer/supercruise/ui_data(mob/user)
+/obj/machinery/computer/shuttle_flight/ui_data(mob/user)
 	// Get orbital map data for the shuttle's current system
 	var/system_id = controlled_shuttle?.star_system?.system_id
 	var/list/data = SSsupercruise.get_orbital_map_data(system_id)
@@ -168,7 +168,7 @@
 
 	return data
 
-/obj/machinery/computer/supercruise/ui_act(action, list/params)
+/obj/machinery/computer/shuttle_flight/ui_act(action, list/params)
 	. = ..()
 	if(.)
 		return

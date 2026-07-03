@@ -102,8 +102,7 @@
 	y_offset = 3
 	x_offset = 0
 
-// DISABLED for PentestSS13 - Replaced with /obj/machinery/computer/supercruise
-
+// [HORIZON-DISABLED] - Заменено на /obj/machinery/computer/shuttle_flight
 /*
 /obj/machinery/computer/shuttle/starfury/fighter
 	name = "syndicate fighter control console"

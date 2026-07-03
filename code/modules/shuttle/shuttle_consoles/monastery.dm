@@ -1,5 +1,4 @@
-// DISABLED for PentestSS13 - Replaced with /obj/machinery/computer/supercruise
-
+// [HORIZON-DISABLED] - Заменено на /obj/machinery/computer/shuttle_flight
 /*
 /obj/machinery/computer/shuttle/monastery_shuttle
 	name = "monastery shuttle console"

@@ -11,7 +11,7 @@
 #define SHUTTLE_CONSOLE_ERROR "error"
 
 /obj/machinery/computer/shuttle
-	parent_type = /obj/machinery/computer/supercruise
+	parent_type = /obj/machinery/computer/shuttle_flight
 	name = "shuttle console"
 	desc = "A shuttle control computer."
 	icon_state = MAP_SWITCH("computer", "/obj/machinery/computer/shuttle")

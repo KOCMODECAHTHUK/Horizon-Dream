@@ -1,7 +1,7 @@
 /////////// ruined whiteship
 
 /obj/item/circuitboard/computer/white_ship/ruin
-	build_path = /obj/machinery/computer/supercruise
+	build_path = /obj/machinery/computer/shuttle_flight
 
 /obj/machinery/computer/shuttle/white_ship/ruin
 	shuttleId = "whiteship_ruin"

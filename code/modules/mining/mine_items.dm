@@ -88,8 +88,7 @@
 	new /obj/item/gun/energy/recharge/kinetic_accelerator(src)
 
 /**********************Shuttle Computer**************************/
-// DISABLED for PentestSS13 - Replaced with /obj/machinery/computer/supercruise
-
+// [HORIZON-DISABLED] - Заменено на /obj/machinery/computer/shuttle_flight
 /*
 /obj/machinery/computer/shuttle/mining
 	name = "mining shuttle console"
