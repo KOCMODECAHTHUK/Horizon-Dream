@@ -79,16 +79,6 @@ function drawStation(ctx, item, props, projectPoint) {
   const dockProj = projectPoint(worldX + dockRange, worldY, 0);
   const dockRadius2D = Math.hypot(dockProj.x - ground.x, dockProj.y - ground.y);
 
-  ctx.strokeStyle = '#88aaff';
-  ctx.lineWidth = 1;
-  ctx.globalAlpha = 0.3;
-  ctx.setLineDash([5, 5]);
-  ctx.beginPath();
-  ctx.arc(ground.x, ground.y, dockRadius2D, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.globalAlpha = 1;
-
   // 2. Геометрия цилиндра (8 граней)
   const segments = 8;
   const topZ = worldZ + stationHeight / 2;
@@ -725,6 +715,51 @@ function drawObjectLabels(ctx, item, isDocked, r, drawnLabels) {
     }
   }
 }
+/**
+ * Отрисовка сферы стыковки (вокруг станций и кораблей в радиусе)
+ */
+function drawDockingRange(ctx, item, projectPoint) {
+  const { obj, worldX, worldY, worldZ } = item;
+  const dockRange = obj.docking_range || 0;
+  if (!dockRange) return;
+
+  ctx.strokeStyle = 'rgba(100, 200, 255, 0.1)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+
+  const segments = 24;
+
+  // Круг по горизонтали (XY)
+  ctx.beginPath();
+  for (let i = 0; i <= segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    const proj = projectPoint(worldX + Math.cos(angle) * dockRange, worldY + Math.sin(angle) * dockRange, worldZ);
+    if (i === 0) ctx.moveTo(proj.x, proj.y);
+    else ctx.lineTo(proj.x, proj.y);
+  }
+  ctx.stroke();
+
+  // Круг по вертикали (XZ)
+  ctx.beginPath();
+  for (let i = 0; i <= segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    const proj = projectPoint(worldX + Math.cos(angle) * dockRange, worldY, worldZ + Math.sin(angle) * dockRange);
+    if (i === 0) ctx.moveTo(proj.x, proj.y);
+    else ctx.lineTo(proj.x, proj.y);
+  }
+  ctx.stroke();
+
+  // Круг по вертикали (YZ)
+  ctx.beginPath();
+  for (let i = 0; i <= segments; i++) {
+    const angle = (i / segments) * Math.PI * 2;
+    const proj = projectPoint(worldX, worldY + Math.cos(angle) * dockRange, worldZ + Math.sin(angle) * dockRange);
+    if (i === 0) ctx.moveTo(proj.x, proj.y);
+    else ctx.lineTo(proj.x, proj.y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
 
 /**
  * Главный диспетчер отрисовки объекта
@@ -738,6 +773,7 @@ export function renderMapObject(ctx, item, props, projectPoint, drawnLabels) {
   }
 
   drawHistoryTrail(ctx, item, projectPoint);
+  drawDockingRange(ctx, item, projectPoint);
 
   switch (obj.render_mode) {
     case 'station':

@@ -255,21 +255,18 @@ function drawSphereCompass(ctx, cx, cy, radius, cameraYaw, cameraPitch, shipHead
   const velPct = Math.min(100, (velMag / (maxSpeed || 50)) * 100);
   const velFillTop = barBotY - (barHeight) * (velPct / 100);
 
-  // Фон шкалы
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
   ctx.beginPath();
   ctx.moveTo(velX, barTopY);
   ctx.lineTo(velX, barBotY);
   ctx.stroke();
 
-  // Заполнение шкалы (голубым)
   ctx.strokeStyle = '#00ffff';
   ctx.beginPath();
   ctx.moveTo(velX, barBotY);
   ctx.lineTo(velX, velFillTop);
   ctx.stroke();
 
-  // Маркер (треугольник, указывающий на текущее значение)
   ctx.fillStyle = '#00ffff';
   ctx.beginPath();
   ctx.moveTo(velX - 2, velFillTop);
@@ -278,34 +275,30 @@ function drawSphereCompass(ctx, cx, cy, radius, cameraYaw, cameraPitch, shipHead
   ctx.closePath();
   ctx.fill();
 
-  // Текст (Значение и единицы измерения)
   ctx.font = 'bold 10px monospace';
   ctx.textAlign = 'right';
-  ctx.fillText(`${Math.round(velMag * 10)}`, velX - 12, barTopY + 4); // Умножаем на 10 для эстетики км/ч
+  ctx.fillText(`${Math.round(velMag * 10)}`, velX - 12, barTopY + 4);
   ctx.font = '8px monospace';
   ctx.fillStyle = 'rgba(0, 255, 255, 0.7)';
-  ctx.fillText('км/ч', velX - 12, barTopY + 14);
+  ctx.fillText('км/с', velX - 12, barTopY + 14);
 
   // 2. Правая шкала (Ускорение/Тяга)
   const thrX = cx + sphereScale + barLength;
   const thrPct = Math.min(100, shuttleThrust);
   const thrFillTop = barBotY - (barHeight) * (thrPct / 100);
 
-  // Фон шкалы
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
   ctx.beginPath();
   ctx.moveTo(thrX, barTopY);
   ctx.lineTo(thrX, barBotY);
   ctx.stroke();
 
-  // Заполнение шкалы (желтым)
   ctx.strokeStyle = '#ffff00';
   ctx.beginPath();
   ctx.moveTo(thrX, barBotY);
   ctx.lineTo(thrX, thrFillTop);
   ctx.stroke();
 
-  // Маркер (треугольник, указывающий на текущее значение)
   ctx.fillStyle = '#ffff00';
   ctx.beginPath();
   ctx.moveTo(thrX + 2, thrFillTop);
@@ -314,7 +307,6 @@ function drawSphereCompass(ctx, cx, cy, radius, cameraYaw, cameraPitch, shipHead
   ctx.closePath();
   ctx.fill();
 
-  // Текст (Значение и единицы измерения)
   ctx.font = 'bold 10px monospace';
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ffff00';
@@ -322,22 +314,6 @@ function drawSphereCompass(ctx, cx, cy, radius, cameraYaw, cameraPitch, shipHead
   ctx.font = '8px monospace';
   ctx.fillStyle = 'rgba(255, 255, 0, 0.7)';
   ctx.fillText('тяга %', thrX + 12, barTopY + 14);
-
-  ctx.fillStyle = '#aaa';
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(`PIT: ${Math.round(shipHeadingPitch)}°`, cx, cy + radius + 14);
-}
-
-/**
- * Вспомогательная функция для отрисовки панелей HUD
- */
-function drawPanel(ctx, x, y, w, h) {
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-  ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x, y, w, h);
 }
 
 /**
@@ -349,87 +325,57 @@ export function drawHUD(ctx, props, canvasWidth, canvasHeight) {
     shuttleVelX = 0, shuttleVelY = 0, shuttleVelZ = 0,
     shuttleMaxSpeed = 50,
     cameraYaw = 45, cameraPitch = 30, isDocked = false, autopilotEnabled = false, hasPendingTarget = false,
-    fuelLevel = 100, fuelMax = 100,
-    targetDistance = null, targetETA = null,
-    radarStatus = 'ACTIVE',
   } = props;
 
   const velMag = Math.hypot(shuttleVelX, shuttleVelY, shuttleVelZ);
 
-  // --- Компас ---
-  const compassX = canvasWidth / 2;
-  const compassY = canvasHeight - 50;
-  const compassRadius = 45;
-  drawSphereCompass(ctx, compassX, compassY, compassRadius, cameraYaw, cameraPitch,
-    shuttleHeading, shuttleHeadingPitch, shuttleThrust, shuttleAngle, velMag, shuttleVelX, shuttleVelY, shuttleVelZ, shuttleMaxSpeed);
-
-  // --- Левая панель (Топливо / Тяга) ---
-  const lx = 10;
-  const ly = canvasHeight - 90;
-  const pw = 135;
-  const ph = 65;
-  drawPanel(ctx, lx, ly, pw, ph);
-
-  const fuelPct = fuelMax > 0 ? (fuelLevel / fuelMax) * 100 : 0;
-  ctx.font = 'bold 10px monospace';
-  ctx.textAlign = 'left';
-
-  ctx.fillStyle = '#ffaa00';
-  ctx.fillText(`FUEL: ${Math.round(fuelPct)}%`, lx + 6, ly + 16);
-  ctx.fillStyle = '#332200';
-  ctx.fillRect(lx + 6, ly + 20, pw - 12, 8);
-  ctx.fillStyle = fuelPct > 20 ? '#ffaa00' : '#ff3333';
-  ctx.fillRect(lx + 6, ly + 20, (pw - 12) * (fuelPct / 100), 8);
-
-  // --- Правая панель (Цели / Радар) ---
-  const rx = canvasWidth - 145;
-  const ry = canvasHeight - 90;
-  drawPanel(ctx, rx, ry, pw, ph);
-
-  ctx.font = 'bold 10px monospace';
-  ctx.textAlign = 'left';
-
-  ctx.fillStyle = targetDistance != null ? '#00ff88' : '#555';
-  ctx.fillText(`TGT: ${targetDistance != null ? `${targetDistance.toFixed(0)} km` : '--'}`, rx + 6, ry + 16);
-
-  ctx.fillStyle = targetETA != null ? '#00ff88' : '#555';
-  ctx.fillText(`ETA: ${targetETA != null ? targetETA : '--'}`, rx + 6, ry + 32);
-
-  ctx.fillStyle = radarStatus === 'ACTIVE' ? '#44ff44' : '#ff4444';
-  ctx.fillText(`RDR: ${radarStatus}`, rx + 6, ry + 48);
-
+  // --- ВЕРХНИЙ ЦЕНТР: Статус (Автопилот / Докинг) ---
   let statusText = '';
   let statusColor = '';
-  let statusFont = '';
-  let statusY = 20;
 
   switch (true) {
     case isDocked:
       statusText = 'DOCKED';
-      statusColor = 'rgba(200, 0, 0, 0.8)';
-      statusFont = 'bold 16px sans-serif';
-      statusY = 25;
+      statusColor = 'rgba(255, 80, 80, 1)';
       break;
     case autopilotEnabled:
-      statusText = 'AUTOPILOT';
-      statusColor = 'rgba(0, 200, 0, 0.8)';
-      statusFont = 'bold 16px sans-serif';
-      statusY = 20;
+      statusText = 'AUTOPILOT ENGAGED';
+      statusColor = 'rgba(50, 255, 50, 1)';
       break;
     case hasPendingTarget:
       statusText = 'COURSE PENDING';
-      statusColor = 'rgba(255, 200, 0, 0.9)';
-      statusFont = 'bold 14px sans-serif';
-      statusY = 20;
+      statusColor = 'rgba(255, 200, 0, 1)';
       break;
     default:
       break;
   }
 
   if (statusText) {
+    ctx.font = 'bold 13px monospace';
+    const textWidth = ctx.measureText(statusText).width;
+    const boxW = textWidth + 30;
+    const boxX = canvasWidth / 2 - boxW / 2;
+    const boxY = 20;
+
+    // Тонкая полупрозрачная плашка
+    ctx.fillStyle = 'rgba(10, 15, 30, 0.85)';
+    ctx.fillRect(boxX, boxY, boxW, 24);
+    ctx.strokeStyle = statusColor.replace('1)', '0.5)');
+    ctx.lineWidth = 1;
+    ctx.strokeRect(boxX, boxY, boxW, 24);
+
     ctx.fillStyle = statusColor;
-    ctx.font = statusFont;
     ctx.textAlign = 'center';
-    ctx.fillText(statusText, canvasWidth / 2, statusY);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(statusText, canvasWidth / 2, boxY + 12);
+    ctx.textBaseline = 'alphabetic';
   }
+
+  // --- НИЖНИЙ ЦЕНТР: Компас ---
+  const compassRadius = 60;
+  const compassY = canvasHeight - 75;
+  const compassX = canvasWidth / 2;
+
+  drawSphereCompass(ctx, compassX, compassY, compassRadius, cameraYaw, cameraPitch,
+    shuttleHeading, shuttleHeadingPitch, shuttleThrust, shuttleAngle, velMag, shuttleVelX, shuttleVelY, shuttleVelZ, shuttleMaxSpeed);
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export const useShuttleControls = (
   act: (action: string, payload?: any) => void,
@@ -11,12 +11,18 @@ export const useShuttleControls = (
   const [cameraYaw, setCameraYaw] = useState(45);
   const [cameraPitch, setCameraPitch] = useState(30);
   const [zoomScale, setZoomScale] = useState(1);
+  const [activeKeys, setActiveKeys] = useState<Record<string, boolean>>({});
+  const keysRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!linkedToShuttle || isDocked) return;
       if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
       const key = event.key.toLowerCase();
+      if (keysRef.current[key]) return;
+      keysRef.current[key] = true;
+      setActiveKeys(prev => ({ ...prev, [key]: true }));
+
       switch (key) {
         case 'w': case 'ц':
           event.preventDefault();
@@ -53,6 +59,9 @@ export const useShuttleControls = (
       if (!linkedToShuttle || isDocked) return;
       const key = event.key.toLowerCase();
 
+      keysRef.current[key] = false;
+      setActiveKeys(prev => ({ ...prev, [key]: false }));
+
       switch (key) {
         case 'w': case 'ц':
           act('toggle_rotate_pitch_up', { enable: false });
@@ -75,6 +84,7 @@ export const useShuttleControls = (
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
+
   }, [linkedToShuttle, isDocked, act, shuttleAngle, shuttlePitch, shuttleThrust]);
 
   const clampPitch = (value: number) => Math.max(5, Math.min(85, value));
@@ -88,5 +98,5 @@ export const useShuttleControls = (
     setZoomScale((prev) => Math.max(0.1, Math.min(10, prev * factor)));
   }, []);
 
-  return { cameraYaw, cameraPitch, zoomScale, rotateCamera, handleZoom };
+  return { cameraYaw, cameraPitch, zoomScale, rotateCamera, handleZoom, activeKeys };
 };

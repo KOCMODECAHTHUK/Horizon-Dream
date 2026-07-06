@@ -81,6 +81,44 @@ export class SupercruiseMapCanvas extends Component {
     return unprojectToGroundPlaneUtil(screenX, screenY, targetZ, this.props, canvasWidth, canvasHeight);
   }
 
+  drawHighlight(ctx, drawItems) {
+    const highlightId = this.props.highlightedObjectId;
+    if (!highlightId) return;
+
+    const item = drawItems.find(i => i.obj && i.obj.id === highlightId);
+    if (!item) return;
+
+    const pulse = Math.sin(Date.now() / 150) * 0.3 + 0.7;
+    const r = Math.max(8, (item.obj.radius || 5) * item.projected.scale + 8);
+
+    // Рисуем пульсирующее неоновое кольцо
+    ctx.strokeStyle = `rgba(0, 255, 255, ${pulse})`;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 15;
+    // Угловые скобки для визуального прицеливания
+    const bracketLen = r * 0.4;
+    ctx.beginPath();
+    // Левый верхний
+    ctx.moveTo(item.projected.x - r, item.projected.y - r + bracketLen);
+    ctx.lineTo(item.projected.x - r, item.projected.y - r);
+    ctx.lineTo(item.projected.x - r + bracketLen, item.projected.y - r);
+    // Правый верхний
+    ctx.moveTo(item.projected.x + r - bracketLen, item.projected.y - r);
+    ctx.lineTo(item.projected.x + r, item.projected.y - r);
+    ctx.lineTo(item.projected.x + r, item.projected.y - r + bracketLen);
+    // Левый нижний
+    ctx.moveTo(item.projected.x - r, item.projected.y + r - bracketLen);
+    ctx.lineTo(item.projected.x - r, item.projected.y + r);
+    ctx.lineTo(item.projected.x - r + bracketLen, item.projected.y + r);
+    // Правый нижний
+    ctx.moveTo(item.projected.x + r - bracketLen, item.projected.y + r);
+    ctx.lineTo(item.projected.x + r, item.projected.y + r);
+    ctx.lineTo(item.projected.x + r, item.projected.y + r - bracketLen);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
   getObjectColor(obj) {
     if (obj.supercruise_color) return obj.supercruise_color;
     switch (obj.render_mode) {
@@ -143,6 +181,7 @@ export class SupercruiseMapCanvas extends Component {
     }
 
     this.drawTargetMarkers(ctx, this.smoothFocusZ);
+    this.drawHighlight(ctx, drawItems); // <--- ДОБАВИТЬ ЭТО
     this.drawHoverTooltip(ctx, drawItems);
     drawHUD(ctx, this.currentRenderProps, canvasWidth, canvasHeight);
     this.drawZAdjustment(ctx, this.smoothFocusZ);

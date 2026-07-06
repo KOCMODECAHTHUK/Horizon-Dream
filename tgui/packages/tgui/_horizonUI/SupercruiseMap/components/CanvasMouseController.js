@@ -87,7 +87,7 @@ export class CanvasMouseController {
         const velX = isStatic ? 0 : (obj.velocity_x ?? 0);
         const velY = isStatic ? 0 : (obj.velocity_y ?? 0);
         const velZ = isStatic ? 0 : (obj.velocity_z ?? 0);
-        const elapsed = 0.3;
+        const elapsed = this.currentElapsed || 0;
         const wx = posX + velX * elapsed;
         const wy = posY + velY * elapsed;
         const wz = posZ + velZ * elapsed;

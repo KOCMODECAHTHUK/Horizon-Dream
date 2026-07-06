@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useBackend } from '../../backend';
-import { Box, Button, Flex, NoticeBox, Section } from 'tgui-core/components';
+import { Box, Button, Flex, NoticeBox } from 'tgui-core/components';
 import { Window } from '../../layouts';
 import { SupercruiseMapCanvas } from './components/MapCanvas';
 import { FlightControls } from './screens/FlightControls';
@@ -49,6 +49,7 @@ export const SupercruiseMap = () => {
   const [selectedJumpDestination, setSelectedJumpDestination] = useState(null);
   const [actionError, setActionError] = useState('');
   const [showPanel, setShowPanel] = useState(true);
+  const [hoveredContactId, setHoveredContactId] = useState(null);
 
   useEffect(() => {
     if (lastActionError) {
@@ -58,7 +59,7 @@ export const SupercruiseMap = () => {
     }
   }, [lastActionError, update_index]);
 
-  const { cameraYaw, cameraPitch, zoomScale, rotateCamera, handleZoom } = useShuttleControls(act, linkedToShuttle, isDocked, shuttleAngle, shuttlePitch, shuttleThrust);
+  const { cameraYaw, cameraPitch, zoomScale, rotateCamera, handleZoom, activeKeys } = useShuttleControls(act, linkedToShuttle, isDocked, shuttleAngle, shuttlePitch, shuttleThrust);
   const ourPos = ourObject ? [ourObject.position_x || 0, ourObject.position_y || 0, ourObject.position_z || 0] : [0, 0, 0];
   const focusX = linkedToShuttle ? ourPos[0] : 0;
   const focusY = linkedToShuttle ? ourPos[1] : 0;
@@ -72,6 +73,32 @@ export const SupercruiseMap = () => {
         <Flex height="100%">
           <Flex.Item grow>
             <Box position="relative" height="100%" backgroundColor="#0a0a1a">
+              {/* === HTML СТАТУС АВТОПИЛОТА / ДОКИНГА === */}
+              {(isDocked || autopilotEnabled || hasPendingTarget || '') && (
+                <Box
+                  position="absolute"
+                  top="15px"
+                  left="50%"
+                  style={{
+                    transform: 'translateX(-50%)',
+                    zIndex: 10,
+                    pointerEvents: 'none',
+                    textShadow: `0 0 8px ${isDocked ? '#ff5050' : autopilotEnabled ? '#32ff32' : '#ffc800'}`,
+                    fontWeight: 'bold',
+                    letterSpacing: '1px',
+                    backgroundColor: 'rgba(10, 15, 30, 0.85)',
+                    border: `1px solid ${isDocked ? 'rgba(255, 80, 80, 0.5)' : autopilotEnabled ? 'rgba(50, 255, 50, 0.5)' : 'rgba(255, 200, 0, 0.5)'}`,
+                    padding: '4px 32px',
+                    fontFamily: 'monospace',
+                    fontSize: '0.9em',
+                    color: isDocked ? '#ff5050' : autopilotEnabled ? '#32ff32' : '#ffc800',
+                  }}
+                >
+                  {isDocked ? 'DOCKED' : autopilotEnabled ? 'AUTOPILOT ENGAGED' : hasPendingTarget ? 'COURSE PENDING' : ''}
+                </Box>
+              )}
+
+              {/* Кнопка сворачивания панели */}
               <Button
                 icon={showPanel ? 'angle-double-right' : 'angle-double-left'}
                 tooltip={showPanel ? 'Скрыть панель управления' : 'Показать панель управления'}
@@ -79,6 +106,13 @@ export const SupercruiseMap = () => {
                 color="primary"
                 onClick={() => setShowPanel(!showPanel)}
               />
+              <Flex style={{ position: 'absolute', top: '10px', right: '40px', zIndex: 10 }}>
+                <Button compact icon="search-plus" onClick={() => handleZoom(1.3)} tooltip="Zoom In" />
+                <Button compact icon="search-minus" onClick={() => handleZoom(0.7)} tooltip="Zoom Out" />
+                <Box as="span" ml={1} fontSize="0.8em" color="label" lineHeight="22px">
+                  Zoom: {zoomScale.toFixed(1)}x
+                </Box>
+              </Flex>
 
               <SupercruiseMapCanvas
                 map_objects={canvasMapObjects}
@@ -100,6 +134,7 @@ export const SupercruiseMap = () => {
                 focusX={focusX} focusY={focusY} focusZ={focusZ}
                 shuttleVelX={shuttleVelX} shuttleVelY={shuttleVelY} shuttleVelZ={shuttleVelZ}
                 shuttleAlt={ourPos[2] || 0}
+                highlightedObjectId={hoveredContactId}
                 onRotate={rotateCamera}
                 onZoom={handleZoom}
                 onMapClick={(worldX, worldY, clickType, altKey, objectId, clickZ) => {
@@ -123,16 +158,25 @@ export const SupercruiseMap = () => {
           </Flex.Item>
 
           {showPanel && (
-            <Flex.Item width="240px" style={{ overflowY: 'auto', maxHeight: '100%' }}>
-              <Section title="Flight Controls" height="100%">
+            <Flex.Item width="260px" style={{ overflowY: 'auto', maxHeight: '100%', backgroundColor: 'rgba(5, 10, 20, 0.9)', borderLeft: '1px solid rgba(0, 255, 255, 0.1)' }}>
+              <Box p={1}>
                 {!linkedToShuttle ? (
                   <NoticeBox>No shuttle linked</NoticeBox>
                 ) : (
                   <>
                     {actionError && <NoticeBox color="red" mb={0.5} fontSize="0.8em">{actionError}</NoticeBox>}
-                    <Box bold mb={0.5} fontSize="1em" color="cyan">{shuttleName}</Box>
-                    <Box mb={0.5} fontSize="0.8em" color="label">
-                      POS: {ourPos[0]?.toFixed(0)}, {ourPos[1]?.toFixed(0)}, {ourPos[2]?.toFixed(0)}
+                    <Box mb={1} style={{
+                      backgroundColor: 'rgba(10, 20, 40, 0.7)',
+                      border: '1px solid rgba(0, 255, 255, 0.2)',
+                      borderRadius: '0px',
+                      boxShadow: 'inset 0 0 10px rgba(0, 255, 255, 0.1)',
+                      padding: '8px 12px',
+                    }}>
+                      <Box bold fontSize="1.3em" color="cyan" mb={0.5} style={{ textShadow: '0 0 5px rgba(0, 255, 255, 0.5)' }}>{shuttleName}</Box>
+                      <Box fontSize="0.8em" color="#88ddff" fontFamily="monospace" letterSpacing="1px" bold mb={0.5}>◉ Venture-Class</Box>
+                      <Box fontFamily="monospace" fontSize="0.75em" color="label">
+                        X: {ourPos[0]?.toFixed(0)} | Y: {ourPos[1]?.toFixed(0)} | Z: {ourPos[2]?.toFixed(0)}
+                      </Box>
                     </Box>
 
                     <FlightControls
@@ -141,15 +185,8 @@ export const SupercruiseMap = () => {
                       shuttlePitch={shuttlePitch}
                       shuttleThrust={shuttleThrust}
                       act={act}
+                      activeKeys={activeKeys}
                     />
-
-                    <Flex mb={0.5}>
-                      <Button compact icon="search-plus" onClick={() => handleZoom(1.3)} tooltip="Zoom In" />
-                      <Button compact icon="search-minus" onClick={() => handleZoom(0.7)} tooltip="Zoom Out" />
-                      <Box as="span" ml={1} fontSize="0.8em" color="label" lineHeight="22px">
-                        Zoom: {zoomScale.toFixed(1)}x
-                      </Box>
-                    </Flex>
 
                     <NavigationStatus
                       isDocked={isDocked}
@@ -165,12 +202,8 @@ export const SupercruiseMap = () => {
                       act={act}
                     />
 
-                    {isDocked && (
-                      <Button fluid icon="anchor" color="red" mt={0.5} onClick={() => act('undock')}>Undock</Button>
-                    )}
-
                     {!isDocked && (
-                      <NearbyContacts nearbyObjects={nearbyObjects} act={act} />
+                      <NearbyContacts nearbyObjects={nearbyObjects} act={act} onContactHover={setHoveredContactId}/>
                     )}
 
                     <JumpDrivePanel
@@ -185,16 +218,9 @@ export const SupercruiseMap = () => {
                       setSelectedJumpDestination={setSelectedJumpDestination}
                       act={act}
                     />
-
-                    <Box mt={1} fontSize="0.7em" color="dim">
-                      W A S D — Повороты корпуса<br />
-                      Q — Уменьшить тягу / E — Увеличить тягу<br />
-                      X — Убить тягу<br />
-                      ПКМ=курс · Ctrl+ПКМ=Z · Shift+ПКМ=отмена<br />
-                    </Box>
                   </>
                 )}
-              </Section>
+              </Box>
             </Flex.Item>
           )}
         </Flex>
