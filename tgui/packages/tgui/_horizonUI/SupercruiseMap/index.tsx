@@ -158,8 +158,17 @@ export const SupercruiseMap = () => {
           </Flex.Item>
 
           {showPanel && (
-            <Flex.Item width="260px" style={{ overflowY: 'auto', maxHeight: '100%', backgroundColor: 'rgba(5, 10, 20, 0.9)', borderLeft: '1px solid rgba(0, 255, 255, 0.1)' }}>
-              <Box p={1}>
+            <Flex.Item
+              width="260px"
+              style={{
+                maxHeight: '100%',
+                backgroundColor: 'rgba(5, 10, 20, 0.9)',
+                borderLeft: '1px solid rgba(0, 255, 255, 0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Box p={1} style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
                 {!linkedToShuttle ? (
                   <NoticeBox>No shuttle linked</NoticeBox>
                 ) : (
@@ -202,9 +211,13 @@ export const SupercruiseMap = () => {
                       act={act}
                     />
 
-                    {!isDocked && (
-                      <NearbyContacts nearbyObjects={nearbyObjects} act={act} onContactHover={setHoveredContactId}/>
-                    )}
+
+                    <NearbyContacts
+                      map_objects={canvasMapObjects}
+                      ourObject={ourObject}
+                      act={act}
+                      onContactHover={setHoveredContactId}
+                    />
 
                     <JumpDrivePanel
                       hasJumpDrive={hasJumpDrive}
