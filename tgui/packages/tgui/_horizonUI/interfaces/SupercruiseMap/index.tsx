@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useBackend } from '../../backend';
+import { useBackend } from '../../../backend';
 import { Box, Button, Flex, NoticeBox } from 'tgui-core/components';
-import { Window } from '../../layouts';
+import { Window } from '../../../layouts';
 import { SupercruiseMapCanvas } from './components/MapCanvas';
 import { FlightControls } from './screens/FlightControls';
 import { NavigationStatus } from './screens/NavigationStatus';
 import { NearbyContacts } from './screens/NearbyContacts';
 import { JumpDrivePanel } from './screens/JumpDrivePanel';
 import { useShuttleControls } from './ShuttleControls';
+import '../../styles/OrbitalMap.scss';
 
 export const SupercruiseMap = () => {
   const { act, data } = useBackend();
@@ -68,7 +69,7 @@ export const SupercruiseMap = () => {
   const canvasMapObjects = map_objects;
 
   return (
-    <Window width={1100} height={750}>
+    <Window width={1100} height={750} theme="Orbital_Map">
       <Window.Content>
         <Flex height="100%">
           <Flex.Item grow>
