@@ -53,6 +53,18 @@
 	/// The area instance for caves
 	var/area/cave_area
 
+	// === DMM GENERATION (rust-g) ===
+	/// When TRUE, uses rust-g DMM generation instead of DM-side perlin/biome terrain.
+	/// DMM generation is significantly faster: all Perlin noise, CA, biome selection,
+	/// turf placement, and flora spawning happens in Rust.
+	var/use_dmm_generation = TRUE
+	/// Planet type key passed to rust-g. Selects biome configs hardcoded in Rust.
+	/// Must match a key in rust-g's get_planet_config() match block.
+	/// Valid: "rock", "ice", "lava", "jungle", "desert", "beach", "grassland", "wasteland"
+	var/biome_key = "rock"
+	/// Seed for DMM generation. If 0, a random seed is generated in New().
+	var/dmm_seed = 0
+
 	// === INTERNAL ===
 	/// Stored CA string for cave generation
 	var/string_gen
@@ -70,13 +82,18 @@
 	heat_seed = rand(0, 50000)
 	humidity_seed = rand(0, 50000)
 
+	// Initialize DMM seed if not set
+	if(!dmm_seed)
+		dmm_seed = rand(0, 999999)
+
 	// Create NEW area instances for this planet (don't reuse global instances)
 	// Each planet needs its own area instance to avoid conflicts when multiple planets exist
 	primary_area = new primary_area_type
 	cave_area = new cave_area_type
 
 	// Generate cellular automata for caves if mountain_height < 1
-	if(mountain_height < 1)
+	// Only needed for legacy (non-DMM) generation path
+	if(mountain_height < 1 && !use_dmm_generation)
 		// This generates the cave layout using cellular automata
 		// The string represents a 2D grid where '0' = open space, '1' = wall
 		string_gen = rustg_cnoise_generate("[initial_closed_chance]", "[smoothing_iterations]", "[birth_limit]", "[death_limit]", "[world.maxx]", "[world.maxy]")
@@ -85,14 +102,20 @@
 	turf_biome_cache = list()
 
 /**
- * Generates a planet level using the virtual level system
+ * Generates a planet level using the virtual level system.
+ *
+ * When use_dmm_generation is TRUE (default), all terrain is generated in Rust
+ * via rust-g's planet_generator_generate_dmm and loaded through /datum/parsed_map.
+ * This is significantly faster than DM-side perlin/biome iteration.
+ *
+ * The legacy path (perlin noise + biome tables) is still available by setting
+ * use_dmm_generation = FALSE on the generator subtype.
  *
  * Arguments:
  * * planet_name - Name of the planet
  * * planet_size - Size of the planet (default 100x100)
  * * baseturf - The base turf type for this planet
  * * mapzone - Optional existing mapzone to use
- * * atmosphere - Optional atmosphere datum to apply to the planet
  *
  * Returns: A list containing [vlevel, list of docking_ports], or null if planet already exists
  */
@@ -150,32 +173,43 @@
 	// Create docking ports for ship landing
 	var/list/docking_ports = create_docking_ports(vlevel, planet_name)
 
-	// Get the turfs to generate (excluding the border)
-	var/list/turf/turfs_to_generate = list()
-	var/turf/bottom_left = vlevel.get_unreserved_bottom_left_turf()
-	var/turf/top_right = vlevel.get_unreserved_top_right_turf()
-
-	for(var/turf/T as anything in block(bottom_left, top_right))
-		turfs_to_generate += T
-
-	if(!length(turfs_to_generate))
-		log_world("ERROR: No turfs available for generation in [planet_name]")
+	// Get the bottom-left turf of the unreserved area (where we load the DMM)
+	var/turf/load_turf = vlevel.get_unreserved_bottom_left_turf()
+	if(!load_turf)
+		log_world("ERROR: No unreserved turfs available for [planet_name]")
 		generating = FALSE
 		return null
 
-	log_world("Generating planet [planet_name] with [length(turfs_to_generate)] turfs...")
+	log_world("Generating planet [planet_name] ([planet_size]x[planet_size])...")
 
-	// Generate the terrain using parent implementation
-	generate_terrain(turfs_to_generate, null)
+	if(use_dmm_generation)
+		// === DMM GENERATION PATH (fast: all CA + turf placement in Rust) ===
+		if(!generate_planet_dmm(planet_name, planet_size, load_turf))
+			generating = FALSE
+			return null
+	else
+		// === LEGACY GENERATION PATH (DM-side perlin + biome iteration) ===
+		var/list/turf/turfs_to_generate = list()
+		var/turf/top_right = vlevel.get_unreserved_top_right_turf()
+		for(var/turf/T as anything in block(load_turf, top_right))
+			turfs_to_generate += T
 
-	// Override atmospheres on all generated turfs to use breathable air
-	override_turf_atmospheres(turfs_to_generate)
+		if(!length(turfs_to_generate))
+			log_world("ERROR: No turfs available for generation in [planet_name]")
+			generating = FALSE
+			return null
 
-	// Populate with flora/fauna using parent implementation
-	populate_terrain(turfs_to_generate, null)
+		// Generate the terrain using biome tables
+		generate_terrain(turfs_to_generate, null)
 
-	// Smooth all generated turfs to fix borders and transitions
-	smooth_generated_turfs(turfs_to_generate, vlevel.z_value)
+		// Override atmospheres on all generated turfs to use breathable air
+		override_turf_atmospheres(turfs_to_generate)
+
+		// Populate with flora/fauna
+		populate_terrain(turfs_to_generate, null)
+
+		// Smooth all generated turfs to fix borders and transitions
+		smooth_generated_turfs(turfs_to_generate, vlevel.z_value)
 
 	log_world("Planet [planet_name] generation complete with [length(docking_ports)] docking ports!")
 
@@ -183,6 +217,65 @@
 	generating = FALSE
 
 	return list(vlevel, docking_ports)
+
+/**
+ * Generates terrain via rust-g DMM and loads it at the target turf.
+ *
+ * Calls rust-g to produce a complete TGM-format DMM string using cellular
+ * automata, then parses and loads it through /datum/parsed_map.
+ * All heavy computation (CA, DMM formatting) happens in Rust; DM only
+ * handles map parsing and atom initialization.
+ *
+ * Arguments:
+ * * planet_name - Name for logging
+ * * planet_size - Width/height of the generated map
+ * * load_turf - Bottom-left turf where the map is placed
+ *
+ * Returns: TRUE on success, FALSE on failure
+ */
+/datum/map_generator/planet_generator/proc/generate_planet_dmm(planet_name, planet_size, turf/load_turf)
+	// Call rust-g to generate the complete DMM string with full procedural generation.
+	// All biome configs (turfs, flora, areas) are hardcoded in Rust, looked up by biome_key.
+	var/dmm_string = rustg_planet_generator_generate_dmm("[planet_size]", "[planet_size]", "[dmm_seed]", biome_key, "[mountain_height]", "[perlin_zoom]", "[initial_closed_chance]", "[smoothing_iterations]", "[birth_limit]", "[death_limit]")
+
+	if(!dmm_string)
+		log_world("ERROR: rust-g returned empty DMM string for [planet_name]")
+		return FALSE
+
+	// Parse the DMM string directly (no file I/O needed)
+	var/datum/parsed_map/parsed = new(dmm_string)
+	if(!parsed || !parsed.bounds)
+		log_world("ERROR: Failed to parse DMM string for [planet_name]")
+		return FALSE
+
+	// Load the parsed map into the world at the target turf.
+	// parsed.load() returns TRUE/FALSE (not bounds); actual bounds are in parsed.bounds.
+	var/load_success = parsed.load(
+		load_turf.x,
+		load_turf.y,
+		load_turf.z,
+		crop_map = TRUE,
+		no_changeturf = (SSatoms.initialized == INITIALIZATION_INSSATOMS),
+	)
+	if(!load_success)
+		log_world("ERROR: DMM load failed for [planet_name]")
+		return FALSE
+
+	// Initialize atoms in the loaded area (turfs, areas, movables)
+	var/datum/map_template/dummy = new()
+	dummy.name = "planet_dmm_[planet_name]"
+	dummy.initTemplateBounds(parsed.bounds)
+
+	// Post-generation: smooth turfs and apply atmosphere
+	var/list/turf/turfs_to_smooth = block(
+		parsed.bounds[MAP_MINX], parsed.bounds[MAP_MINY], parsed.bounds[MAP_MINZ],
+		parsed.bounds[MAP_MAXX], parsed.bounds[MAP_MAXY], parsed.bounds[MAP_MAXZ]
+	)
+	smooth_generated_turfs(turfs_to_smooth, load_turf.z)
+	override_turf_atmospheres(turfs_to_smooth)
+
+	log_world("DMM planet [planet_name] loaded at [load_turf.x],[load_turf.y],[load_turf.z]")
+	return TRUE
 
 /**
  * Creates docking ports for ship landing
@@ -509,6 +602,8 @@
 	primary_area_type = /area/planet/rocky
 	cave_area_type = /area/planet/cave/rocky
 	mountain_height = 0.80  // Moderate amount of caves
+	// DMM generation settings
+	biome_key = "rock"
 
 /datum/map_generator/planet_generator/rocky/New()
 	. = ..()
@@ -599,6 +694,8 @@
 	primary_area_type = /area/planet/ice
 	cave_area_type = /area/planet/cave/ice
 	mountain_height = 0.75  // More caves due to ice fracturing
+	// DMM generation settings
+	biome_key = "ice"
 
 /datum/map_generator/planet_generator/ice/New()
 	. = ..()
@@ -691,6 +788,8 @@
 	cave_area_type = /area/planet/cave/lava
 	mountain_height = 0.45  // 55% caves! Extensive lava tube networks like PentestSS13
 	perlin_zoom = 65  // Same as PentestSS13 lava planets
+	// DMM generation settings
+	biome_key = "lava"
 
 /datum/map_generator/planet_generator/lava/New()
 	. = ..()
@@ -782,6 +881,8 @@
 	primary_area_type = /area/planet/jungle
 	cave_area_type = /area/planet/cave/jungle
 	mountain_height = 0.85  // Fewer caves, dense surface vegetation
+	// DMM generation settings
+	biome_key = "jungle"
 
 /datum/map_generator/planet_generator/jungle/New()
 	. = ..()
@@ -872,6 +973,8 @@
 	primary_area_type = /area/planet/desert
 	cave_area_type = /area/planet/cave/desert
 	mountain_height = 0.82  // Wind-carved caves
+	// DMM generation settings
+	biome_key = "desert"
 
 /datum/map_generator/planet_generator/desert/New()
 	. = ..()
@@ -962,6 +1065,8 @@
 	primary_area_type = /area/planet/beach
 	cave_area_type = /area/planet/cave/beach
 	mountain_height = 0.88  // Few caves, mostly coastal
+	// DMM generation settings
+	biome_key = "beach"
 
 /datum/map_generator/planet_generator/beach/New()
 	. = ..()
@@ -1052,6 +1157,8 @@
 	primary_area_type = /area/planet/grassland
 	cave_area_type = /area/planet/cave/grassland
 	mountain_height = 0.80  // Moderate cave systems
+	// DMM generation settings
+	biome_key = "grassland"
 
 /datum/map_generator/planet_generator/grassland/New()
 	. = ..()
@@ -1142,6 +1249,8 @@
 	primary_area_type = /area/planet/wasteland
 	cave_area_type = /area/planet/cave/wasteland
 	mountain_height = 0.78  // Many collapsed structures and tunnels
+	// DMM generation settings
+	biome_key = "wasteland"
 
 /datum/map_generator/planet_generator/wasteland/New()
 	. = ..()

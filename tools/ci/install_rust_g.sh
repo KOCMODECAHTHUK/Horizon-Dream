@@ -7,3 +7,7 @@ mkdir -p ~/.byond/bin
 wget -nv -O ~/.byond/bin/librust_g.so "https://github.com/tgstation/rust-g/releases/download/$RUST_G_VERSION/librust_g.so"
 chmod +x ~/.byond/bin/librust_g.so
 ldd ~/.byond/bin/librust_g.so
+
+wget -nv -O ~/.byond/bin/rust_utils.so "https://github.com/horizon-dev-team/rust-g-horizon/releases/download/$RUST_UTILS_VERSION/rust_utils.so"
+chmod +x ~/.byond/bin/rust_utils.so
+ldd ~/.byond/bin/rust_utils.so
