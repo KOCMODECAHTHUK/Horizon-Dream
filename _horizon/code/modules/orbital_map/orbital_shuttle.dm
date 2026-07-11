@@ -298,22 +298,83 @@
 				vel_y *= drag_ratio
 				vel_z *= drag_ratio
 
-	// ГРАВИТАЦИЯ ЗВЕЗДЫ
-	if(star_system && star_system.central_star)
-		var/datum/orbital_object/star/S = star_system.central_star
-		var/dx = S.pos_x - pos_x
-		var/dy = S.pos_y - pos_y
-		var/dz = S.pos_z - pos_z
-		var/dist_sq = dx*dx + dy*dy + dz*dz
-		var/dist = sqrt(dist_sq)
+	// === ГРАВИТАЦИЯ И СТОЛКНОВЕНИЯ (Сферы Влияния - SOI) ===
+	if(star_system)
+		var/datum/orbital_object/dominant_body = null
+		var/dominant_dist_sq = INFINITY
 
-		// S.gravity_mass = масса звезды (сейчас 5000 в orbital_star.dm)
-		// Можно изменить делитель (1000) ниже, чтобы сделать гравитацию слабее/сильнее.
-		if(dist > 0.01 && dist < 1000) // Гравитация работает только в радиусе 1000 км
-			var/pull_strength = (S.gravity_mass / max(dist_sq, 1)) / 1000
-			vel_x += (dx / dist) * pull_strength * seconds_per_tick
-			vel_y += (dy / dist) * pull_strength * seconds_per_tick
-			vel_z += (dz / dist) * pull_strength * seconds_per_tick
+		// Ищем, чья гравитация сейчас сильнее (кто ближе в своей SOI)
+		for(var/datum/orbital_object/obj in star_system.orbital_objects)
+			if(!obj.mass || obj == src) continue
+
+			var/dx = obj.pos_x - pos_x
+			var/dy = obj.pos_y - pos_y
+			var/dz = obj.pos_z - pos_z
+			var/dist_sq = dx*dx + dy*dy + dz*dz
+
+			// Проверка столкновений
+			if(istype(obj, /datum/orbital_object/planet))
+				var/datum/orbital_object/planet/P = obj
+				var/coll_radius = P.radius + 5
+				if(dist_sq < coll_radius * coll_radius)
+					// Пытаемся сесть
+					if(P.emergency_dock(src))
+						return // Успешно приземлились
+
+					// ЕСЛИ НЕ СМОГЛИ СЕСТЬ (не сгенерировалась или газовый гигант):
+					// Прилипаем к поверхности (не даем лететь дальше к центру)
+					var/dist = sqrt(dist_sq)
+					if(dist > 0.01)
+						// Нормаль (вектор от центра планеты к кораблю)
+						var/nx = -dx / dist
+						var/ny = -dy / dist
+						var/nz = -dz / dist
+
+						// Выталкиваем корабль ровно на границу collision radius
+						pos_x = P.pos_x + nx * coll_radius
+						pos_y = P.pos_y + ny * coll_radius
+						pos_z = P.pos_z + nz * coll_radius
+
+						// Гасим скорость, направленную внутрь планеты (чтобы не улетел в ядро)
+						var/vdotn = vel_x * nx + vel_y * ny + vel_z * nz
+						if(vdotn < 0)
+							vel_x -= vdotn * nx
+							vel_y -= vdotn * ny
+							vel_z -= vdotn * nz
+
+				// Если внутри SOI планеты, она становится кандидатом на доминирование
+				if(P.soi_radius > 0 && dist_sq < P.soi_radius * P.soi_radius)
+					if(dist_sq < dominant_dist_sq)
+						dominant_body = P
+						dominant_dist_sq = dist_sq
+
+			else if(istype(obj, /datum/orbital_object/star))
+				var/datum/orbital_object/star/S = obj
+				var/coll_radius = S.collision_radius || S.radius
+				if(dist_sq < coll_radius * coll_radius)
+					// Столкновение со звездой - просто отскок (смерть от радиации добавим потом)
+					vel_x = -vel_x * 0.8
+					vel_y = -vel_y * 0.8
+					vel_z = -vel_z * 0.8
+
+				// Звезда всегда кандидат на доминирование, если нет планет
+				if(dist_sq < dominant_dist_sq && !dominant_body)
+					dominant_body = S
+					dominant_dist_sq = dist_sq
+
+		// Применяем гравитацию от доминирующего тела
+		if(dominant_body)
+			var/dx = dominant_body.pos_x - pos_x
+			var/dy = dominant_body.pos_y - pos_y
+			var/dz = dominant_body.pos_z - pos_z
+			var/dist = sqrt(dominant_dist_sq)
+
+			if(dist > 0.1 && dist < 2000) // Гравитация работает в радиусе 2000 км
+				// Формула: F = G * M / r^2. Делитель 5 для баланса.
+				var/pull_strength = (dominant_body.mass / max(dominant_dist_sq, 1)) / 5
+				vel_x += (dx / dist) * pull_strength * seconds_per_tick
+				vel_y += (dy / dist) * pull_strength * seconds_per_tick
+				vel_z += (dz / dist) * pull_strength * seconds_per_tick
 
 	// Enforce speed limit
 	var/current_speed = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z)

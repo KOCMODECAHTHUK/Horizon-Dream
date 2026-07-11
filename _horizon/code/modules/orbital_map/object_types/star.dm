@@ -8,7 +8,9 @@
 	supercruise_color = "#ffff88"
 	name = "Star"
 	/// Масса звезды для расчета гравитации
-	var/gravity_mass = 5000
+	mass = 5000
+	/// Радиус столкновения со звездой
+	var/collision_radius = 50
 
 /datum/orbital_object/star/New(x_pos = 0, y_pos = 0, z_pos = 0, star_name = "Star", datum/overmap_star_system/spawn_system = null)
 	. = ..(x_pos, y_pos, z_pos, spawn_system)

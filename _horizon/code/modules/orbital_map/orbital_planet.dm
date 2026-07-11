@@ -36,6 +36,10 @@
 	var/orbit_inclination = 0
 	/// Вращение орбиты (0-360). Поворот наклоненной плоскости вокруг оси Z
 	var/orbit_ascension = 0
+	/// Радиус Сферы Влияния (SOI). В этом радиусе планета притягивает корабль.
+	var/soi_radius = 500
+	/// Масса планеты для расчета гравитации (100 = средняя, 5000 = звезда)
+	mass = 200
 
 /datum/orbital_object/planet/New(x_pos, y_pos, z_pos, planet_name, set_type = /datum/orbital_object/planet/rocky, datum/overmap_star_system/spawn_system = null)
 	. = ..(x_pos, y_pos, z_pos, spawn_system)
@@ -367,3 +371,46 @@
 	// Delete the planet's supercruise object itself (like PentestSS13 does)
 	// This removes it from the overmap and frees all references
 	qdel(src)
+
+/**
+ * Экстренная посадка (Auto-dock) при столкновении с планетой.
+ * Вызывается, когда корабль пересекает критический радиус.
+ */
+/datum/orbital_object/planet/proc/emergency_dock(datum/orbital_object/shuttle/dock_requester)
+	if(!istype(dock_requester))
+		return FALSE
+
+	// Если на планету нельзя сесть (например, газовый гигант), не садим, а отбрасываем корабль
+	if(!landable)
+		return FALSE
+
+	// Если уровень не сгенерирован, генерируем
+	if(!planet_level)
+		generate_level()
+
+	var/list/available = get_dockable_locations()
+	if(!length(available))
+		return FALSE // Нет места, придется отскочить
+
+	var/obj/docking_port/stationary/dock_to_use = pick(available)
+
+	// Используем систему тикетов для безопасной стыковки
+	var/datum/docking_ticket/ticket = pre_docked(dock_requester, dock_to_use)
+	if(!ticket || ticket.docking_error)
+		if(ticket) qdel(ticket)
+		return FALSE
+
+	// Инициируем стыковку
+	var/docking_result = dock_requester.shuttle_port.initiate_docking(ticket.target_port)
+	if(docking_result != DOCKING_SUCCESS)
+		qdel(ticket)
+		return FALSE
+
+	// Запоминаем оффсет и привязываем
+	dock_requester.docked_offset_x = dock_requester.pos_x - pos_x
+	dock_requester.docked_offset_y = dock_requester.pos_y - pos_y
+	dock_requester.docked_offset_z = dock_requester.pos_z - pos_z
+	dock_requester.docked_at = src
+
+	qdel(ticket)
+	return TRUE
