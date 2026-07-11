@@ -72,6 +72,11 @@
 	/// The original stationary port where the shuttle was docked before entering supercruise
 	var/obj/docking_port/stationary/original_dock = null
 
+	/// Оффсет позиции относительно станции/планеты при стыковке (чтобы двигаться вместе с ними)
+	var/docked_offset_x = 0
+	var/docked_offset_y = 0
+	var/docked_offset_z = 0
+
 	/// Does this shuttle have a jump drive installed?
 	var/has_jump_drive = TRUE
 	/// Cooldown between jumps in seconds
@@ -123,11 +128,17 @@
 			thrust_angle = MODULUS(thrust_angle - rotation_rate * seconds_per_tick, 360)
 			is_rotating = TRUE
 		if(rotating_pitch_up)
-			thrust_pitch = clamp(thrust_pitch + rotation_rate * seconds_per_tick, -90, 90)
+			thrust_pitch += rotation_rate * seconds_per_tick
 			is_rotating = TRUE
 		if(rotating_pitch_down)
-			thrust_pitch = clamp(thrust_pitch - rotation_rate * seconds_per_tick, -90, 90)
+			thrust_pitch -= rotation_rate * seconds_per_tick
 			is_rotating = TRUE
+		if(thrust_pitch > 90)
+			thrust_pitch = 180 - thrust_pitch
+			thrust_angle = MODULUS(thrust_angle + 180, 360)
+		else if(thrust_pitch < -90)
+			thrust_pitch = -180 - thrust_pitch
+			thrust_angle = MODULUS(thrust_angle + 180, 360)
 
 		// Пересчитываем вектор тяги, даже если thrust_power = 0, чтобы компас вращался
 		if(is_rotating)
@@ -511,6 +522,11 @@
 	docked_at = target_station
 	is_docking = FALSE
 
+	// Сохраняем оффсет
+	docked_offset_x = pos_x - target_station.pos_x
+	docked_offset_y = pos_y - target_station.pos_y
+	docked_offset_z = pos_z - target_station.pos_z
+
 	return null // Success
 
 /**
@@ -527,9 +543,17 @@
 
 	// If we're docked at a station object, undock from it
 	if(docked_at)
+		var/new_pos_x = docked_at.pos_x + docked_offset_x
+		var/new_pos_y = docked_at.pos_y + docked_offset_y
+		var/new_pos_z = docked_at.pos_z + docked_offset_z
+
 		var/undock_error = docked_at.undock_shuttle(src)
 		if(undock_error)
 			return undock_error
+
+		pos_x = new_pos_x
+		pos_y = new_pos_y
+		pos_z = new_pos_z
 
 	// Store the current dock location so we can return to it
 	var/obj/docking_port/stationary/current_dock = shuttle_port.get_docked()

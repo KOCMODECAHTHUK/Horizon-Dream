@@ -257,6 +257,11 @@
 	// Clean up the ticket now that docking is complete
 	qdel(ticket)
 
+	// Сохраняем оффсет, чтобы при отстыковке корабль появился рядом с планетой
+	interacting_shuttle.docked_offset_x = interacting_shuttle.pos_x - pos_x
+	interacting_shuttle.docked_offset_y = interacting_shuttle.pos_y - pos_y
+	interacting_shuttle.docked_offset_z = interacting_shuttle.pos_z - pos_z
+
 	return null // Success
 
 /**

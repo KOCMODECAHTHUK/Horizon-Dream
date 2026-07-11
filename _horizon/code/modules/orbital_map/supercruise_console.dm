@@ -83,10 +83,20 @@
 		data["shuttleVelX"] = controlled_shuttle.vel_x
 		data["shuttleVelY"] = controlled_shuttle.vel_y
 		data["shuttleVelZ"] = controlled_shuttle.vel_z
-		data["shuttlePosX"] = controlled_shuttle.pos_x
-		data["shuttlePosY"] = controlled_shuttle.pos_y
-		data["shuttlePosZ"] = controlled_shuttle.pos_z
-		data["ourObject"] = controlled_shuttle.get_map_data()
+		if(controlled_shuttle.docked_at)
+			data["shuttlePosX"] = controlled_shuttle.docked_at.pos_x
+			data["shuttlePosY"] = controlled_shuttle.docked_at.pos_y
+			data["shuttlePosZ"] = controlled_shuttle.docked_at.pos_z
+		else
+			data["shuttlePosX"] = controlled_shuttle.pos_x
+			data["shuttlePosY"] = controlled_shuttle.pos_y
+			data["shuttlePosZ"] = controlled_shuttle.pos_z
+		var/list/our_obj_data = controlled_shuttle.get_map_data()
+		if(controlled_shuttle.docked_at)
+			our_obj_data["position_x"] = data["shuttlePosX"]
+			our_obj_data["position_y"] = data["shuttlePosY"]
+			our_obj_data["position_z"] = data["shuttlePosZ"]
+		data["ourObject"] = our_obj_data
 		data["autopilotEnabled"] = controlled_shuttle.autopilot_enabled
 
 		// Check if docked - either docked_at is set OR shuttle is not in transit dock
