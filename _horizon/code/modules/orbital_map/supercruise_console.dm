@@ -300,6 +300,22 @@
 			controlled_shuttle.toggle_rotate_pitch_down(text2num(params["enable"]))
 			return TRUE
 
+		if("set_rcs")
+			var/sx = text2num(params["sx"]) || 0
+			var/sy = text2num(params["sy"]) || 0
+			var/sz = text2num(params["sz"]) || 0
+			var/power = text2num(params["power"]) || 0
+
+			if(sx == 0 && sy == 0 && sz == 0)
+				controlled_shuttle.rcs_power = 0
+			else
+				controlled_shuttle.rcs_power = clamp(power, 0, 10)
+
+			controlled_shuttle.rcs_strafe_x = sx
+			controlled_shuttle.rcs_strafe_y = sy
+			controlled_shuttle.rcs_strafe_z = sz
+			return TRUE
+
 		if("dock")
 			var/object_id = params["stationId"]
 			if(!object_id)

@@ -97,6 +97,9 @@ export const FlightControls = (props) => {
             <Box>W A S D — Повороты корпуса</Box>
             <Box>Q / E — Тяга (- / +)</Box>
             <Box>X — Сброс тяги</Box>
+            <Box mt={0.5} bold color="purple">МАНЕВРОВЫЕ (RCS)</Box>
+            <Box>Shift + W A S D — Стрейф</Box>
+            <Box>Shift + Space/Ctrl — Вверх/Вниз</Box>
             <Box mt={0.5} bold color="cyan">НАВИГАЦИЯ</Box>
             <Box>ПКМ — Задать курс (Автопилот)</Box>
             <Box>Ctrl + ПКМ — Регулировка высоты</Box>
@@ -110,7 +113,7 @@ export const FlightControls = (props) => {
       <Flex direction="column" align="center" gap={1}>
         {/* --- ЕДИНЫЙ БЛОК УПРАВЛЕНИЯ (D-PAD + ТЯГА) --- */}
         <Flex direction="column" align="center" gap={2}>
-          <Box fontSize="0.7em" color="#88ddff" mb={0.5} letterSpacing="2px">FLIGHT CONTROL</Box>
+          <Box fontSize="0.7em" color={activeKeys['shift'] ? '#bb86fc' : '#88ddff'} mb={0.5} letterSpacing="2px">{activeKeys['shift'] ? 'RCS MODE' : 'FLIGHT CONTROL'}</Box>
 
           {/* Ряд 1: [-], [W], [+] */}
           <Flex gap={2} align="center">
@@ -119,7 +122,7 @@ export const FlightControls = (props) => {
               onClick={() => !isDocked && act('set_thrust', { angle: shuttleAngle, power: Math.max(shuttleThrust - 10, 0), pitch: shuttlePitch || 0 })}
             >−</div>
             <div
-              style={controlButtonStyle(activeKeys['w'] || activeKeys['ц'])}
+              style={controlButtonStyle((activeKeys['w'] || activeKeys['ц']) && !activeKeys['shift'])}
               onMouseDown={() => !isDocked && act('toggle_rotate_pitch_up', { enable: true })}
               onMouseUp={() => !isDocked && act('toggle_rotate_pitch_up', { enable: false })}
               onMouseLeave={() => !isDocked && act('toggle_rotate_pitch_up', { enable: false })}

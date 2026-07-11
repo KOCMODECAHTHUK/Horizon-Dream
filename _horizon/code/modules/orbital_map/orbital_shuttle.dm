@@ -94,6 +94,13 @@
 	/// Rotation rate for continuous rotation (degrees per second)
 	var/rotation_rate = 30
 
+	/// Маневровые двигатели (RCS) - мощность (0-10)
+	var/rcs_power = 0
+	/// Вектор стрейфа
+	var/rcs_strafe_x = 0
+	var/rcs_strafe_y = 0
+	var/rcs_strafe_z = 0
+
 /datum/orbital_object/shuttle/process(seconds_per_tick)
 	// Don't process movement if docked
 	var/obj/docking_port/stationary/current_dock = shuttle_port?.get_docked()
@@ -111,6 +118,10 @@
 		autopilot_enabled = FALSE
 		has_target_position = FALSE
 		has_pending_target = FALSE
+		rcs_power = 0
+		rcs_strafe_x = 0
+		rcs_strafe_y = 0
+		rcs_strafe_z = 0
 		return
 
 	// Record position history for trail
@@ -231,6 +242,31 @@
 		if(!rotating_left && !rotating_right && !rotating_pitch_up && !rotating_pitch_down)
 			heading = thrust_angle
 			heading_pitch = thrust_pitch
+
+	// === Применение тяги RCS (стрейф) ===
+	if(rcs_power > 0)
+		// Лкальные векторы ориентации корабля
+		var/cos_pitch = cos(thrust_pitch)
+		var/sin_pitch = sin(thrust_pitch)
+		var/cos_yaw = cos(thrust_angle)
+		var/sin_yaw = sin(thrust_angle)
+		// Локальный "вперед" (Z)
+		var/fwd_x = cos_yaw * cos_pitch
+		var/fwd_y = sin_yaw * cos_pitch
+		var/fwd_z = sin_pitch
+		// Локальный "вправо" (X)
+		var/loc_x = sin_yaw * cos_pitch
+		var/loc_y = -cos_yaw * cos_pitch
+		// Складываем векторы с учетом нажатых кнопок стрейфа
+		var/target_vx = (loc_x * rcs_strafe_x) + (fwd_x * rcs_strafe_z)
+		var/target_vy = (loc_y * rcs_strafe_x) + (fwd_y * rcs_strafe_z)
+		var/target_vz = rcs_strafe_y + (fwd_z * rcs_strafe_z)
+		var/mag = sqrt(target_vx*target_vx + target_vy*target_vy + target_vz*target_vz)
+		if(mag > 0.001)
+			var/rcs_accel = (rcs_power / 100) * acceleration * 0.5 // RCS в 2 раза слабее главных двигателей
+			vel_x += (target_vx / mag) * rcs_accel * seconds_per_tick
+			vel_y += (target_vy / mag) * rcs_accel * seconds_per_tick
+			vel_z += (target_vz / mag) * rcs_accel * seconds_per_tick
 
 	// === Apply acceleration ===
 	if(effective_thrust_power > 0)
