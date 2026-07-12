@@ -52,6 +52,12 @@
 	var/has_target_position = FALSE
 	/// Autopilot enabled (confirmed and flying)
 	var/autopilot_enabled = FALSE
+	 /// Режим автопилота: 0=Выключен, 1=Лететь к цели (Travel), 2=Орбита (Orbit), 3=Удержание (Hold)
+	var/autopilot_mode = 0
+	/// ID объекта, к которому летим/на орбите которого находимся
+	var/target_object_id = null
+	/// Выбранный радиус орбиты (для режима ORBIT)
+	var/target_orbit_radius = 0
 
 	/// Position history for trail rendering (list of position lists)
 	var/list/position_history = list()
@@ -100,6 +106,17 @@
 	var/rcs_strafe_x = 0
 	var/rcs_strafe_y = 0
 	var/rcs_strafe_z = 0
+
+	/// Система стабилизации (SAS) включена
+    var/sas_enabled = TRUE
+    /// Маневровые двигатели (RCS) включены
+    var/rcs_enabled = TRUE
+
+    // Внутренние переменные автопилота для RCS
+    var/ap_rcs_x = 0
+    var/ap_rcs_y = 0
+    var/ap_rcs_z = 0
+    var/ap_rcs_power = 0
 
 /datum/orbital_object/shuttle/process(seconds_per_tick)
 	// Don't process movement if docked
@@ -171,74 +188,200 @@
 			heading = thrust_angle
 			heading_pitch = thrust_pitch
 
-	// === Determine thrust direction and power ===
+		// === Determine thrust direction and power ===
 	var/thrust_dir_x = 0
 	var/thrust_dir_y = 0
 	var/thrust_dir_z = 0
 	var/effective_thrust_power = 0
 
-	// Handle autopilot to target position
-	if(autopilot_enabled && has_target_position)
-		var/target_x = target_pos_x
-		var/target_y = target_pos_y
-		var/target_z = target_pos_z
+		// Синхронизируем старую переменную для UI
+	autopilot_enabled = (autopilot_mode > 0)
 
-		var/dx = target_x - pos_x
-		var/dy = target_y - pos_y
-		var/dz = target_z - pos_z
-		var/distance = sqrt(dx*dx + dy*dy + dz*dz)
+	// --- АВТОПИЛОТ ---
+	if(autopilot_mode > 0)
+		var/datum/orbital_object/target = null
+		if(target_object_id)
+			target = SSsupercruise.find_object(target_object_id, star_system)
+			if(!target)
+				autopilot_mode = 0
+				target_object_id = null
 
-		if(distance > arrival_threshold)
-			var/dir_x = dx / distance
-			var/dir_y = dy / distance
-			var/dir_z = dz / distance
+		// Поддержка статичной точки (только для режима TRAVEL)
+		if(!target && !(autopilot_mode == 1 && has_target_position))
+			autopilot_mode = 0 // Неверный режим, выключаем
 
-			var/desired_speed = max_speed
-			if(distance < slowdown_distance)
-				desired_speed = max_speed * (distance / slowdown_distance)
-				desired_speed = max(desired_speed, 2)
+		if(autopilot_mode > 0)
+			// Получаем координаты и скорость цели (или статичной точки)
+			var/t_pos_x = target ? target.pos_x : target_pos_x
+			var/t_pos_y = target ? target.pos_y : target_pos_y
+			var/t_pos_z = target ? target.pos_z : target_pos_z
+			var/t_vel_x = target ? target.vel_x : 0
+			var/t_vel_y = target ? target.vel_y : 0
+			var/t_vel_z = target ? target.vel_z : 0
+			var/t_mass = target ? target.mass : 0
 
-			var/current_speed = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z)
-			var/dot_vel_dir = vel_x*dir_x + vel_y*dir_y + vel_z*dir_z
+			var/dx = t_pos_x - pos_x
+			var/dy = t_pos_y - pos_y
+			var/dz = t_pos_z - pos_z
+			var/distance = sqrt(dx*dx + dy*dy + dz*dz)
 
-			if(dot_vel_dir >= 0 && current_speed > desired_speed)
-				if(current_speed > 0.01)
-					thrust_dir_x = -vel_x/current_speed
-					thrust_dir_y = -vel_y/current_speed
-					thrust_dir_z = -vel_z/current_speed
-				effective_thrust_power = 100
+			// Хелпер: перевод 3D вектора в углы Heading/Pitch (В BYOND arctan(x, y)!)
+			var/v_mag = distance
+			var/targ_h = v_mag > 0.01 ? MODULUS(arctan(dx, dy), 360) : heading
+			var/h_mag = sqrt(dx*dx + dy*dy)
+			var/targ_p = h_mag > 0.01 ? arctan(h_mag, dz) : (dz > 0 ? 90 : -90)
+
+			// РЕЖИМ 1: TRAVEL TO
+			if(autopilot_mode == 1)
+				if(distance > arrival_threshold)
+					var/rvel_x = vel_x - t_vel_x
+					var/rvel_y = vel_y - t_vel_y
+					var/rvel_z = vel_z - t_vel_z
+					var/rvel_mag = sqrt(rvel_x*rvel_x + rvel_y*rvel_y + rvel_z*rvel_z)
+					var/dot_vel = (rvel_x*dx + rvel_y*dy + rvel_z*dz) / max(distance, 0.01)
+
+					// Если близко и летим к цели - ТОРМОЗИМ (только если есть скорость)
+					if(distance < slowdown_distance && dot_vel > 0 && rvel_mag > 0.1)
+						targ_h = MODULUS(arctan(-rvel_x, -rvel_y), 360)
+						h_mag = sqrt(rvel_x*rvel_x + rvel_y*rvel_y)
+						targ_p = h_mag > 0.01 ? arctan(h_mag, -rvel_z) : (-rvel_z > 0 ? 90 : -90)
+						effective_thrust_power = 100
+					// Если летим мимо (от цели) - ТОРМОЗИМ
+					else if(dot_vel < 0 && rvel_mag > 5)
+						targ_h = MODULUS(arctan(-rvel_x, -rvel_y), 360)
+						h_mag = sqrt(rvel_x*rvel_x + rvel_y*rvel_y)
+						targ_p = h_mag > 0.01 ? arctan(h_mag, -rvel_z) : (-rvel_z > 0 ? 90 : -90)
+						effective_thrust_power = 100
+					else
+						effective_thrust_power = 50
+				else
+					// Долетели
+					autopilot_mode = 3
+					target_orbit_radius = max(target ? target.radius : 50 + 20, 50)
+
+			// РЕЖИМ 2: ESTABLISH ORBIT
+			else if(autopilot_mode == 2)
+				var/target_orbit_speed = sqrt(t_mass / (5 * max(target_orbit_radius, 50)))
+				var/up_x = 0
+				var/up_y = 0
+				var/up_z = 1
+				if(abs(dx) < 0.1 && abs(dy) < 0.1)
+					up_x = 1
+					up_z = 0
+
+				var/tan_x = (dy * up_z - dz * up_y)
+				var/tan_y = (dz * up_x - dx * up_z)
+				var/tan_z = (dx * up_y - dy * up_x)
+				var/tan_mag = sqrt(tan_x*tan_x + tan_y*tan_y + tan_z*tan_z)
+
+				if(tan_mag > 0.01)
+					tan_x /= tan_mag
+					tan_y /= tan_mag
+					tan_z /= tan_mag
+
+					var/current_tan_speed = vel_x*tan_x + vel_y*tan_y + vel_z*tan_z
+					if(current_tan_speed < 0)
+						tan_x = -tan_x
+						tan_y = -tan_y
+						tan_z = -tan_z
+
+					var/v_target_x = tan_x * target_orbit_speed
+					var/v_target_y = tan_y * target_orbit_speed
+					var/v_target_z = tan_z * target_orbit_speed
+
+					var/err_x = v_target_x - vel_x
+					var/err_y = v_target_y - vel_y
+					var/err_z = v_target_z - vel_z
+					var/err_mag = sqrt(err_x*err_x + err_y*err_y + err_z*err_z)
+
+					if(err_mag > 0.5)
+						targ_h = MODULUS(arctan(err_x, err_y), 360)
+						h_mag = sqrt(err_x*err_x + err_y*err_y)
+						targ_p = h_mag > 0.01 ? arctan(h_mag, err_z) : (err_z > 0 ? 90 : -90)
+						effective_thrust_power = clamp(err_mag * 5, 10, 80)
+					else
+						effective_thrust_power = 0 // Идеальная орбита
+
+			// РЕЖИМ 3: HOLD POSITION
+			else if(autopilot_mode == 3)
+				var/rx = -dx
+				var/ry = -dy
+				var/rz = -dz
+				var/r_mag = sqrt(rx*rx + ry*ry + rz*rz)
+				if(r_mag > 0.01)
+					rx /= r_mag
+					ry /= r_mag
+					rz /= r_mag
+
+				var/desired_x = t_pos_x + rx * target_orbit_radius
+				var/desired_y = t_pos_y + ry * target_orbit_radius
+				var/desired_z = t_pos_z + rz * target_orbit_radius
+
+				var/err_x = desired_x - pos_x
+				var/err_y = desired_y - pos_y
+				var/err_z = desired_z - pos_z
+				var/err_mag = sqrt(err_x*err_x + err_y*err_y + err_z*err_z)
+
+				var/current_speed = sqrt(vel_x*vel_x + vel_y*vel_y + vel_z*vel_z)
+				// Приоритет — торможение, если нас сильно несет
+				if(current_speed > 2)
+					targ_h = MODULUS(arctan(-vel_x, -vel_y), 360)
+					h_mag = sqrt(vel_x*vel_x + vel_y*vel_y)
+					targ_p = h_mag > 0.01 ? arctan(h_mag, -vel_z) : (-vel_z > 0 ? 90 : -90)
+					effective_thrust_power = 50
+				else if(err_mag > 1)
+					targ_h = MODULUS(arctan(err_x, err_y), 360)
+					h_mag = sqrt(err_x*err_x + err_y*err_y)
+					targ_p = h_mag > 0.01 ? arctan(h_mag, err_z) : (err_z > 0 ? 90 : -90)
+					effective_thrust_power = clamp(err_mag * 5, 10, 30)
+
+			// === SAS (Физический поворот корабля) ===
+			var/diff_h = targ_h - heading
+			if(diff_h > 180) diff_h -= 360
+			if(diff_h < -180) diff_h += 360
+			var/step_h = rotation_rate * seconds_per_tick
+			if(abs(diff_h) <= step_h)
+				heading = targ_h
 			else
-				thrust_dir_x = dir_x
-				thrust_dir_y = dir_y
-				thrust_dir_z = dir_z
-				var/speed_diff = desired_speed - dot_vel_dir
-				effective_thrust_power = clamp(speed_diff / max_speed * 100, 10, 100)
-			var/horiz_mag = sqrt(thrust_dir_x*thrust_dir_x + thrust_dir_y*thrust_dir_y)
-			if(horiz_mag > 0.001)
-				heading = MODULUS(ATAN2(thrust_dir_x, thrust_dir_y), 360)
-				heading_pitch = ATAN2(horiz_mag, thrust_dir_z)
+				heading = MODULUS(heading + (diff_h > 0 ? step_h : -step_h), 360)
+
+			var/diff_p = targ_p - heading_pitch
+			var/step_p = rotation_rate * seconds_per_tick
+			if(abs(diff_p) <= step_p)
+				heading_pitch = targ_p
 			else
-				heading = 0
-				heading_pitch = thrust_dir_z > 0 ? 90 : -90
+				heading_pitch += (diff_p > 0 ? step_p : -step_p)
 
-			thrust_x = thrust_dir_x
-			thrust_y = thrust_dir_y
-			thrust_z = thrust_dir_z
-			thrust_power = effective_thrust_power
-			thrust_angle = heading
-			thrust_pitch = heading_pitch
-		else
-			autopilot_enabled = FALSE
-			has_target_position = FALSE
+			// === Включение двигателей (Только если нос смотрит куда надо) ===
+			if(abs(diff_h) < 15 && abs(diff_p) < 15 && effective_thrust_power > 0)
+				var/cos_pitch = cos(heading_pitch)
+				var/sin_pitch = sin(heading_pitch)
+				var/cos_yaw = cos(heading)
+				var/sin_yaw = sin(heading)
+				thrust_dir_x = cos_yaw * cos_pitch
+				thrust_dir_y = sin_yaw * cos_pitch
+				thrust_dir_z = sin_pitch
 
-	// Handle manual thrust (срабатывает, если автопилот выключен)
+				thrust_power = effective_thrust_power
+				thrust_angle = heading
+				thrust_pitch = heading_pitch
+				thrust_x = thrust_dir_x
+				thrust_y = thrust_dir_y
+				thrust_z = thrust_dir_z
+			else
+				// Корабль еще разворачивается, двигатели выключены
+				thrust_power = 0
+				thrust_x = 0
+				thrust_y = 0
+				thrust_z = 0
+				effective_thrust_power = 0 // ВАЖНО: сбрасываем, чтобы не улететь по инерции во время разворота
+
+	// --- РУЧНОЕ УПРАВЛЕНИЕ ---
 	else if(thrust_power > 0)
 		thrust_dir_x = thrust_x
 		thrust_dir_y = thrust_y
 		thrust_dir_z = thrust_z
 		effective_thrust_power = thrust_power
-		// Если мы даём ручную тягу, нос смотрит туда же (только если не вращаемся кнопками,
-		// чтобы не перетирать heading, который уже обновлён в блоке вращения выше)
 		if(!rotating_left && !rotating_right && !rotating_pitch_up && !rotating_pitch_down)
 			heading = thrust_angle
 			heading_pitch = thrust_pitch
@@ -509,9 +652,13 @@
 	thrust_y = 0
 	thrust_z = 0
 	thrust_power = 0
-	// heading and heading_pitch are preserved
-	// velocity is preserved for inertia
+	rcs_power = 0
+	rcs_strafe_x = 0
+	rcs_strafe_y = 0
+	rcs_strafe_z = 0
 	stop_all_rotation()
+	autopilot_mode = 0
+	target_object_id = null
 
 /**
  * Toggle continuous rotation left/right

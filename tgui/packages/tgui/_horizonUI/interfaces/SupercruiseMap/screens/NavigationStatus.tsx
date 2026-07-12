@@ -12,7 +12,8 @@ export const NavigationStatus = (props) => {
   const {
     isDocked, dockedStation, hasPendingTarget,
     pendingTargetX, pendingTargetY, pendingTargetZ,
-    autopilotEnabled, targetX, targetY, targetZ, act
+    autopilotMode, targetObjectId,
+    targetX, targetY, targetZ, act
   } = props;
 
   if (isDocked) {
@@ -31,33 +32,60 @@ export const NavigationStatus = (props) => {
     );
   }
 
+  // Состояние 1: Цель выбрана, ожидаем выбора режима автопилота
   if (hasPendingTarget) {
+    const isObjectTarget = targetObjectId != null;
+
     return (
       <Box style={holoPanelStyle('255, 200, 0')}>
         <Box fontSize="0.7em" color="yellow" letterSpacing="2px" mb={0.5}>TARGET PENDING</Box>
         <Box fontFamily="monospace" fontSize="0.85em" color="#ffcc00" mb={1}>
-          X: {pendingTargetX?.toFixed(0)} | Y: {pendingTargetY?.toFixed(0)} | Z: {(pendingTargetZ || 0).toFixed(0)}
+          {isObjectTarget ? "OBJECT LOCKED" : `X: ${pendingTargetX?.toFixed(0)} | Y: ${pendingTargetY?.toFixed(0)} | Z: ${(pendingTargetZ || 0).toFixed(0)}`}
         </Box>
-        <Flex gap={1}>
-          <Button fluid compact icon="check" color="green" onClick={() => act('confirmAutopilot')}>CONFIRM</Button>
+        <Flex direction="column" gap={1}>
+          <Button fluid compact icon="check" color="green" onClick={() => act('setAutopilotMode', { mode: 1 })}>
+            CONFIRM TRAVEL
+          </Button>
+
+          {/* Кнопки Орбиты и Удержания доступны только для объектов (планет/станций) */}
+          {isObjectTarget && (
+            <>
+              <Button fluid compact icon="sync" color="blue" onClick={() => act('setAutopilotMode', { mode: 2, orbitRadius: 150 })}>
+                ENTER ORBIT (150km)
+              </Button>
+              <Button fluid compact icon="hand" color="purple" onClick={() => act('setAutopilotMode', { mode: 3 })}>
+                HOLD POSITION
+              </Button>
+            </>
+          )}
+
           <Button fluid compact icon="xmark" color="red" onClick={() => act('clearPendingTarget')}>ABORT</Button>
         </Flex>
       </Box>
     );
   }
 
-  if (autopilotEnabled) {
+  // Состояние 2: Автопилот включен и работает
+  if (autopilotMode > 0) {
+    let modeText = '';
+    let modeColor = '50, 255, 50';
+
+    if (autopilotMode === 1) modeText = 'AUTOPILOT: TRAVEL';
+    if (autopilotMode === 2) modeText = 'AUTOPILOT: ORBIT';
+    if (autopilotMode === 3) modeText = 'AUTOPILOT: HOLD';
+
     return (
-      <Box style={holoPanelStyle('50, 255, 50')}>
-        <Box fontSize="0.7em" color="green" letterSpacing="2px" mb={0.5}>AUTOPILOT ACTIVE</Box>
+      <Box style={holoPanelStyle(modeColor)}>
+        <Box fontSize="0.7em" color="green" letterSpacing="2px" mb={0.5}>{modeText}</Box>
         <Box fontFamily="monospace" fontSize="0.85em" color="#33ff33" mb={1}>
-          X: {targetX?.toFixed(0)} | Y: {targetY?.toFixed(0)} | Z: {(targetZ || 0).toFixed(0)}
+          TGT: {targetX?.toFixed(0)} | {targetY?.toFixed(0)} | {(targetZ || 0).toFixed(0)}
         </Box>
         <Button fluid compact icon="xmark" color="red" onClick={() => act('clearPendingTarget')}>DISENGAGE AUTOPILOT</Button>
       </Box>
     );
   }
 
+  // Состояние 3: Ничего не выбрано
   return (
     <Box style={holoPanelStyle('150, 150, 255')}>
       <Box fontSize="0.7em" color="#aaaaff" letterSpacing="2px">NAVIGATION</Box>

@@ -45,6 +45,8 @@ export const SupercruiseMap = () => {
     jumpDestinations = [],
     currentSystemName = 'Unknown',
     lastActionError = '',
+    autopilotMode = 0,
+    targetObjectId = null,
   } = data;
 
   const [selectedJumpDestination, setSelectedJumpDestination] = useState(null);
@@ -146,7 +148,7 @@ export const SupercruiseMap = () => {
                       break;
                     case 'right': {
                       const finalZ = clickZ != null ? clickZ : (ourPos[2] || 0);
-                      act('setTargetCoords', { x: worldX, y: worldY, z: finalZ, altKey });
+                      act('setTargetCoords', { x: worldX, y: worldY, z: finalZ, altKey, objectId });
                       break;
                     }
                     case 'double':
@@ -205,7 +207,8 @@ export const SupercruiseMap = () => {
                       pendingTargetX={pendingTargetX}
                       pendingTargetY={pendingTargetY}
                       pendingTargetZ={pendingTargetZ}
-                      autopilotEnabled={autopilotEnabled}
+                      autopilotMode={autopilotMode}
+                      targetObjectId={targetObjectId}
                       targetX={targetX}
                       targetY={targetY}
                       targetZ={targetZ}

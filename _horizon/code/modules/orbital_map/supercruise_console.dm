@@ -97,7 +97,9 @@
 			our_obj_data["position_y"] = data["shuttlePosY"]
 			our_obj_data["position_z"] = data["shuttlePosZ"]
 		data["ourObject"] = our_obj_data
-		data["autopilotEnabled"] = controlled_shuttle.autopilot_enabled
+		data["autopilotEnabled"] = controlled_shuttle.autopilot_mode > 0
+		data["autopilotMode"] = controlled_shuttle.autopilot_mode // 0=off, 1=travel, 2=orbit, 3=hold
+		data["targetObjectId"] = controlled_shuttle.target_object_id // ID объекта, к которому летим
 
 		// Check if docked - either docked_at is set OR shuttle is not in transit dock
 		var/obj/docking_port/stationary/current_dock = controlled_shuttle.shuttle_port?.get_docked()
@@ -146,7 +148,13 @@
 			))
 		data["nearbyObjects"] = nearby_objects
 
-		if(controlled_shuttle.has_target_position)
+		// Отправляем координаты цели для маркера на карте
+		var/datum/orbital_object/target_obj = SSsupercruise.find_object(controlled_shuttle.target_object_id, controlled_shuttle.star_system)
+		if(target_obj)
+			data["targetX"] = target_obj.pos_x
+			data["targetY"] = target_obj.pos_y
+			data["targetZ"] = target_obj.pos_z
+		else if(controlled_shuttle.has_target_position || controlled_shuttle.has_pending_target)
 			data["targetX"] = controlled_shuttle.target_pos_x
 			data["targetY"] = controlled_shuttle.target_pos_y
 			data["targetZ"] = controlled_shuttle.target_pos_z
@@ -238,37 +246,52 @@
 			var/x = text2num(params["x"])
 			var/y = text2num(params["y"])
 			var/z = text2num(params["z"])
-			var/altKey = params["altKey"]
+			var/objectId = params["objectId"]
+			var	altKey = params["altKey"]
 
-			if(altKey) // Alt+Click clears target and stops thrust
-				controlled_shuttle.autopilot_enabled = FALSE
-				controlled_shuttle.has_target_position = FALSE
-				controlled_shuttle.has_pending_target = FALSE
+			if(altKey)
+				controlled_shuttle.autopilot_mode = 0
 				controlled_shuttle.kill_thrust()
+			else if(objectId)
+				// ПКМ по объекту - запоминаем ID объекта
+				controlled_shuttle.target_object_id = objectId
+				controlled_shuttle.has_pending_target = TRUE
 			else if(!isnull(x) && !isnull(y) && !isnull(z))
-				controlled_shuttle.pending_target_x = x
-				controlled_shuttle.pending_target_y = y
-				controlled_shuttle.pending_target_z = z
+				// ПКМ по пустому месту - летим в статичную точку (создаем фейковый объект? Нет, пока просто координаты)
+				// Для простоты: если кликнули пустоту, автопилот летит туда и забывает про объекты
+				controlled_shuttle.target_object_id = null
+				// В старом коде мы хранили target_pos_x/y/z. Давайте вернем их временно для статичных точек
+				controlled_shuttle.target_pos_x = x
+				controlled_shuttle.target_pos_y = y
+				controlled_shuttle.target_pos_z = z
 				controlled_shuttle.has_pending_target = TRUE
 			return TRUE
 
-		if("confirmAutopilot")
-			if(!controlled_shuttle.has_pending_target)
-				last_action_error = "No pending target to confirm"
-				return FALSE
-			controlled_shuttle.target_pos_x = controlled_shuttle.pending_target_x
-			controlled_shuttle.target_pos_y = controlled_shuttle.pending_target_y
-			controlled_shuttle.target_pos_z = controlled_shuttle.pending_target_z
-			controlled_shuttle.has_target_position = TRUE
-			controlled_shuttle.autopilot_enabled = TRUE
-			controlled_shuttle.has_pending_target = FALSE
-			return TRUE
+		if("setAutopilotMode")
+			var/mode = text2num(params["mode"])
+			var/orbit_radius = text2num(params["orbitRadius"]) || 150
+
+			if(controlled_shuttle.has_pending_target && controlled_shuttle.target_object_id)
+				controlled_shuttle.autopilot_mode = mode
+				controlled_shuttle.target_orbit_radius = max(orbit_radius, 50)
+				controlled_shuttle.has_pending_target = FALSE
+				controlled_shuttle.has_target_position = FALSE
+				return TRUE
+			else if(controlled_shuttle.has_pending_target && !controlled_shuttle.target_object_id)
+				// Если летим в статичную точку, включаем только режим TRAVEL (1)
+				controlled_shuttle.autopilot_mode = 1
+				controlled_shuttle.has_target_position = TRUE
+				controlled_shuttle.has_pending_target = FALSE
+				return TRUE
+			return FALSE
 
 		if("clearPendingTarget")
 			controlled_shuttle.has_pending_target = FALSE
-			if(controlled_shuttle.autopilot_enabled)
-				controlled_shuttle.autopilot_enabled = FALSE
-				controlled_shuttle.has_target_position = FALSE
+			controlled_shuttle.has_target_position = FALSE
+			controlled_shuttle.target_object_id = null
+			if(controlled_shuttle.autopilot_mode > 0)
+				controlled_shuttle.autopilot_mode = 0
+				controlled_shuttle.kill_thrust()
 			return TRUE
 
 		if("adjust_altitude")
