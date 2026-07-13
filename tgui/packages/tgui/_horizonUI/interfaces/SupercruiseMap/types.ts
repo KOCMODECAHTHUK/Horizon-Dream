@@ -29,6 +29,11 @@ export interface MapObject {
   pendingTargetX?: number;
   pendingTargetY?: number;
   pendingTargetZ?: number;
+  orbit_center_id?: string;
+  orbit_radius?: number;
+  orbit_inclination?: number;
+  orbit_ascension?: number;
+  landable?: boolean;
 }
 
 export interface NearbyObject {
@@ -80,4 +85,6 @@ export interface SupercruiseMapData {
   jumpDestinations: JumpDestination[];
   currentSystemName: string;
   lastActionError: string;
+  autopilotMode?: number;
+  targetObjectId?: string | null;
 }

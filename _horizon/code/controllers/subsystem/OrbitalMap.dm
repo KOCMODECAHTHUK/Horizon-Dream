@@ -27,8 +27,7 @@ SUBSYSTEM_DEF(supercruise)
 	sol_system.star_z = 0
 	sol_system.star_color = "#ffff88"
 
-	// Create a test station in Sol at coordinates (100, 50, 0)
-	var/datum/orbital_object/station/test_station = new(100, 50, 0, "Test Station Alpha", sol_system)
+	new /datum/orbital_object/station(100, 50, 0, "Test Station Alpha", sol_system)
 
 	// Generate planets for Sol system
 	sol_system.generate_planets(rand(8, 12))
@@ -40,8 +39,7 @@ SUBSYSTEM_DEF(supercruise)
 	alpha_system.star_z = 0
 	alpha_system.star_color = "#ffaa44"
 
-	// Create a test station in Alpha Centauri at different coordinates
-	var/datum/orbital_object/station/alpha_station = new(150, -100, 0, "Alpha Station One", alpha_system)
+	new /datum/orbital_object/station(150, -100, 0, "Alpha Station One", alpha_system)
 
 	// Generate planets for Alpha Centauri system
 	alpha_system.generate_planets(rand(5, 8))
@@ -158,12 +156,12 @@ SUBSYSTEM_DEF(supercruise)
 	new_system.add_object(obj)
 
 	// Set new position
-	obj.set_position(x_pos, y_pos, z_pos)
+	obj.position.Set(x_pos, y_pos, z_pos)
 
 	// Reset movement for shuttles
 	if(istype(obj, /datum/orbital_object/shuttle))
 		var/datum/orbital_object/shuttle/shuttle = obj
-		shuttle.set_velocity(0, 0, 0)
+		shuttle.velocity.Set(0, 0, 0)
 		shuttle.autopilot_enabled = FALSE
 		shuttle.has_target_position = FALSE
 		shuttle.kill_thrust()

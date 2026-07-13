@@ -24,8 +24,13 @@
 	var/max_height = 600
 	/// Whether this system can be jumped to
 	var/can_jump = TRUE
-	// Central star object (for future star rendering)
+	/// Central star object (for future star rendering)
 	var/datum/orbital_object/star/central_star = null
+
+	/// Spatial grid for optimized collision detection
+	var/list/spatial_grid = list()
+	/// Size of one spatial grid cell
+	var/grid_cell_size = 100
 
 /datum/overmap_star_system/New(id, name, description)
 	. = ..()
@@ -43,7 +48,6 @@
 		qdel(obj)
 	orbital_objects.Cut()
 
-	// Remove from global registry
 	SSsupercruise.star_systems -= system_id
 	return ..()
 
@@ -60,6 +64,7 @@
 
 	obj.star_system = src
 	orbital_objects |= obj
+	add_to_grid(obj)
 	return TRUE
 
 /**
@@ -68,19 +73,18 @@
 /datum/overmap_star_system/proc/remove_object(datum/orbital_object/obj)
 	if(!obj)
 		return FALSE
-
 	orbital_objects -= obj
+	remove_from_grid(obj, obj.position.x, obj.position.y, obj.position.z)
 	if(obj.star_system == src)
 		obj.star_system = null
 	return TRUE
 
 /**
- * Генерируем планеты с 3D-орбитами
+ * GENERATION SYSTEM AND PLANETS
  */
 /datum/overmap_star_system/proc/generate_planets(num_planets = 8)
 	var/list/planet_types = GLOB.planet_types
 
-	// Если центральной звезды нет — создаем её
 	if(!central_star)
 		central_star = new(star_x, star_y, star_z, "[system_name] Star", src)
 		central_star.supercruise_color = star_color
@@ -88,26 +92,15 @@
 	for(var/i in 1 to num_planets)
 		var/planet_type = pick(planet_types)
 		var/planet_name = gen_planet_name()
+		var/datum/orbital_object/planet/planet = new planet_type(star_x, star_y, star_z, planet_name, planet_type, src)
+		var/orbit_radius = rand(100, 500)
+		var/inclination = rand(-75, 75)
+		var/ascension = rand(0, 360)
+		var/direction = pick(-1, 1)
+		var/orbit_speed = (10 / orbit_radius) * 10
 
-		// Создаем планету (пока в центре, позицию пересчитает process())
-		var/datum/orbital_object/planet/new_planet = new planet_type(star_x, star_y, star_z, planet_name, planet_type, src)
-
-		// Назначаем центр орбиты
-		new_planet.orbit_center = central_star
-
-		// Случайные 3D параметры
-		new_planet.orbit_radius = rand(100, 500) // Разброс расстояний
-		new_planet.orbit_angle = rand(0, 360) // Случайная стартовая фаза
-		new_planet.orbit_speed = (10 / new_planet.orbit_radius) * 10 // Кеплеровская зависимость (дальше = медленнее)
-
-		// Полноценный 3D наклон!
-		new_planet.orbit_inclination = rand(-75, 75)
-		new_planet.orbit_ascension = rand(0, 360)
-
-		// Вызываем первый тик, чтобы планета сразу встала на свою 3D-орбиту
-		new_planet.process(0)
-
-		log_world("Generated planet: [planet_name] orbiting [central_star.name] at R:[new_planet.orbit_radius] Inc:[new_planet.orbit_inclination] Asc:[new_planet.orbit_ascension]")
+		planet.setup_orbit(central_star, orbit_radius, inclination, ascension, orbit_speed, direction)
+		log_world("Generated planet: [planet_name] orbiting [central_star.name] at R:[orbit_radius] Inc:[inclination] Asc:[ascension]")
 
 /datum/overmap_star_system/proc/gen_planet_name()
 	. = ""
@@ -133,21 +126,12 @@
 			result += obj
 	return result
 
-/**
- * Get all shuttles in this system
- */
 /datum/overmap_star_system/proc/get_shuttles()
 	return get_objects_by_type(/datum/orbital_object/shuttle)
 
-/**
- * Get all stations in this system
- */
 /datum/overmap_star_system/proc/get_stations()
 	return get_objects_by_type(/datum/orbital_object/station)
 
-/**
- * Get all planets in this system
- */
 /datum/overmap_star_system/proc/get_planets()
 	return get_objects_by_type(/datum/orbital_object/planet)
 
@@ -155,7 +139,10 @@
  * Process all objects in this system
  */
 /datum/overmap_star_system/proc/process_objects(seconds_per_tick)
-	for(var/datum/orbital_object/obj in orbital_objects)
+	var/list/objs_to_process = orbital_objects.Copy()
+	for(var/datum/orbital_object/obj in objs_to_process)
+		if(QDELETED(obj))
+			continue
 		obj.process(seconds_per_tick)
 
 /**
@@ -176,3 +163,50 @@
 		data["map_objects"] += list(obj.get_map_data())
 
 	return data
+
+/**
+ * SPATIAL GRID
+ */
+/datum/overmap_star_system/proc/get_grid_key(x, y, z)
+	return "[round(x / grid_cell_size)],[round(y / grid_cell_size)],[round(z / grid_cell_size)]"
+
+/datum/overmap_star_system/proc/add_to_grid(datum/orbital_object/obj)
+	var/key = get_grid_key(obj.position.x, obj.position.y, obj.position.z)
+	if(!spatial_grid[key])
+		spatial_grid[key] = list()
+	spatial_grid[key] |= obj
+
+/datum/overmap_star_system/proc/remove_from_grid(datum/orbital_object/obj, old_x, old_y, old_z)
+	var/key = get_grid_key(old_x, old_y, old_z)
+	if(spatial_grid[key])
+		spatial_grid[key] -= obj
+		if(!length(spatial_grid[key]))
+			spatial_grid -= key
+
+/**
+ * Called by base orbital_object process() when position changes
+ */
+/datum/overmap_star_system/proc/on_body_moved(datum/orbital_object/obj, old_x, old_y, old_z)
+	var/old_key = get_grid_key(old_x, old_y, old_z)
+	var/new_key = get_grid_key(obj.position.x, obj.position.y, obj.position.z)
+	if(old_key == new_key)
+		return
+	remove_from_grid(obj, old_x, old_y, old_z)
+	add_to_grid(obj)
+
+/**
+ * Returns nearby objects in a 3x3x3 grid area around the object
+ */
+/datum/overmap_star_system/proc/get_nearby_objects_for_collision(datum/orbital_object/obj)
+	var/list/result = list()
+	var/cx = round(obj.position.x / grid_cell_size)
+	var/cy = round(obj.position.y / grid_cell_size)
+	var/cz = round(obj.position.z / grid_cell_size)
+
+	for(var/dx in list(-1, 0, 1))
+		for(var/dy in list(-1, 0, 1))
+			for(var/dz in list(-1, 0, 1))
+				var/key = "[cx+dx],[cy+dy],[cz+dz]"
+				if(spatial_grid[key])
+					result |= spatial_grid[key]
+	return result

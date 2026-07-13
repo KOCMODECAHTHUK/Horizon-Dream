@@ -258,6 +258,7 @@
 	crosslinked["[direction]"] = other_zone
 	other_zone.crosslinked["[nb_direction]"] = src
 
+/*
 	var/start_x
 	var/start_y
 
@@ -404,6 +405,7 @@
 			//nb_cur_turf.destination_x = cur_mirage_turf.x
 			//nb_cur_turf.destination_y = cur_mirage_turf.y
 			//nb_cur_turf.destination_z = cur_mirage_turf.z
+*/
 
 /datum/virtual_level/New(passed_name, list/passed_traits, datum/map_zone/passed_map, lx, ly, hx, hy, passed_z)
 	next_id++

@@ -1245,8 +1245,6 @@
 	if(!length(turfs_to_process))
 		return
 
-	var/turfs_modified = 0
-
 	for(var/turf/open/target_turf as anything in turfs_to_process)
 		if(!istype(target_turf))
 			continue
@@ -1262,7 +1260,6 @@
 		if(target_turf.air)
 			target_turf.air = target_turf.create_gas_mixture()
 
-		turfs_modified++
 
 // ============================================================================
 // AREAS

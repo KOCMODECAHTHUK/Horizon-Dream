@@ -1,7 +1,5 @@
 /**
  * # Supercruise Flight Console
- *
- * Allows controlling a shuttle in supercruise/orbital space.
  */
 /obj/machinery/computer/shuttle_flight
 	name = "supercruise flight console"
@@ -9,9 +7,7 @@
 	icon_screen = "shuttle"
 	icon_keyboard = "generic_key"
 
-	/// The shuttle we're controlling
 	var/datum/orbital_object/shuttle/controlled_shuttle
-	/// Last action error message for UI display
 	var/last_action_error = ""
 
 /obj/machinery/computer/shuttle_flight/Initialize(mapload)
@@ -22,7 +18,6 @@
 	if(!port)
 		return
 
-	// Check if an orbital shuttle already exists for this port in any system
 	for(var/system_id in SSsupercruise.star_systems)
 		var/datum/overmap_star_system/system = SSsupercruise.star_systems[system_id]
 		for(var/datum/orbital_object/shuttle/existing_shuttle in system.get_shuttles())
@@ -30,22 +25,17 @@
 				controlled_shuttle = existing_shuttle
 				return TRUE
 
-	// If no existing shuttle, create a new one and add it to the default system
 	controlled_shuttle = new /datum/orbital_object/shuttle()
 	controlled_shuttle.shuttle_port = port
 	controlled_shuttle.name = port.name || "Shuttle"
-	// Start at a default position - shuttle is docked at station initially
-	controlled_shuttle.set_position(100, 50, 0)
+	controlled_shuttle.position.Set(100, 50, 0)
 
-	// Add shuttle to the default system
 	var/datum/overmap_star_system/default_system = SSsupercruise.get_default_system()
 	if(default_system)
 		default_system.add_object(controlled_shuttle)
-
 	return TRUE
 
 /obj/machinery/computer/shuttle_flight/Destroy()
-	// Clean up any open UIs
 	SStgui.close_uis(src)
 	return ..()
 
@@ -66,11 +56,9 @@
 	return GLOB.default_state
 
 /obj/machinery/computer/shuttle_flight/ui_data(mob/user)
-	// Get orbital map data for the shuttle's current system
 	var/system_id = controlled_shuttle?.star_system?.system_id
 	var/list/data = SSsupercruise.get_orbital_map_data(system_id)
 
-	// Add shuttle-specific data
 	if(controlled_shuttle)
 		data["linkedToShuttle"] = TRUE
 		data["shuttleName"] = controlled_shuttle.name
@@ -80,17 +68,19 @@
 		data["shuttleHeading"] = controlled_shuttle.heading
 		data["shuttleHeadingPitch"] = controlled_shuttle.heading_pitch
 		data["shuttleMaxSpeed"] = controlled_shuttle.max_speed
-		data["shuttleVelX"] = controlled_shuttle.vel_x
-		data["shuttleVelY"] = controlled_shuttle.vel_y
-		data["shuttleVelZ"] = controlled_shuttle.vel_z
+		data["shuttleVelX"] = controlled_shuttle.velocity.x
+		data["shuttleVelY"] = controlled_shuttle.velocity.y
+		data["shuttleVelZ"] = controlled_shuttle.velocity.z
+
 		if(controlled_shuttle.docked_at)
-			data["shuttlePosX"] = controlled_shuttle.docked_at.pos_x
-			data["shuttlePosY"] = controlled_shuttle.docked_at.pos_y
-			data["shuttlePosZ"] = controlled_shuttle.docked_at.pos_z
+			data["shuttlePosX"] = controlled_shuttle.docked_at.position.x
+			data["shuttlePosY"] = controlled_shuttle.docked_at.position.y
+			data["shuttlePosZ"] = controlled_shuttle.docked_at.position.z
 		else
-			data["shuttlePosX"] = controlled_shuttle.pos_x
-			data["shuttlePosY"] = controlled_shuttle.pos_y
-			data["shuttlePosZ"] = controlled_shuttle.pos_z
+			data["shuttlePosX"] = controlled_shuttle.position.x
+			data["shuttlePosY"] = controlled_shuttle.position.y
+			data["shuttlePosZ"] = controlled_shuttle.position.z
+
 		var/list/our_obj_data = controlled_shuttle.get_map_data()
 		if(controlled_shuttle.docked_at)
 			our_obj_data["position_x"] = data["shuttlePosX"]
@@ -98,10 +88,9 @@
 			our_obj_data["position_z"] = data["shuttlePosZ"]
 		data["ourObject"] = our_obj_data
 		data["autopilotEnabled"] = controlled_shuttle.autopilot_mode > 0
-		data["autopilotMode"] = controlled_shuttle.autopilot_mode // 0=off, 1=travel, 2=orbit, 3=hold
-		data["targetObjectId"] = controlled_shuttle.target_object_id // ID объекта, к которому летим
+		data["autopilotMode"] = controlled_shuttle.autopilot_mode
+		data["targetObjectId"] = controlled_shuttle.target_object_id
 
-		// Check if docked - either docked_at is set OR shuttle is not in transit dock
 		var/obj/docking_port/stationary/current_dock = controlled_shuttle.shuttle_port?.get_docked()
 		var/is_in_transit = istype(current_dock, /obj/docking_port/stationary/transit)
 		var/is_docked = (controlled_shuttle.docked_at != null) || (current_dock && !is_in_transit)
@@ -109,66 +98,56 @@
 
 		var/docked_station_name = null
 		if(controlled_shuttle.docked_at)
-			// Check if it's a station (has station_name) or other object (use name)
 			if(istype(controlled_shuttle.docked_at, /datum/orbital_object/station))
 				var/datum/orbital_object/station/station = controlled_shuttle.docked_at
-				docked_station_name = station.station_name
+				docked_station_name = station.name
 			else
 				docked_station_name = controlled_shuttle.docked_at.name
 		else if(is_docked && current_dock)
 			docked_station_name = current_dock.name
 		data["dockedStation"] = docked_station_name
 
-		// Get nearby stations (only in current system)
 		var/list/nearby_stations = list()
 		for(var/datum/orbital_object/station/station in controlled_shuttle.get_nearby_stations())
-			var/dx = station.pos_x - controlled_shuttle.pos_x
-			var/dy = station.pos_y - controlled_shuttle.pos_y
-			var/dz = station.pos_z - controlled_shuttle.pos_z
+			var/dist = controlled_shuttle.position.DistanceTo(station.position)
 			nearby_stations += list(list(
 				"id" = station.unique_id,
-				"name" = station.station_name,
-				"distance" = round(sqrt(dx*dx + dy*dy + dz*dz), 0.1),
+				"name" = station.name,
+				"distance" = round(dist, 0.1),
 				"occupied" = station.occupied
 			))
 		data["nearbyStations"] = nearby_stations
 
-		// Get ALL nearby interactable objects (generic, only in current system)
 		var/list/nearby_objects = list()
 		for(var/datum/orbital_object/obj in controlled_shuttle.get_nearby_objects(30))
-			var/dx = obj.pos_x - controlled_shuttle.pos_x
-			var/dy = obj.pos_y - controlled_shuttle.pos_y
-			var/dz = obj.pos_z - controlled_shuttle.pos_z
+			var/dist = controlled_shuttle.position.DistanceTo(obj.position)
 			nearby_objects += list(list(
 				"id" = obj.unique_id,
 				"name" = obj.name,
-				"distance" = round(sqrt(dx*dx + dy*dy + dz*dz), 0.1),
+				"distance" = round(dist, 0.1),
 				"type" = obj.render_mode,
 				"occupied" = istype(obj, /datum/orbital_object/station) ? obj:occupied : FALSE
 			))
 		data["nearbyObjects"] = nearby_objects
 
-		// Отправляем координаты цели для маркера на карте
 		var/datum/orbital_object/target_obj = SSsupercruise.find_object(controlled_shuttle.target_object_id, controlled_shuttle.star_system)
 		if(target_obj)
-			data["targetX"] = target_obj.pos_x
-			data["targetY"] = target_obj.pos_y
-			data["targetZ"] = target_obj.pos_z
+			data["targetX"] = target_obj.position.x
+			data["targetY"] = target_obj.position.y
+			data["targetZ"] = target_obj.position.z
 		else if(controlled_shuttle.has_target_position || controlled_shuttle.has_pending_target)
-			data["targetX"] = controlled_shuttle.target_pos_x
-			data["targetY"] = controlled_shuttle.target_pos_y
-			data["targetZ"] = controlled_shuttle.target_pos_z
+			data["targetX"] = controlled_shuttle.target_pos.x
+			data["targetY"] = controlled_shuttle.target_pos.y
+			data["targetZ"] = controlled_shuttle.target_pos.z
 
-		// Pending autopilot target (set by right-click, requires confirmation)
 		if(controlled_shuttle.has_pending_target)
-			data["pendingTargetX"] = controlled_shuttle.pending_target_x
-			data["pendingTargetY"] = controlled_shuttle.pending_target_y
-			data["pendingTargetZ"] = controlled_shuttle.pending_target_z
+			data["pendingTargetX"] = controlled_shuttle.pending_target.x
+			data["pendingTargetY"] = controlled_shuttle.pending_target.y
+			data["pendingTargetZ"] = controlled_shuttle.pending_target.z
 			data["hasPendingTarget"] = TRUE
 		else
 			data["hasPendingTarget"] = FALSE
 
-		// Jump drive data
 		data["hasJumpDrive"] = controlled_shuttle.has_jump_drive
 		data["isJumping"] = controlled_shuttle.is_jumping
 		data["jumpCooldown"] = controlled_shuttle.jump_cooldown
@@ -180,10 +159,8 @@
 	else
 		data["linkedToShuttle"] = FALSE
 
-	// Send last action error to UI (then clear it)
 	data["lastActionError"] = last_action_error
 	last_action_error = ""
-
 	return data
 
 /obj/machinery/computer/shuttle_flight/ui_act(action, list/params)
@@ -194,7 +171,6 @@
 	if(!controlled_shuttle)
 		return
 
-	// Check if docked - prevent flight controls when docked
 	var/obj/docking_port/stationary/current_dock = controlled_shuttle.shuttle_port?.get_docked()
 	var/is_in_transit = istype(current_dock, /obj/docking_port/stationary/transit)
 	var/is_docked = (controlled_shuttle.docked_at != null) || (current_dock && !is_in_transit)
@@ -234,12 +210,10 @@
 			var/new_y = text2num(params["y"])
 			var/new_z = text2num(params["z"])
 			if(!isnull(new_x) && !isnull(new_y))
-				var/dx = new_x - controlled_shuttle.pos_x
-				var/dy = new_y - controlled_shuttle.pos_y
-				var/dz = (isnull(new_z) ? 0 : new_z) - controlled_shuttle.pos_z
-				var/mag = sqrt(dx*dx + dy*dy + dz*dz)
+				var/datum/orbital_vector/delta = new(new_x - controlled_shuttle.position.x, new_y - controlled_shuttle.position.y, (isnull(new_z) ? 0 : new_z) - controlled_shuttle.position.z)
+				var/mag = delta.Length()
 				if(mag > 0.001)
-					controlled_shuttle.set_thrust_3d(dx / mag, dy / mag, dz / mag, controlled_shuttle.thrust_power)
+					controlled_shuttle.set_thrust_3d(delta.x / mag, delta.y / mag, delta.z / mag, controlled_shuttle.thrust_power)
 			return TRUE
 
 		if("setTargetCoords")
@@ -253,17 +227,11 @@
 				controlled_shuttle.autopilot_mode = 0
 				controlled_shuttle.kill_thrust()
 			else if(objectId)
-				// ПКМ по объекту - запоминаем ID объекта
 				controlled_shuttle.target_object_id = objectId
 				controlled_shuttle.has_pending_target = TRUE
 			else if(!isnull(x) && !isnull(y) && !isnull(z))
-				// ПКМ по пустому месту - летим в статичную точку (создаем фейковый объект? Нет, пока просто координаты)
-				// Для простоты: если кликнули пустоту, автопилот летит туда и забывает про объекты
 				controlled_shuttle.target_object_id = null
-				// В старом коде мы хранили target_pos_x/y/z. Давайте вернем их временно для статичных точек
-				controlled_shuttle.target_pos_x = x
-				controlled_shuttle.target_pos_y = y
-				controlled_shuttle.target_pos_z = z
+				controlled_shuttle.target_pos.Set(x, y, z)
 				controlled_shuttle.has_pending_target = TRUE
 			return TRUE
 
@@ -278,7 +246,6 @@
 				controlled_shuttle.has_target_position = FALSE
 				return TRUE
 			else if(controlled_shuttle.has_pending_target && !controlled_shuttle.target_object_id)
-				// Если летим в статичную точку, включаем только режим TRAVEL (1)
 				controlled_shuttle.autopilot_mode = 1
 				controlled_shuttle.has_target_position = TRUE
 				controlled_shuttle.has_pending_target = FALSE
@@ -310,15 +277,12 @@
 		if("toggle_rotate_left")
 			controlled_shuttle.toggle_rotate_left(text2num(params["enable"]))
 			return TRUE
-
 		if("toggle_rotate_right")
 			controlled_shuttle.toggle_rotate_right(text2num(params["enable"]))
 			return TRUE
-
 		if("toggle_rotate_pitch_up")
 			controlled_shuttle.toggle_rotate_pitch_up(text2num(params["enable"]))
 			return TRUE
-
 		if("toggle_rotate_pitch_down")
 			controlled_shuttle.toggle_rotate_pitch_down(text2num(params["enable"]))
 			return TRUE
@@ -334,9 +298,7 @@
 			else
 				controlled_shuttle.rcs_power = clamp(power, 0, 10)
 
-			controlled_shuttle.rcs_strafe_x = sx
-			controlled_shuttle.rcs_strafe_y = sy
-			controlled_shuttle.rcs_strafe_z = sz
+			controlled_shuttle.rcs_strafe.Set(sx, sy, sz)
 			return TRUE
 
 		if("dock")

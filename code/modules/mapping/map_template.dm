@@ -107,9 +107,6 @@
 		affected_turf.levelupdate()
 
 /datum/map_template/proc/load_new_z(secret = FALSE)
-	var/x = round((world.maxx - width) * 0.5) + 1
-	var/y = round((world.maxy - height) * 0.5) + 1
-
 	// Create a new map zone and virtual level for this template
 	var/datum/map_zone/mapzone = SSmapping.create_map_zone(name)
 	var/datum/virtual_level/vlevel = SSmapping.create_virtual_level(
@@ -149,7 +146,7 @@
 	//initialize things that are normally initialized after map load
 	initTemplateBounds(bounds)
 	smooth_zlevel(vlevel.z_value)
-	log_game("Z-level [name] loaded at [load_turf.x],[load_turf.y],[vlevel.z_value] in virtual level [vlevel.id]")
+	log_game("Z-level [name] loaded at [vlevel.z_value] in virtual level [vlevel.id]")
 
 	return mapzone
 

@@ -27,6 +27,7 @@
 #include "code\modules\admin\verbs\mapping.dm"
 #include "code\modules\admin\all_verb_panel.dm"
 #include "code\modules\mob\dead\dead.dm"
+#include "code\modules\orbital_map\orbital_map_components\orbital_vector.dm"
 #include "code\modules\orbital_map\orbital_object.dm"
 #include "code\modules\orbital_map\orbital_planet.dm"
 #include "code\modules\orbital_map\orbital_shuttle.dm"
