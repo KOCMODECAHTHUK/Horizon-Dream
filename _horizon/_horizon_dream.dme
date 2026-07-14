@@ -18,13 +18,14 @@
 // END_PREFERENCES
 
 // BEGIN_INCLUDE
+#include "code\_rust_utils\rust_utils.dm"
 #include "code\__HELPERS\virtual_z_level.dm"
 #include "code\_globalvars\orbital_map.dm"
 #include "code\_globalvars\lists\strings.dm"
 #include "code\controllers\subsystem\OrbitalMap.dm"
 #include "code\datums\docking_ticket.dm"
 #include "code\datums\map_zones.dm"
-#include "code\datums\mapgen\planet_dmm_loader.dm"
+#include "code\datums\mapgen\_map_gen.dm"
 #include "code\modules\admin\verbs\mapping.dm"
 #include "code\modules\admin\all_verb_panel.dm"
 #include "code\modules\mob\dead\dead.dm"

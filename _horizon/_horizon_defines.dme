@@ -16,5 +16,4 @@
 // BEGIN_INCLUDE
 #include "code\__DEFINES\test_defines.dm"
 #include "code\__DEFINES\orbit_defines.dm"
-#include "code\_rust_utils\rust_utils.dm"
 // END_INCLUDE

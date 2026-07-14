@@ -1,0 +1,11 @@
+#include "planet_dmm_loader.dm"
+#include "planet_generator.dm"
+
+#include "biomes/beach_biomes.dm"
+#include "biomes/jungle_biomes.dm"
+#include "biomes/lavaland_biomes.dm"
+#include "biomes/planetary_biomes.dm"
+#include "biomes/rock_biomes.dm"
+#include "biomes/sand_biomes.dm"
+#include "biomes/snow_biomes.dm"
+#include "biomes/waste_biomes.dm"

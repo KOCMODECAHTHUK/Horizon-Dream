@@ -16,15 +16,8 @@
 #define RUST_UTILS (__rust_utils || __detect_rust_utils())
 #endif
 
-// Handle 515 call() -> call_ext() changes
-#if DM_VERSION >= 515
-#define RUST_UTILS_CALL call_ext
-#else
-#define RUST_UTILS_CALL call
-#endif
-
 /// Gets the version of rust_utils
-/proc/rust_utils_get_version() return RUST_UTILS_CALL(RUST_UTILS, "get_version")()
+/proc/rust_utils_get_version() return RUSTG_CALL(RUST_UTILS, "get_version")()
 
 
 /**
@@ -45,4 +38,4 @@
  * * area_path - Full DM path for the area, e.g. "/area/planet/lava"
  */
 #define rustg_planet_generator_generate_dmm(width, height, seed, planet_type, mountain_height, perlin_zoom, ca_closed_chance, ca_iterations, ca_birth_limit, ca_death_limit) \
-	RUST_UTILS_CALL(RUST_UTILS, "planet_generator_generate_dmm")(width, height, seed, planet_type, mountain_height, perlin_zoom, ca_closed_chance, ca_iterations, ca_birth_limit, ca_death_limit)
+	RUSTG_CALL(RUST_UTILS, "planet_generator_generate_dmm")(width, height, seed, planet_type, mountain_height, perlin_zoom, ca_closed_chance, ca_iterations, ca_birth_limit, ca_death_limit)
