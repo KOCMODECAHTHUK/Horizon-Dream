@@ -6,7 +6,6 @@
 	primary_area_type = /area/planet/wasteland
 	cave_area_type = /area/planet/cave/wasteland
 	mountain_height = 0.78
-	biome_key = "wasteland"
 
 /datum/map_generator/planet_generator/wasteland/New()
 	. = ..()

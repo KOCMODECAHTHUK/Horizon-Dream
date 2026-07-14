@@ -58,10 +58,6 @@
 	/// DMM generation is significantly faster: all Perlin noise, CA, biome selection,
 	/// turf placement, and flora spawning happens in Rust.
 	var/use_dmm_generation = TRUE
-	/// Planet type key passed to rust-g. Selects biome configs hardcoded in Rust.
-	/// Must match a key in rust-g's get_planet_config() match block.
-	/// Valid: "rock", "ice", "lava", "jungle", "desert", "beach", "grassland", "wasteland"
-	var/biome_key = "rock"
 	/// Seed for DMM generation. If 0, a random seed is generated in New().
 	var/dmm_seed = 0
 
@@ -221,10 +217,10 @@
 /**
  * Generates terrain via rust-g DMM and loads it at the target turf.
  *
- * Calls rust-g to produce a complete TGM-format DMM string using cellular
- * automata, then parses and loads it through /datum/parsed_map.
- * All heavy computation (CA, DMM formatting) happens in Rust; DM only
- * handles map parsing and atom initialization.
+ * Serializes the biome tables and biome definitions into a JSON config string,
+ * passes it to rust-g which performs all Perlin noise, CA, biome selection,
+ * turf placement, and flora spawning, then parses and loads the resulting
+ * TGM-format DMM string through /datum/parsed_map.
  *
  * Arguments:
  * * planet_name - Name for logging
@@ -234,9 +230,11 @@
  * Returns: TRUE on success, FALSE on failure
  */
 /datum/map_generator/planet_generator/proc/generate_planet_dmm(planet_name, planet_size, turf/load_turf)
-	// Call rust-g to generate the complete DMM string with full procedural generation.
-	// All biome configs (turfs, flora, areas) are hardcoded in Rust, looked up by biome_key.
-	var/dmm_string = rustg_planet_generator_generate_dmm("[planet_size]", "[planet_size]", "[dmm_seed]", biome_key, "[mountain_height]", "[perlin_zoom]", "[initial_closed_chance]", "[smoothing_iterations]", "[birth_limit]", "[death_limit]")
+	// Build JSON config from DM-side biome tables and definitions
+	var/config_json = build_biome_config_json(planet_size, planet_size, dmm_seed)
+
+	// Call rust-g to generate the complete DMM string
+	var/dmm_string = rustg_planet_generator_generate_dmm(config_json)
 
 	if(!dmm_string)
 		log_world("ERROR: rust-g returned empty DMM string for [planet_name]")
@@ -276,6 +274,129 @@
 
 	log_world("DMM planet [planet_name] loaded at [load_turf.x],[load_turf.y],[load_turf.z]")
 	return TRUE
+
+/**
+ * Builds a JSON config string containing all generation parameters and biome
+ * configurations, to be passed to rust-g's planet_generator_generate_dmm.
+ *
+ * Collects unique biome types from biome_table and cave_biome_table, reads
+ * their open_turf_type, closed_turf_type, flora_density, and flora_types
+ * using initial() (so the original weighted lists are preserved), then
+ * builds 2D index tables mapping heat×humidity → biome index.
+ *
+ * Arguments:
+ * * width - Map width in turfs
+ * * height - Map height in turfs
+ * * seed - Numeric seed for deterministic generation
+ *
+ * Returns: JSON-encoded string
+ */
+/datum/map_generator/planet_generator/proc/build_biome_config_json(width, height, seed)
+	// 1. Collect unique biome types from both tables
+	var/list/biome_type_to_index = list()
+	var/list/biome_defs = list()
+
+	var/list/tables_to_scan = list(biome_table, cave_biome_table)
+	for(var/list/table in tables_to_scan)
+		if(!table)
+			continue
+		for(var/heat_key in table)
+			var/list/humidity_map = table[heat_key]
+			if(!humidity_map)
+				continue
+			for(var/humidity_key in humidity_map)
+				var/biome_path = humidity_map[humidity_key]
+				if(!biome_path || (biome_path in biome_type_to_index))
+					continue
+				biome_type_to_index[biome_path] = biome_defs.len // 0-indexed
+				biome_defs += list(get_biome_def_json(biome_path))
+
+	// 2. Build surface table (6 heat × 5 humidity)
+	var/list/surface_indices = list()
+	var/list/heat_keys_surface = list(
+		BIOME_COLDEST, BIOME_COLD, BIOME_WARM,
+		BIOME_TEMPERATE, BIOME_HOT, BIOME_HOTTEST,
+	)
+	var/list/humidity_keys = list(
+		BIOME_LOWEST_HUMIDITY, BIOME_LOW_HUMIDITY, BIOME_MEDIUM_HUMIDITY,
+		BIOME_HIGH_HUMIDITY, BIOME_HIGHEST_HUMIDITY,
+	)
+	for(var/heat_key in heat_keys_surface)
+		var/list/row = list()
+		for(var/humidity_key in humidity_keys)
+			var/biome_path = biome_table?[heat_key]?[humidity_key]
+			row += biome_type_to_index[biome_path] || 0
+		surface_indices += list(row)
+
+	// 3. Build cave table (4 heat × 5 humidity)
+	var/list/cave_indices = list()
+	var/list/heat_keys_cave = list(
+		BIOME_COLDEST_CAVE, BIOME_COLD_CAVE, BIOME_WARM_CAVE, BIOME_HOT_CAVE,
+	)
+	for(var/heat_key in heat_keys_cave)
+		var/list/row = list()
+		for(var/humidity_key in humidity_keys)
+			var/biome_path = cave_biome_table?[heat_key]?[humidity_key]
+			row += biome_type_to_index[biome_path] || 0
+		cave_indices += list(row)
+
+	// 4. Build final config and encode as JSON
+	var/list/config = list(
+		"width" = width,
+		"height" = height,
+		"seed" = seed,
+		"mountain_height" = mountain_height,
+		"perlin_zoom" = perlin_zoom,
+		"ca_closed_chance" = initial_closed_chance,
+		"ca_iterations" = smoothing_iterations,
+		"ca_birth_limit" = birth_limit,
+		"ca_death_limit" = death_limit,
+		"surface_area" = "[primary_area_type]",
+		"cave_area" = "[cave_area_type]",
+		"biome_defs" = biome_defs,
+		"surface_table" = surface_indices,
+		"cave_table" = cave_indices,
+	)
+	return json_encode(config)
+
+/**
+ * Reads a biome type's definition (open_turf, closed_turf, flora_chance, flora list)
+ * and returns it as an associative list suitable for JSON encoding.
+ *
+ * Uses initial() to get the original weighted flora_types list (before New()
+ * expands it), so weights are preserved for Rust-side weighted random selection.
+ *
+ * Arguments:
+ * * biome_path - Type path of the biome (e.g. /datum/biome/rock)
+ *
+ * Returns: List with keys: open_turf, closed_turf, flora_chance, flora
+ */
+/datum/map_generator/planet_generator/proc/get_biome_def_json(biome_path)
+	// Instantiate to read type definition values via initial()
+	var/datum/biome/B = new biome_path
+
+	// Read original (pre-expansion) flora_types list
+	var/list/raw_flora = initial(B.flora_types)
+	var/list/flora_json = list()
+	if(raw_flora)
+		for(var/flora_path in raw_flora)
+			var/weight = raw_flora[flora_path]
+			flora_json += list(list(
+				"path" = "[flora_path]",
+				"weight" = isnull(weight) ? 1 : weight,
+			))
+
+	var/open_turf = initial(B.open_turf_type)
+	var/closed_turf = initial(B.closed_turf_type)
+
+	qdel(B)
+
+	return list(
+		"open_turf" = open_turf ? "[open_turf]" : "",
+		"closed_turf" = closed_turf ? "[closed_turf]" : "",
+		"flora_chance" = initial(B.flora_density),
+		"flora" = flora_json,
+	)
 
 /**
  * Creates docking ports for ship landing

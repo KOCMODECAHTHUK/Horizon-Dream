@@ -6,9 +6,8 @@
 /datum/map_generator/planet_generator/lava
 	primary_area_type = /area/planet/lava
 	cave_area_type = /area/planet/cave/lava
-	mountain_height = 0.45
 	perlin_zoom = 65
-	biome_key = "lava"
+	mountain_height = 0.45
 
 /datum/map_generator/planet_generator/lava/New()
 	. = ..()

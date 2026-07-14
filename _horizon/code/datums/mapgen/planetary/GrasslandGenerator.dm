@@ -6,7 +6,6 @@
 	primary_area_type = /area/planet/grassland
 	cave_area_type = /area/planet/cave/grassland
 	mountain_height = 0.80
-	biome_key = "grassland"
 
 /datum/map_generator/planet_generator/grassland/New()
 	. = ..()

@@ -5,8 +5,8 @@
  * The main planet generation path goes through /datum/map_generator/planet_generator,
  * but these procs are useful for testing and ad-hoc planet creation.
  *
- * All biome configs (turfs, flora, areas) are hardcoded in Rust — DM only
- * passes the planet_type string and generation parameters.
+ * All biome configs are serialized from DM-side biome tables into a JSON string
+ * and passed to Rust — nothing is hardcoded in the library.
  */
 
 // ─── Map Template Subtype ──────────────────────────────────────────────────────
@@ -31,38 +31,38 @@
 // ─── Public API ────────────────────────────────────────────────────────────────
 
 /**
- * Generate a planet map using rust-g and load it into the world at a target turf.
+ * Generate a planet map using a planet generator datum and load it into the
+ * world at a target turf.
  *
  * All Perlin noise, CA, biome selection, turf placement, and flora spawning
- * is done in Rust. DM only creates the map_template and calls load().
+ * is done in Rust. DM serializes the biome tables to JSON and passes it.
  *
  * Arguments:
+ * * generator - The /datum/map_generator/planet_generator (or subtype) with biome tables set
  * * width - Map width in turfs
  * * height - Map height in turfs
  * * seed - Numeric seed for deterministic generation
- * * planet_type - One of: "rock", "ice", "lava", "jungle", "desert", "beach", "grassland", "wasteland"
  * * target_turf - The bottom-left turf where the map will be placed
- * * mountain_height - 0.0-1.0, height threshold above which caves generate
- * * perlin_zoom - Higher values create larger biome zones
- * * ca_closed_chance - 0-100, chance for a CA cell to start as wall
- * * ca_iterations - Number of CA smoothing iterations
- * * ca_birth_limit - Wall neighbor threshold for floor→wall
- * * ca_death_limit - Wall neighbor threshold for wall→floor
  *
  * Returns: /datum/map_template/planet_dmm if successful, null otherwise
  */
-/proc/generate_and_load_planet_dmm(width, height, seed, planet_type, turf/target_turf, mountain_height = 0.80, perlin_zoom = 65, ca_closed_chance = 45, ca_iterations = 20, ca_birth_limit = 4, ca_death_limit = 3)
+/proc/generate_and_load_planet_dmm(datum/map_generator/planet_generator/generator, width, height, seed, turf/target_turf)
 	if(!target_turf)
 		CRASH("generate_and_load_planet_dmm: target_turf is null")
+	if(!generator)
+		CRASH("generate_and_load_planet_dmm: generator is null")
+
+	// Build JSON config from the generator's biome tables
+	var/config_json = generator.build_biome_config_json(width, height, seed)
 
 	// Call rust-g to generate the complete DMM string
-	var/dmm_string = rustg_planet_generator_generate_dmm("[width]", "[height]", "[seed]", planet_type, "[mountain_height]", "[perlin_zoom]", "[ca_closed_chance]", "[ca_iterations]", "[ca_birth_limit]", "[ca_death_limit]")
+	var/dmm_string = rustg_planet_generator_generate_dmm(config_json)
 
 	if(!dmm_string)
 		CRASH("generate_and_load_planet_dmm: rust-g returned empty string")
 
 	// Create a map template directly from the DMM string (no file I/O needed)
-	var/datum/map_template/planet_dmm/template = new(dmm_string, "Planet [planet_type] #[seed]")
+	var/datum/map_template/planet_dmm/template = new(dmm_string, "Planet [generator.type] #[seed]")
 
 	if(!template.cached_map || !template.cached_map.bounds)
 		CRASH("generate_and_load_planet_dmm: failed to parse DMM string")
@@ -72,7 +72,7 @@
 	if(!result)
 		CRASH("generate_and_load_planet_dmm: template.load() failed")
 
-	log_game("Planet DMM loaded: [planet_type] [width]x[height] at [target_turf.x],[target_turf.y],[target_turf.z]")
+	log_game("Planet DMM loaded: [generator.type] [width]x[height] at [target_turf.x],[target_turf.y],[target_turf.z]")
 	return template
 
 /**
@@ -83,16 +83,18 @@
  * Z-levels (e.g. for supercruise arrival).
  *
  * Arguments:
+ * * generator - The /datum/map_generator/planet_generator (or subtype) with biome tables set
  * * planet_name - Name for the planet (used for zone/vlevel naming)
  * * width - Map width in turfs
  * * height - Map height in turfs
  * * seed - Numeric seed for deterministic generation
- * * planet_type - Planet type string (see generate_and_load_planet_dmm)
- * * mountain_height - 0.0-1.0, height threshold for caves
  *
  * Returns: list(vlevel, template) if successful, null otherwise
  */
-/proc/generate_planet_on_new_level(planet_name = "Planet", width = 50, height = 50, seed, planet_type = "rock", mountain_height = 0.80)
+/proc/generate_planet_on_new_level(datum/map_generator/planet_generator/generator, planet_name = "Planet", width = 50, height = 50, seed)
+	if(!generator)
+		CRASH("generate_planet_on_new_level: generator is null")
+
 	// Create a map zone and virtual level for this planet
 	var/datum/map_zone/mapzone = SSmapping.create_map_zone("[planet_name] Zone")
 	if(!mapzone)
@@ -120,7 +122,7 @@
 		CRASH("generate_planet_on_new_level: no unreserved turfs available")
 
 	// Generate and load the planet DMM at the target turf
-	var/datum/map_template/planet_dmm/template = generate_and_load_planet_dmm(width, height, seed, planet_type, load_turf, mountain_height)
+	var/datum/map_template/planet_dmm/template = generate_and_load_planet_dmm(generator, width, height, seed, load_turf)
 
 	if(!template)
 		CRASH("generate_planet_on_new_level: planet DMM generation failed")

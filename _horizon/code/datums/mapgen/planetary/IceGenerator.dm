@@ -6,7 +6,6 @@
 	primary_area_type = /area/planet/ice
 	cave_area_type = /area/planet/cave/ice
 	mountain_height = 0.75
-	biome_key = "ice"
 
 /datum/map_generator/planet_generator/ice/New()
 	. = ..()

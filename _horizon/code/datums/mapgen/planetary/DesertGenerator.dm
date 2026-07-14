@@ -6,7 +6,6 @@
 	primary_area_type = /area/planet/desert
 	cave_area_type = /area/planet/cave/desert
 	mountain_height = 0.82
-	biome_key = "desert"
 
 /datum/map_generator/planet_generator/desert/New()
 	. = ..()

@@ -6,7 +6,6 @@
 	primary_area_type = /area/planet/jungle
 	cave_area_type = /area/planet/cave/jungle
 	mountain_height = 0.85
-	biome_key = "jungle"
 
 /datum/map_generator/planet_generator/jungle/New()
 	. = ..()

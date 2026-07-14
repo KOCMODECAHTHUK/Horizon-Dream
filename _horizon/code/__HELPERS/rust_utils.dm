@@ -21,21 +21,13 @@
 
 
 /**
- * Generates a planet map as a valid DMM (TGM-format) string using cellular automata.
- *
- * Returns a complete DMM string that can be parsed by /datum/parsed_map.
- * The string contains two tile types (wall "a" and floor "b") arranged
- * using CA-smoothed cave generation.
+ * Generates a planet map as a valid DMM (TGM-format) string using full
+ * procedural generation: Perlin noise, cellular automata, biome selection,
+ * and flora placement. All biome configs are passed as JSON from DM.
  *
  * Arguments:
- * * width - Map width in turfs
- * * height - Map height in turfs
- * * seed - u64 seed for deterministic generation
- * * biome_type - Biome name (unused by Rust, reserved for future biome-specific turf selection)
- * * cave_chance - 0.0–1.0, probability of a cell starting as floor before CA smoothing
- * * wall_turf_path - Full DM path for wall turfs, e.g. "/turf/closed/wall/rock"
- * * floor_turf_path - Full DM path for floor turfs, e.g. "/turf/open/misc/asteroid/basalt"
- * * area_path - Full DM path for the area, e.g. "/area/planet/lava"
+ * * config_json - JSON string with all generation params and biome configs.
+ *                 See /datum/map_generator/planet_generator/proc/build_biome_config_json()
  */
-#define rustg_planet_generator_generate_dmm(width, height, seed, planet_type, mountain_height, perlin_zoom, ca_closed_chance, ca_iterations, ca_birth_limit, ca_death_limit) \
-	RUSTG_CALL(RUST_UTILS, "planet_generator_generate_dmm")(width, height, seed, planet_type, mountain_height, perlin_zoom, ca_closed_chance, ca_iterations, ca_birth_limit, ca_death_limit)
+#define rustg_planet_generator_generate_dmm(config_json) \
+	RUSTG_CALL(RUST_UTILS, "planet_generator_generate_dmm")(config_json)

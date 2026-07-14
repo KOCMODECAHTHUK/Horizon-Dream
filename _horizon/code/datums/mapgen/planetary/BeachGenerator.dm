@@ -6,7 +6,6 @@
 	primary_area_type = /area/planet/beach
 	cave_area_type = /area/planet/cave/beach
 	mountain_height = 0.88
-	biome_key = "beach"
 
 /datum/map_generator/planet_generator/beach/New()
 	. = ..()
