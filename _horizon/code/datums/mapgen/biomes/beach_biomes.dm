@@ -53,28 +53,55 @@
 /// Grass biome - grassy coastal areas
 /datum/biome/grass
 	open_turf_type = /turf/open/floor/grass
-	flora_density = 40
-	flora_types = list(
-		/obj/structure/flora/bush = 50,
-		/obj/structure/flora/bush = 45,
-		/obj/structure/flora/bush = 40,
-		/obj/structure/flora/bush = 35,
-		/obj/structure/flora/bush = 30,
-		/obj/structure/flora/bush = 10,
-		/obj/structure/flora/tree/palm = 5,
+
+	fauna_density = 1
+	flora_density = 25
+
+	fauna_types = list(
+		/mob/living/basic/butterfly = 1,
+		/mob/living/basic/rabbit = 1,
+		/mob/living/basic/mouse = 1,
+		/mob/living/basic/cow = 1,
+		/mob/living/basic/deer = 1,
 	)
+
+	flora_types = list(
+		/obj/structure/flora/tree/jungle = 1,
+		/obj/structure/flora/bush/flowers_br/style_random = 1,
+		/obj/structure/flora/bush/ferny/style_random = 1,
+		/obj/structure/flora/bush/fullgrass/style_random = 1,
+		/obj/structure/flora/bush/generic/style_random = 1,
+		/obj/structure/flora/bush/grassy/style_random = 1,
+		/obj/structure/flora/bush/lavendergrass/style_random = 1,
+		/obj/structure/flora/bush/leavy/style_random = 1,
+		/obj/structure/flora/bush/pale/style_random = 1,
+		/obj/structure/flora/bush/pointy/style_random = 1,
+		/obj/structure/flora/bush/flowers_pp/style_random = 1,
+		/obj/structure/flora/bush/reed/style_random = 1,
+		/obj/structure/flora/bush/sparsegrass/style_random = 1,
+		/obj/structure/flora/bush/stalky/style_random = 1,
+		/obj/structure/flora/bush/stalky/style_random = 1,
+		/obj/structure/flora/bush/sunny/style_random = 1,
+		/obj/structure/flora/bush/flowers_yw/style_random = 1,
+		/obj/structure/flora/tree/palm = 1,
+		///obj/structure/flora/ash/garden = 1,
+	)
+
+	//feature_types = list(
+	//	/obj/effect/greeble_spawner/grass_patch_spawner/dark_beach = 1,
+	//)
 
 /// Dense grass - heavy grass coverage
 /datum/biome/grass/dense
+
+	fauna_density = 2
 	flora_density = 70
-	flora_types = list(
-		/obj/structure/flora/bush = 50,
-		/obj/structure/flora/bush = 45,
-		/obj/structure/flora/bush = 40,
-		/obj/structure/flora/bush = 35,
-		/obj/structure/flora/bush = 30,
-		/obj/structure/flora/bush = 10,
-		/obj/structure/flora/tree/palm = 10,
+	feature_density = 1.2
+
+	fauna_types = list(
+		/mob/living/basic/butterfly = 4,
+		/mob/living/basic/snake = 5,
+		/mob/living/basic/bee/toxin = 3,
 	)
 
 /// Ocean biome - shallow water

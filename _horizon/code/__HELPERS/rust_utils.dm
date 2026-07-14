@@ -23,7 +23,8 @@
 /**
  * Generates a planet map as a valid DMM (TGM-format) string using full
  * procedural generation: Perlin noise, cellular automata, biome selection,
- * and flora placement. All biome configs are passed as JSON from DM.
+ * flora/feature/fauna placement with exclusion radiuses.
+ * All biome configs are passed as JSON from DM.
  *
  * Arguments:
  * * config_json - JSON string with all generation params and biome configs.

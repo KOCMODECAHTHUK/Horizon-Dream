@@ -360,43 +360,79 @@
 	return json_encode(config)
 
 /**
- * Reads a biome type's definition (open_turf, closed_turf, flora_chance, flora list)
- * and returns it as an associative list suitable for JSON encoding.
+ * Reads a biome type's definition and returns it as an associative list
+ * suitable for JSON encoding.
  *
- * Uses initial() to get the original weighted flora_types list (before New()
- * expands it), so weights are preserved for Rust-side weighted random selection.
+ * Instantiates the biome (which expands weighted lists via expand_weights),
+ * then reconstructs relative weights by counting occurrences in the expanded
+ * list. Simple numeric vars (density, exclusion radius) are read directly
+ * from the instance since New() does not modify them.
  *
  * Arguments:
  * * biome_path - Type path of the biome (e.g. /datum/biome/rock)
  *
- * Returns: List with keys: open_turf, closed_turf, flora_chance, flora
+ * Returns: List with keys: open_turf, closed_turf, flora_chance, flora,
+ *          feature_chance, features, fauna_chance, fauna,
+ *          mob_exclusion_radius, feature_exclusion_radius
  */
 /datum/map_generator/planet_generator/proc/get_biome_def_json(biome_path)
-	// Instantiate to read type definition values via initial()
 	var/datum/biome/B = new biome_path
 
-	// Read original (pre-expansion) flora_types list
-	var/list/raw_flora = initial(B.flora_types)
-	var/list/flora_json = list()
-	if(raw_flora)
-		for(var/flora_path in raw_flora)
-			var/weight = raw_flora[flora_path]
-			flora_json += list(list(
-				"path" = "[flora_path]",
-				"weight" = isnull(weight) ? 1 : weight,
-			))
+	// Reconstruct weighted lists from expanded flat lists.
+	// expand_weights preserves relative ratios (weight / GCF), so counting
+	// occurrences gives us correct relative weights for Rust-side selection.
+	var/list/flora_json = weights_from_expanded(B.flora_types)
+	var/list/feature_json = weights_from_expanded(B.feature_types)
+	var/list/fauna_json = weights_from_expanded(B.fauna_types)
 
-	var/open_turf = initial(B.open_turf_type)
-	var/closed_turf = initial(B.closed_turf_type)
+	var/open_turf = B.open_turf_type
+	var/closed_turf = B.closed_turf_type
 
 	qdel(B)
 
 	return list(
 		"open_turf" = open_turf ? "[open_turf]" : "",
 		"closed_turf" = closed_turf ? "[closed_turf]" : "",
-		"flora_chance" = initial(B.flora_density),
+		"flora_chance" = B.flora_density,
 		"flora" = flora_json,
+		"feature_chance" = B.feature_density,
+		"features" = feature_json,
+		"fauna_chance" = B.fauna_density,
+		"fauna" = fauna_json,
+		"mob_exclusion_radius" = B.mob_exclusion_radius,
+		"feature_exclusion_radius" = B.feature_exclusion_radius,
 	)
+
+/**
+ * Takes an expanded flat list (output of expand_weights) and reconstructs
+ * a list of (path, weight) pairs by counting occurrences of each entry.
+ *
+ * For example, list(A, A, B, B, B) → list(list("path"="/A", "weight"=2),
+ * list("path"="/B", "weight"=3)). The relative weights match the original
+ * weighted list before expansion.
+ *
+ * Arguments:
+ * * expanded - A flat list of type paths (output of expand_weights)
+ *
+ * Returns: List of associative lists with "path" and "weight" keys
+ */
+/datum/map_generator/planet_generator/proc/weights_from_expanded(list/expanded)
+	var/list/result = list()
+	if(!length(expanded))
+		return result
+
+	// Count occurrences of each type path
+	var/list/path_counts = list()
+	for(var/entry in expanded)
+		path_counts[entry] = (path_counts[entry] || 0) + 1
+
+	// Build JSON-serializable list
+	for(var/entry in path_counts)
+		result += list(list(
+			"path" = "[entry]",
+			"weight" = path_counts[entry],
+		))
+	return result
 
 /**
  * Creates docking ports for ship landing
