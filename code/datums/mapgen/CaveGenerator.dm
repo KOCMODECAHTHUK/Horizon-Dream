@@ -451,19 +451,19 @@
 /datum/map_generator/cave_generator/jungle
 	possible_biomes = list(
 		BIOME_LOW_HEAT = list(
-			BIOME_LOW_HUMIDITY = /datum/biome/grass,
+			BIOME_LOW_HUMIDITY = /datum/biome/plains,
 			BIOME_MEDIUM_HUMIDITY = /datum/biome/mudlands,
-			BIOME_HIGH_HUMIDITY = /datum/biome/jungle/water
+			BIOME_HIGH_HUMIDITY = /datum/biome/water
 		),
 		BIOME_MEDIUM_HEAT = list(
-			BIOME_LOW_HUMIDITY = /datum/biome/grass,
-			BIOME_MEDIUM_HUMIDITY = /datum/biome/jungle/dense,
+			BIOME_LOW_HUMIDITY = /datum/biome/plains,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/jungle/deep,
 			BIOME_HIGH_HUMIDITY = /datum/biome/jungle
 		),
 		BIOME_HIGH_HEAT = list(
-			BIOME_LOW_HUMIDITY = /datum/biome/sand/wasteland,
-			BIOME_MEDIUM_HUMIDITY = /datum/biome/grass,
-			BIOME_HIGH_HUMIDITY = /datum/biome/jungle/dense
+			BIOME_LOW_HUMIDITY = /datum/biome/wasteland,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/plains,
+			BIOME_HIGH_HUMIDITY = /datum/biome/jungle/deep
 		)
 	)
 

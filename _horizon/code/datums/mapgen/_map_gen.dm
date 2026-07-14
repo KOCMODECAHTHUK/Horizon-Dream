@@ -1,6 +1,7 @@
 #include "planet_dmm_loader.dm"
 #include "planet_generator.dm"
 
+#include "biomes/_biomes.dm"
 #include "biomes/beach_biomes.dm"
 #include "biomes/jungle_biomes.dm"
 #include "biomes/lavaland_biomes.dm"
