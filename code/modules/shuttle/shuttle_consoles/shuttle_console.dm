@@ -1,4 +1,4 @@
-// COMPATIBILITY LAYER for PentestSS13
+// COMPATIBILITY LAYER for Horizon-Dream
 // Shuttle consoles now extend supercruise console for compatibility
 // All old functionality is stubbed out - maps use supercruise console directly
 

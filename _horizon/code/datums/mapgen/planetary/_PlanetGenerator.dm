@@ -1,0 +1,8 @@
+#include "BeachGenerator.dm"
+#include "DesertGenerator.dm"
+#include "GrasslandGenerator.dm"
+#include "IceGenerator.dm"
+#include "JungleGenerator.dm"
+#include "LavaGenerator.dm"
+#include "RockGenerator.dm"
+#include "WastelandGenerator.dm"

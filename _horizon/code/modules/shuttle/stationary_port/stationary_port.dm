@@ -11,7 +11,6 @@
 /**
  * Helper proc for docking. Alters the position and orientation of a stationary docking port
  * to ensure that any mobile port small enough can dock within its bounds.
- * Based on PentestSS13's implementation.
  */
 /obj/docking_port/stationary/proc/adjust_dock_to_shuttle(obj/docking_port/mobile/shuttle)
 	if(!adjust_dock_for_landing || is_adjusting_now)

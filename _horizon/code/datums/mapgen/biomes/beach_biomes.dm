@@ -1,6 +1,5 @@
 /**
  * BEACH/OCEAN BIOMES
- * Based on PentestSS13's beach/ocean biome definitions
  * Used by beach planet generator
  */
 

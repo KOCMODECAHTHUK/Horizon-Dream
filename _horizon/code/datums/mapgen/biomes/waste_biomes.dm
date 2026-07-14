@@ -1,6 +1,5 @@
 /**
  * WASTE BIOMES
- * Based on PentestSS13's waste biome definitions
  * Used by wasteland planet generator
  */
 

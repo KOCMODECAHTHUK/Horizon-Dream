@@ -1,6 +1,5 @@
 /**
  * SAND/DESERT BIOMES
- * Based on PentestSS13's sand/desert biome definitions
  * Used by desert planet generator
  */
 

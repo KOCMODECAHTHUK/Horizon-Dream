@@ -1,6 +1,5 @@
 /**
  * SNOW/ICE BIOMES
- * Based on PentestSS13's snow/ice biome definitions
  * Used by ice planet generator
  */
 

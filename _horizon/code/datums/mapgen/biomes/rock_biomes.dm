@@ -1,6 +1,5 @@
 /**
  * ROCK BIOMES
- * Based on PentestSS13's rock biome definitions
  * Used by rock planet generator
  */
 

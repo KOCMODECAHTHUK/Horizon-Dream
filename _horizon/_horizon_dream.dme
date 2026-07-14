@@ -18,7 +18,7 @@
 // END_PREFERENCES
 
 // BEGIN_INCLUDE
-#include "code\_rust_utils\rust_utils.dm"
+#include "code\__HELPERS\rust_utils.dm"
 #include "code\__HELPERS\virtual_z_level.dm"
 #include "code\_globalvars\orbital_map.dm"
 #include "code\_globalvars\lists\strings.dm"

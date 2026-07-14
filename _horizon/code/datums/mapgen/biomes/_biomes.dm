@@ -1,3 +1,12 @@
+#include "beach_biomes.dm"
+#include "jungle_biomes.dm"
+#include "lavaland_biomes.dm"
+#include "planetary_biomes.dm"
+#include "rock_biomes.dm"
+#include "sand_biomes.dm"
+#include "snow_biomes.dm"
+#include "waste_biomes.dm"
+
 // ============================================================================
 // PLANETARY BIOMES FOR SUPERCRUISE PLANET GENERATION
 // ============================================================================

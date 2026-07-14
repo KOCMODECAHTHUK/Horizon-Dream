@@ -1,8 +1,6 @@
 /**
  * # Planetary Biomes
- *
  * Diverse biome types for planet generation
- * Based on PentestSS13's extensive biome system
  */
 
 // ============================================================================

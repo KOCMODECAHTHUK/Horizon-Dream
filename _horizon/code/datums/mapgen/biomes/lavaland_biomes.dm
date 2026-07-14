@@ -1,6 +1,5 @@
 /**
  * LAVALAND BIOMES
- * Based on PentestSS13's lavaland biome definitions
  * Used by lava planet generator
  */
 

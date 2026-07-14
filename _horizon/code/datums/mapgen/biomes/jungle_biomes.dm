@@ -1,6 +1,5 @@
 /**
  * JUNGLE BIOMES
- * Based on PentestSS13's jungle biome definitions
  * Used by jungle planet generator
  */
 

@@ -1,0 +1,88 @@
+/**
+ * Ice Planet Generator
+ * Creates a frozen ice world with icy caves
+ */
+/datum/map_generator/planet_generator/ice
+	primary_area_type = /area/planet/ice
+	cave_area_type = /area/planet/cave/ice
+	mountain_height = 0.75
+	biome_key = "ice"
+
+/datum/map_generator/planet_generator/ice/New()
+	. = ..()
+
+	biome_table = list(
+		BIOME_COLDEST = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/arctic/rocky,
+			BIOME_LOW_HUMIDITY = /datum/biome/snow,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/iceberg/lake,
+			BIOME_HIGH_HUMIDITY = /datum/biome/iceberg,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/iceberg,
+		),
+		BIOME_COLD = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/arctic,
+			BIOME_LOW_HUMIDITY = /datum/biome/arctic/rocky,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/snow/lush,
+			BIOME_HIGH_HUMIDITY = /datum/biome/snow,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/iceberg,
+		),
+		BIOME_WARM = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/snow/thawed,
+			BIOME_LOW_HUMIDITY = /datum/biome/snow/forest,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/snow,
+			BIOME_HIGH_HUMIDITY = /datum/biome/snow/lush,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/iceberg,
+		),
+		BIOME_TEMPERATE = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/snow/lush,
+			BIOME_LOW_HUMIDITY = /datum/biome/snow/forest,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/snow/thawed,
+			BIOME_HIGH_HUMIDITY = /datum/biome/snow,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/snow/lush,
+		),
+		BIOME_HOT = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/snow/forest,
+			BIOME_LOW_HUMIDITY = /datum/biome/snow/lush,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/snow/thawed,
+			BIOME_HIGH_HUMIDITY = /datum/biome/snow,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/snow/lush,
+		),
+		BIOME_HOTTEST = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/snow/thawed,
+			BIOME_LOW_HUMIDITY = /datum/biome/snow/forest,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/snow/thawed,
+			BIOME_HIGH_HUMIDITY = /datum/biome/snow/forest/dense,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/snow/thawed,
+		),
+	)
+
+	cave_biome_table = list(
+		BIOME_COLDEST_CAVE = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/cave/snow,
+			BIOME_LOW_HUMIDITY = /datum/biome/cave/snow,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/cave/snow,
+			BIOME_HIGH_HUMIDITY = /datum/biome/cave/snow,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/cave/snow/ice,
+		),
+		BIOME_COLD_CAVE = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/cave/snow,
+			BIOME_LOW_HUMIDITY = /datum/biome/cave/snow,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/cave/snow,
+			BIOME_HIGH_HUMIDITY = /datum/biome/cave/snow/ice,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/cave/snow/ice,
+		),
+		BIOME_WARM_CAVE = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/cave/snow,
+			BIOME_LOW_HUMIDITY = /datum/biome/cave/snow,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/cave/snow/thawed,
+			BIOME_HIGH_HUMIDITY = /datum/biome/cave/snow/thawed,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/cave/snow,
+		),
+		BIOME_HOT_CAVE = list(
+			BIOME_LOWEST_HUMIDITY = /datum/biome/cave/snow/thawed,
+			BIOME_LOW_HUMIDITY = /datum/biome/cave/snow/thawed,
+			BIOME_MEDIUM_HUMIDITY = /datum/biome/cave/volcanic/lava/plasma,
+			BIOME_HIGH_HUMIDITY = /datum/biome/cave/volcanic/lava,
+			BIOME_HIGHEST_HUMIDITY = /datum/biome/cave/volcanic/lava/total,
+		),
+	)
