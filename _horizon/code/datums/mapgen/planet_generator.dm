@@ -247,6 +247,7 @@
 		return FALSE
 
 	// Load the parsed map into the world at the target turf.
+	// place_on_top = TRUE is critical: it uses load_on_top() instead of ChangeTurf(),
 	// parsed.load() returns TRUE/FALSE (not bounds); actual bounds are in parsed.bounds.
 	var/load_success = parsed.load(
 		load_turf.x,
@@ -254,6 +255,7 @@
 		load_turf.z,
 		crop_map = TRUE,
 		no_changeturf = (SSatoms.initialized == INITIALIZATION_INSSATOMS),
+		place_on_top = TRUE,
 	)
 	if(!load_success)
 		log_world("ERROR: DMM load failed for [planet_name]")

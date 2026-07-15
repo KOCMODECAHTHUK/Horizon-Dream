@@ -4,7 +4,7 @@
  */
 
 // ========================================
-// SURFACE BIOMES
+// MARK: SURFACE BIOMES
 // ========================================
 
 /// Base rock biome - barren rocky terrain
@@ -53,7 +53,7 @@
 	)
 
 // ========================================
-// CAVE BIOMES
+// MARK: CAVE BIOMES
 // ========================================
 
 /// Rock cave - cracked rocky underground

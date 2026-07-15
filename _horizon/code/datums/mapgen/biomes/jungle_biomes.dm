@@ -4,7 +4,7 @@
  */
 
 // ========================================
-// SURFACE BIOMES
+// MARK: SURFACE BIOMES
 // ========================================
 
 /// Base jungle biome - dense vegetation
@@ -69,7 +69,7 @@
 	)
 
 // ========================================
-// CAVE BIOMES
+// MARK: CAVE BIOMES
 // ========================================
 
 /// Jungle cave - dirt underground

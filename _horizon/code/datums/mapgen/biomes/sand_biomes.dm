@@ -4,7 +4,7 @@
  */
 
 // ========================================
-// SURFACE BIOMES
+// MARK: SURFACE BIOMES
 // ========================================
 
 /// Base sand biome - white sand dunes
@@ -89,7 +89,7 @@
 	)
 
 // ========================================
-// CAVE BIOMES
+// MARK: MARK: CAVE BIOMES
 // ========================================
 
 /// Desert cave - sandy underground

@@ -4,7 +4,7 @@
  */
 
 // ========================================
-// SURFACE BIOMES
+// MARK: SURFACE BIOMES
 // ========================================
 
 /// Base lavaland biome - rocky basalt surface
@@ -128,7 +128,7 @@
 	flora_density = 2
 
 // ========================================
-// CAVE BIOMES
+// MARK: CAVE BIOMES
 // ========================================
 
 /// Base lavaland cave biome

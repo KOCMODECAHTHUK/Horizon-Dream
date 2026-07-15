@@ -4,7 +4,7 @@
  */
 
 // ========================================
-// SURFACE BIOMES
+// MARK: SURFACE BIOMES
 // ========================================
 
 /// Base snow biome - snowy plains
@@ -131,7 +131,7 @@
 	open_turf_type = /turf/open/lava/plasma/ice_moon
 
 // ========================================
-// CAVE BIOMES
+// MARK: CAVE BIOMES
 // ========================================
 
 /// Snow cave - icy underground chambers

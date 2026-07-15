@@ -4,7 +4,7 @@
  */
 
 // ========================================
-// SURFACE BIOMES
+// MARK: SURFACE BIOMES
 // ========================================
 
 /// Base beach biome - sandy shores
@@ -125,7 +125,7 @@
 	)
 
 // ========================================
-// CAVE BIOMES
+// MARK: CAVE BIOMES
 // ========================================
 
 /// Beach cave - sandy underground chambers

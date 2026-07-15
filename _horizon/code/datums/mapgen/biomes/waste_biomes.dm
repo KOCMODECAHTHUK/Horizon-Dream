@@ -4,7 +4,7 @@
  */
 
 // ========================================
-// SURFACE BIOMES
+// MARK: SURFACE BIOMES
 // ========================================
 
 /// Base waste biome - industrial wasteland
@@ -101,7 +101,7 @@
 	flora_density = 0
 
 // ========================================
-// CAVE BIOMES
+// MARK: MARK: CAVE BIOMES
 // ========================================
 
 /// Waste cave - industrial underground tunnels
