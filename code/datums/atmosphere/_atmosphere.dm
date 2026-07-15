@@ -59,7 +59,7 @@
 		cached_moles[gastype] += amount
 
 	// Safety check: ensure gastype is valid before accessing
-	if(!gastype || !gaslist[gastype])
+	if(!gastype || !cached_moles[gastype])
 		log_world("WARNING: Atmosphere [id] generation completed without valid gastype!")
 		gas_string = "o2=21;n2=79;TEMP=[gasmix.temperature]"
 		return
