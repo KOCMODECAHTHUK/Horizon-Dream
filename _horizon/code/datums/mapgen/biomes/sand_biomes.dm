@@ -10,7 +10,14 @@
 /// Base sand biome - white sand dunes
 /datum/biome/sand
 	open_turf_type = /turf/open/misc/beach/sand
+	fauna_density = 1
 	flora_density = 5
+	feature_density = 0.5
+	fauna_types = list(
+		/mob/living/basic/spider/giant = 100,
+		/mob/living/basic/snake = 20,
+		/mob/living/simple_animal/hostile/megafauna/dragon = 10,
+	)
 	flora_types = list(
 		/obj/structure/flora/rock/pile = 10,
 		/obj/structure/flora/rock = 10,
@@ -18,14 +25,7 @@
 		/obj/structure/flora/tree/dead = 5,
 		/obj/structure/flora/ash/cacti = 3,
 	)
-	feature_density = 0.5
 	feature_types = list(
-	)
-	fauna_density = 1
-	fauna_types = list(
-		/mob/living/basic/spider/giant = 100,
-		/mob/living/basic/snake = 20,
-		/mob/living/simple_animal/hostile/megafauna/dragon = 10,
 	)
 
 /// Wasteland sand - degraded sandy areas
@@ -64,8 +64,8 @@
 /// Ice cap on sand - cold desert
 /datum/biome/sand/icecap
 	open_turf_type = /turf/open/misc/asteroid/snow
-	flora_density = 4
 	fauna_density = 1
+	flora_density = 4
 	flora_types = list(
 		/obj/structure/flora/bush,
 		/obj/structure/flora/bush,
@@ -78,12 +78,12 @@
 /datum/biome/sand/sulfur_plains
 	open_turf_type = /turf/open/misc/beach/sand
 	flora_density = 1
+	feature_density = 1
 	flora_types = list(
 		/obj/structure/flora/bush,
 		/obj/structure/flora/rock = 2,
 		/obj/structure/flora/rock/pile = 2,
 	)
-	feature_density = 1
 	feature_types = list(
 		/obj/structure/geyser/random = 1,
 	)
@@ -96,16 +96,16 @@
 /datum/biome/cave/sand
 	open_turf_type = /turf/open/misc/beach/sand
 	closed_turf_type = /turf/closed/mineral/random/jungle
+	fauna_density = 1
 	flora_density = 4
+	fauna_types = list(
+		/mob/living/basic/carp = 30,
+		/mob/living/simple_animal/hostile/megafauna/dragon = 10,
+	)
 	flora_types = list(
 		/obj/structure/flora/rock/pile = 10,
 		/obj/structure/flora/rock = 15,
 		/obj/structure/flora/bush = 40,
-	)
-	fauna_density = 1
-	fauna_types = list(
-		/mob/living/basic/carp = 30,
-		/mob/living/simple_animal/hostile/megafauna/dragon = 10,
 	)
 
 /// Deep sand cave
@@ -125,6 +125,7 @@
 	closed_turf_type = /turf/closed/mineral/random/jungle
 	flora_density = 2
 	flora_types = list(/obj/structure/flora/rock/pile = 1, /obj/structure/flora/rock = 2)
+
 
 /// Volcanic sand cave with lava
 /datum/biome/cave/sand/volcanic/lava

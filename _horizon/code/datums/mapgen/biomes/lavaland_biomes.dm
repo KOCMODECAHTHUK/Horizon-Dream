@@ -10,19 +10,9 @@
 /// Base lavaland biome - rocky basalt surface
 /datum/biome/lavaland
 	open_turf_type = /turf/open/misc/asteroid/basalt/lava_land_surface
-	flora_density = 1
-	flora_types = list(
-		/obj/structure/flora/bush = 40,
-		/obj/structure/flora/ash/fireblossom = 1,
-		/obj/structure/flora/ash/seraka = 5,
-	)
-	feature_density = 0.3
-	feature_types = list(
-		/obj/structure/flora/rock/pile = 20,
-		/obj/structure/geyser/random = 4,
-		/obj/structure/flora/rock/pile = 14,
-	)
 	fauna_density = 1
+	flora_density = 1
+	feature_density = 0.3
 	fauna_types = list(
 		/mob/living/basic/mining/goliath = 50,
 		/mob/living/basic/mining/watcher = 40,
@@ -30,20 +20,33 @@
 		/mob/living/basic/mining/hivelord = 10,
 		/mob/living/basic/mining/lobstrosity = 1,
 	)
+	flora_types = list(
+		/obj/structure/flora/bush = 40,
+		/obj/structure/flora/ash/fireblossom = 1,
+		/obj/structure/flora/ash/seraka = 5,
+	)
+	feature_types = list(
+		/obj/structure/geyser/plasma_oxide = 8,
+		/obj/structure/geyser/protozine = 8,
+		/obj/structure/geyser/wittel = 8,
+		/obj/structure/geyser/random = 3,
+		/obj/structure/ore_vent/boss = 1,
+	)
 
 /// Lavaland forest - dead trees and dense grass
 /datum/biome/lavaland/forest
 	open_turf_type = /turf/open/misc/asteroid/basalt
+	flora_density = 80
 	flora_types = list(
 		/obj/structure/flora/tree/dead = 10,
 		/obj/structure/flora/bush = 40,
 		/obj/structure/flora/bush = 20,
 		/obj/structure/flora/ash/fireblossom = 4,
 	)
-	flora_density = 80
 
 /// Lavaland rocky forest - forest with more rocks
 /datum/biome/lavaland/forest/rocky
+	flora_density = 75
 	flora_types = list(
 		/obj/structure/flora/rock/pile = 5,
 		/obj/structure/flora/rock/pile = 4,
@@ -52,22 +55,21 @@
 		/obj/structure/flora/bush = 20,
 		/obj/structure/flora/ash/fireblossom = 4,
 	)
-	flora_density = 75
 
 /// Lavaland plains - grassy areas
 /datum/biome/lavaland/plains
 	open_turf_type = /turf/open/misc/dirt
+	flora_density = 15
 	flora_types = list(
 		/obj/structure/flora/bush = 50,
 		/obj/structure/flora/bush = 35,
 		/obj/structure/flora/bush = 1,
 	)
-	flora_density = 15
 
 /// Lavaland dense plains - heavily vegetated
 /datum/biome/lavaland/plains/dense
-	flora_density = 85
 	open_turf_type = /turf/open/misc/dirt
+	flora_density = 85
 	feature_density = 5
 	feature_types = list(
 		/obj/structure/flora/tree/dead = 50,
@@ -76,12 +78,13 @@
 
 /// Lavaland mixed dense plains - grass and moss mix
 /datum/biome/lavaland/plains/dense/mixed
-	flora_density = 50
 	open_turf_type = /turf/open/misc/dirt
+	flora_density = 50
 
 /// Lavaland outback - sparse vegetation
 /datum/biome/lavaland/outback
 	open_turf_type = /turf/open/misc/dirt
+	flora_density = 2
 	flora_types = list(
 		/obj/structure/flora/bush = 40,
 		/obj/structure/flora/bush = 35,
@@ -89,11 +92,11 @@
 		/obj/structure/flora/rock/pile = 2,
 		/obj/structure/flora/ash/cacti = 1,
 	)
-	flora_density = 2
 
 /// Lavaland lush - dense vegetation with crimson grass
 /datum/biome/lavaland/lush
 	open_turf_type = /turf/open/misc/dirt
+	flora_density = 30
 	flora_types = list(
 		/obj/structure/flora/bush,
 		/obj/structure/flora/tree/dead = 1,
@@ -106,26 +109,25 @@
 		/obj/structure/flora/bush,
 		/obj/structure/flora/bush = 3
 	)
-	flora_density = 30
 
 /// Lavaland lava - active lava flows
 /datum/biome/lavaland/lava
 	open_turf_type = /turf/open/lava/smooth/lava_land_surface
+	flora_density = 2
+	feature_density = 0
 	flora_types = list(
 		/obj/structure/flora/rock/pile = 1,
 		/obj/structure/flora/rock/pile = 1
 	)
-	flora_density = 2
-	feature_density = 0
 
 /// Lavaland near-lava - obsidian areas near lava
 /datum/biome/lavaland/nearlava
 	open_turf_type = /turf/open/misc/asteroid/basalt
+	flora_density = 2
 	flora_types = list(
 		/obj/structure/flora/rock/pile = 1,
 		/obj/structure/flora/rock/pile = 1
 	)
-	flora_density = 2
 
 // ========================================
 // MARK: CAVE BIOMES
@@ -136,13 +138,14 @@
 	open_turf_type = /turf/open/misc/asteroid/basalt/lava_land_surface
 	closed_turf_type = /turf/closed/mineral/random/volcanic
 	fauna_density = 4
+	flora_density = 2
+	feature_density = 1
 	fauna_types = list(
 		/mob/living/basic/mining/goliath = 50,
 		/mob/living/basic/mining/watcher = 40,
 		/mob/living/basic/mining/basilisk = 30,
 		/mob/living/basic/mining/hivelord = 10,
 	)
-	flora_density = 2
 	flora_types = list(
 		/obj/structure/flora/rock/pile = 4,
 		/obj/structure/flora/rock/pile = 4,
@@ -154,7 +157,6 @@
 		/obj/structure/flora/ash/cacti = 1,
 		/obj/structure/flora/ash/tall_shroom = 2,
 	)
-	feature_density = 1
 	feature_types = list(
 	)
 
@@ -165,11 +167,11 @@
 /// Lavaland cave - rocky purple floor
 /datum/biome/cave/lavaland/rocky
 	open_turf_type = /turf/open/misc/asteroid/basalt
+	flora_density = 5
 	flora_types = list(
 		/obj/structure/flora/rock/pile = 6,
 		/obj/structure/flora/rock/pile = 6,
 	)
-	flora_density = 5
 
 /// Lavaland cave - mossy underground
 /datum/biome/cave/lavaland/mossy
@@ -191,3 +193,4 @@
 	open_turf_type = /turf/open/lava/smooth/lava_land_surface
 	feature_density = 1
 	feature_types = list(/obj/structure/flora/rock/pile = 1)
+

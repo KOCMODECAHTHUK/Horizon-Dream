@@ -9,9 +9,6 @@
 	perlin_zoom = 65
 	mountain_height = 0.45
 
-/datum/map_generator/planet_generator/lava/New()
-	. = ..()
-
 	biome_table = list(
 		BIOME_COLDEST = list(
 			BIOME_LOWEST_HUMIDITY = /datum/biome/lavaland/forest,

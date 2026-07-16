@@ -7,9 +7,6 @@
 	cave_area_type = /area/planet/cave/ice
 	mountain_height = 0.75
 
-/datum/map_generator/planet_generator/ice/New()
-	. = ..()
-
 	biome_table = list(
 		BIOME_COLDEST = list(
 			BIOME_LOWEST_HUMIDITY = /datum/biome/arctic/rocky,

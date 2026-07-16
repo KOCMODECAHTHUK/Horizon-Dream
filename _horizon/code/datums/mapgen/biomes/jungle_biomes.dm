@@ -10,6 +10,13 @@
 /// Base jungle biome - dense vegetation
 /datum/biome/jungle
 	open_turf_type = /turf/open/misc/dirt/jungle
+	fauna_density = 4
+	flora_density = 75
+	feature_density = 0.05
+	fauna_types = list(
+		/mob/living/basic/spider/giant = 40,
+		/mob/living/basic/spider/giant/ambush = 40,
+	)
 	flora_types = list(
 		/obj/structure/flora/grass/jungle = 10,
 		/obj/structure/flora/grass/jungle/b = 10,
@@ -20,13 +27,6 @@
 		/obj/structure/flora/bush/jungle = 10,
 		/obj/structure/flora/rock/pile/jungle/large = 3,
 	)
-	flora_density = 75
-	fauna_density = 4
-	fauna_types = list(
-		/mob/living/basic/spider/giant = 40,
-		/mob/living/basic/spider/giant/ambush = 40,
-	)
-	feature_density = 0.05
 	feature_types = list(
 		/obj/structure/geyser/random = 1,
 	)
@@ -76,7 +76,12 @@
 /datum/biome/cave/jungle
 	open_turf_type = /turf/open/misc/dirt/jungle
 	closed_turf_type = /turf/closed/mineral/random/jungle
+	fauna_density = 2
 	flora_density = 5
+	fauna_types = list(
+		/mob/living/basic/spider/giant = 40,
+		/mob/living/basic/spider/giant/ambush = 40,
+	)
 	flora_types = list(
 		/obj/structure/flora/grass/jungle = 10,
 		/obj/structure/flora/grass/jungle/b = 10,
@@ -85,11 +90,6 @@
 		/obj/structure/flora/bush/jungle = 40,
 		/obj/structure/flora/bush/jungle = 35,
 		/obj/structure/flora/bush/jungle = 10,
-	)
-	fauna_density = 2
-	fauna_types = list(
-		/mob/living/basic/spider/giant = 40,
-		/mob/living/basic/spider/giant/ambush = 40,
 	)
 
 /// Dirt-heavy jungle cave

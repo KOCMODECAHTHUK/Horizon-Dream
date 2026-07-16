@@ -7,9 +7,6 @@
 	cave_area_type = /area/planet/cave/jungle
 	mountain_height = 0.85
 
-/datum/map_generator/planet_generator/jungle/New()
-	. = ..()
-
 	biome_table = list(
 		BIOME_COLDEST = list(
 			BIOME_LOWEST_HUMIDITY = /datum/biome/jungle,

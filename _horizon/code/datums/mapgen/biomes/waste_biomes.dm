@@ -10,7 +10,14 @@
 /// Base waste biome - industrial wasteland
 /datum/biome/waste
 	open_turf_type = /turf/open/misc/ashplanet/rocky
+	fauna_density = 3
 	flora_density = 25
+	feature_density = 0.5
+	fauna_types = list(
+		/mob/living/basic/migo = 30,
+		/mob/living/basic/faithless = 20,
+		/mob/living/basic/blankbody = 40,
+	)
 	flora_types = list(
 		/obj/structure/flora/rock/pile = 15,
 		/obj/structure/flora/bush = 50,
@@ -18,13 +25,6 @@
 		/obj/structure/flora/bush = 35,
 		/obj/structure/flora/ash/tall_shroom = 5,
 	)
-	fauna_density = 3
-	fauna_types = list(
-		/mob/living/basic/migo = 30,
-		/mob/living/basic/faithless = 20,
-		/mob/living/basic/blankbody = 40,
-	)
-	feature_density = 0.5
 	feature_types = list(
 	)
 
@@ -66,11 +66,11 @@
 /datum/biome/waste/metal
 	open_turf_type = /turf/open/misc/ashplanet/rocky
 	flora_density = 1
+	feature_density = 2
 	flora_types = list(
 		/obj/structure/girder/displaced = 3,
 		/obj/structure/grille/broken = 2,
 	)
-	feature_density = 2
 	feature_types = list(
 		/obj/structure/girder/displaced = 5,
 		/obj/structure/grille/broken = 3,
@@ -108,19 +108,19 @@
 /datum/biome/cave/waste
 	open_turf_type = /turf/open/misc/ashplanet/rocky
 	closed_turf_type = /turf/closed/mineral/random/jungle
+	fauna_density = 2
 	flora_density = 30
+	fauna_types = list(
+		/mob/living/basic/migo = 30,
+		/mob/living/basic/faithless = 20,
+		/mob/living/basic/blankbody = 40,
+	)
 	flora_types = list(
 		/obj/structure/flora/rock/pile = 10,
 		/obj/structure/flora/bush = 50,
 		/obj/structure/flora/bush = 40,
 		/obj/structure/flora/bush = 35,
 		/obj/structure/flora/ash/tall_shroom = 10,
-	)
-	fauna_density = 2
-	fauna_types = list(
-		/mob/living/basic/migo = 30,
-		/mob/living/basic/faithless = 20,
-		/mob/living/basic/blankbody = 40,
 	)
 
 /// Concrete waste cave - concrete tunnels
@@ -148,18 +148,18 @@
 
 /// Hivebot metal cave - active hivebot areas
 /datum/biome/cave/waste/metal/hivebot
+	fauna_density = 8
 	flora_density = 30
+	fauna_types = list(
+		/mob/living/basic/morph = 100,
+		/mob/living/basic/migo = 30,
+		/mob/living/basic/faithless = 20,
+	)
 	flora_types = list(
 		/obj/structure/girder/displaced = 5,
 		/obj/structure/grille/broken = 5,
 		/obj/structure/flora/bush = 50,
 		/obj/structure/flora/bush = 40,
-	)
-	fauna_density = 8
-	fauna_types = list(
-		/mob/living/basic/morph = 100,
-		/mob/living/basic/migo = 30,
-		/mob/living/basic/faithless = 20,
 	)
 
 /// Radioactive waste cave - contaminated underground

@@ -7,9 +7,6 @@
 	cave_area_type = /area/planet/cave/wasteland
 	mountain_height = 0.78
 
-/datum/map_generator/planet_generator/wasteland/New()
-	. = ..()
-
 	biome_table = list(
 		BIOME_COLDEST = list(
 			BIOME_LOWEST_HUMIDITY = /datum/biome/waste/crater,

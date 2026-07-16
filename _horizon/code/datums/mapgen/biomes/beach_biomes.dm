@@ -10,18 +10,18 @@
 /// Base beach biome - sandy shores
 /datum/biome/beach
 	open_turf_type = /turf/open/misc/beach/sand
+	fauna_density = 2
 	flora_density = 5
+	fauna_types = list(
+		/mob/living/basic/carp = 10,
+		/mob/living/basic/carp = 5,
+	)
 	flora_types = list(
 		/obj/structure/flora/tree/palm = 1,
 		/obj/structure/flora/rock = 2,
 		/obj/structure/flora/rock/pile = 3,
 		/obj/structure/flora/bush,
 		/obj/structure/flora/bush,
-	)
-	fauna_density = 2
-	fauna_types = list(
-		/mob/living/basic/carp = 10,
-		/mob/living/basic/carp = 5,
 	)
 
 /// Dense beach - heavier sand coverage
@@ -35,8 +35,8 @@
 
 /// Beach jungle - tropical coastal vegetation
 /datum/biome/beach_jungle
-	flora_density = 70
 	open_turf_type = /turf/open/misc/dirt
+	flora_density = 70
 	flora_types = list(
 		/obj/structure/flora/grass/jungle = 10,
 		/obj/structure/flora/grass/jungle/b = 10,
@@ -53,10 +53,8 @@
 /// Grass biome - grassy coastal areas
 /datum/biome/grass
 	open_turf_type = /turf/open/floor/grass
-
 	fauna_density = 1
 	flora_density = 25
-
 	fauna_types = list(
 		/mob/living/basic/butterfly = 1,
 		/mob/living/basic/rabbit = 1,
@@ -64,7 +62,6 @@
 		/mob/living/basic/cow = 1,
 		/mob/living/basic/deer = 1,
 	)
-
 	flora_types = list(
 		/obj/structure/flora/tree/jungle = 1,
 		/obj/structure/flora/bush/flowers_br/style_random = 1,
@@ -87,17 +84,11 @@
 		///obj/structure/flora/ash/garden = 1,
 	)
 
-	//feature_types = list(
-	//	/obj/effect/greeble_spawner/grass_patch_spawner/dark_beach = 1,
-	//)
-
 /// Dense grass - heavy grass coverage
 /datum/biome/grass/dense
-
 	fauna_density = 2
 	flora_density = 70
 	feature_density = 1.2
-
 	fauna_types = list(
 		/mob/living/basic/butterfly = 4,
 		/mob/living/basic/snake = 5,
@@ -107,8 +98,8 @@
 /// Ocean biome - shallow water
 /datum/biome/ocean
 	open_turf_type = /turf/open/water/jungle
-	flora_density = 0
 	fauna_density = 1
+	flora_density = 0
 	fauna_types = list(
 		/mob/living/basic/carp = 10,
 		/mob/living/basic/carp = 5,
@@ -117,11 +108,10 @@
 /// Deep ocean - deep water areas
 /datum/biome/ocean/deep
 	open_turf_type = /turf/open/water/jungle
-	flora_density = 0
 	fauna_density = 1.4
+	flora_density = 0
 	fauna_types = list(
 		/mob/living/basic/carp = 10,
-		/mob/living/simple_animal/hostile/megafauna/dragon = 2,
 	)
 
 // ========================================
@@ -132,21 +122,21 @@
 /datum/biome/cave/beach
 	open_turf_type = /turf/open/misc/beach/sand
 	closed_turf_type = /turf/closed/mineral/random/jungle
+	fauna_density = 1
 	flora_density = 4
+	fauna_types = list(
+		/mob/living/basic/carp = 5,
+	)
 	flora_types = list(
 		/obj/structure/flora/rock = 15,
 		/obj/structure/flora/rock = 10,
 		/obj/structure/flora/bush = 40,
 	)
-	fauna_density = 1
-	fauna_types = list(
-		/mob/living/basic/carp = 5,
-		/mob/living/simple_animal/hostile/megafauna/dragon = 1,
-	)
 
 /// Beach cove - coastal cave formations
 /datum/biome/cave/beach/cove
 	open_turf_type = /turf/open/misc/beach/sand
+	flora_density = 20
 	flora_types = list(
 		/obj/structure/flora/tree/pine = 10,
 		/obj/structure/flora/rock = 10,
@@ -154,7 +144,6 @@
 		/obj/structure/flora/tree/dead = 10,
 		/obj/structure/flora/bush = 40,
 	)
-	flora_density = 20
 
 /// Magical beach cave - enchanted underground
 /datum/biome/cave/beach/magical

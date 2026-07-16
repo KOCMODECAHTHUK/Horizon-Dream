@@ -7,9 +7,6 @@
 	cave_area_type = /area/planet/cave/desert
 	mountain_height = 0.82
 
-/datum/map_generator/planet_generator/desert/New()
-	. = ..()
-
 	biome_table = list(
 		BIOME_COLDEST = list(
 			BIOME_LOWEST_HUMIDITY = /datum/biome/sand,

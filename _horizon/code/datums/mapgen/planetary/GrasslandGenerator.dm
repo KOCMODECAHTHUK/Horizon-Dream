@@ -7,9 +7,6 @@
 	cave_area_type = /area/planet/cave/grassland
 	mountain_height = 0.80
 
-/datum/map_generator/planet_generator/grassland/New()
-	. = ..()
-
 	biome_table = list(
 		BIOME_COLDEST = list(
 			BIOME_LOWEST_HUMIDITY = /datum/biome/rock,
