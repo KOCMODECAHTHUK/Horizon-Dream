@@ -1086,3 +1086,76 @@ ADMIN_VERB(load_away_mission, R_FUN, "Load Away Mission", "Load a specific away 
 		for(var/datum/virtual_level/vlevel as anything in zone.virtual_levels)
 			if(vlevel.traits[trait])
 				. += vlevel
+
+/// Creates a new Z-level specifically for planet generation.
+/// Returns a /datum/virtual_level on the new Z-level, or null on failure.
+/// The virtual level will have the given name, traits, and size.
+/datum/controller/subsystem/mapping/proc/create_planet_vlevel(new_name, list/traits, datum/map_zone/mapzone, width, height)
+	// Create a new Z-level for this planet
+	var/datum/space_level/new_z = add_new_zlevel(
+		new_name,
+		traits,
+		/datum/space_level,
+		contain_turfs = TRUE,
+		allocation_type = ALLOCATION_FREE
+	)
+
+	if(!new_z)
+		log_world("MAPPING: Failed to create planet Z-level for [new_name]")
+		return null
+
+	var/z_value = new_z.z_value
+
+	// Reserve the full extent of the new Z-level for the virtual level
+	// The Z-level is pre-filled with space turfs (0,0) to (world.maxx, world.maxy)
+	// We create a virtual level covering the requested area
+	var/datum/virtual_level/vlevel = new(
+		new_name,
+		traits,
+		mapzone,
+		1,                    // low_x
+		1,                    // low_y
+		width,                // high_x
+		height,               // high_y
+		z_value               // z_value
+	)
+
+	return vlevel
+
+/// Destroys a planet's Z-level tracking data.
+/// The Z-level itself remains in the world as an empty space level.
+/// This prevents the mapping system from trying to use stale references.
+/// Returns TRUE on success, FALSE if the Z-level doesn't exist.
+/datum/controller/subsystem/mapping/proc/destroy_planet_zlevel(datum/virtual_level/vlevel)
+	if(!vlevel)
+		return FALSE
+
+	var/z_value = vlevel.z_value
+	var/datum/space_level/planet_z = z_list[z_value]
+
+	if(!planet_z)
+		log_world("MAPPING: No Z-level found for planet at z=[z_value]")
+		return FALSE
+
+	// Remove from z_list and all tracking lists
+	z_list -= z_value
+	z_level_to_plane_offset -= z_value
+	z_level_to_lowest_plane_offset -= z_value
+	z_level_to_stack -= z_value
+	gravity_by_z_level -= z_value
+
+	// Clean up plane tracking for levels below the removed z
+	for(var/i in 1 to world.maxz)
+		if(i < z_value)
+			continue
+		var/level = z_list[i]
+		if(!level)
+			continue
+		var/list/stack = z_level_to_stack[i]
+		if(stack)
+			for(var/j in 1 to stack.len)
+				if(stack[j] >= z_value)
+					stack[j] -= 1
+
+	log_world("MAPPING: Planet Z-level [planet_z.name] (z=[z_value]) tracking removed")
+	return TRUE

@@ -147,15 +147,13 @@
 	// Add extra space for the 1-tile border on each side
 	var/total_size = planet_size + 2
 
-	// Create a virtual level for the planet
-	var/datum/virtual_level/vlevel = SSmapping.create_virtual_level(
+	// Create a virtual level on a NEW Z-level
+	var/datum/virtual_level/vlevel = SSmapping.create_planet_vlevel(
 		planet_name,
 		list(ZTRAIT_MINING = TRUE, ZTRAIT_BASETURF = baseturf),
 		mapzone,
 		total_size,
-		total_size,
-		ALLOCATION_FREE,
-		DEFAULT_ALLOC_JUMP
+		total_size
 	)
 
 	if(!vlevel)

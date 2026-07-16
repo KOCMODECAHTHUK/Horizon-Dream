@@ -101,14 +101,12 @@
 		CRASH("generate_planet_on_new_level: failed to create map zone")
 
 	var/total_size = width + 2 // margin for borders
-	var/datum/virtual_level/vlevel = SSmapping.create_virtual_level(
+	var/datum/virtual_level/vlevel = SSmapping.create_planet_vlevel(
 		planet_name,
 		list(ZTRAIT_MINING = TRUE, ZTRAIT_BASETURF = /turf/open/space/basic),
 		mapzone,
 		total_size,
-		total_size,
-		ALLOCATION_FREE,
-		DEFAULT_ALLOC_JUMP,
+		total_size
 	)
 	if(!vlevel)
 		CRASH("generate_planet_on_new_level: failed to create virtual level")

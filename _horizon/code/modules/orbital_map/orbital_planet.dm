@@ -243,6 +243,10 @@
 	reserve_docks = null
 
 	planet_level.clear_reservation()
+
+	// Remove the planet's dedicated Z-level from tracking
+	SSmapping.destroy_planet_zlevel(planet_level)
+
 	qdel(planet_level)
 	planet_level = null
 
