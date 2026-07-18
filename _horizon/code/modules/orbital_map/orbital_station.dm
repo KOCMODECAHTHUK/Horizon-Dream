@@ -56,7 +56,7 @@
 	occupied = FALSE
 	return null
 
-/datum/orbital_object/station/interact(datum/orbital_object/shuttle/interacting_shuttle, mob/user)
+/datum/orbital_object/station/interact(datum/orbital_object/shuttle/interacting_shuttle, mob/user, obj/machinery/computer/shuttle_flight/flight_console = null)
 	if(!istype(interacting_shuttle))
 		return "Only shuttles can dock with stations"
 	var/dock_result = interacting_shuttle.dock_at_station(src)

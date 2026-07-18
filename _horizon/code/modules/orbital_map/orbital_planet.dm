@@ -13,6 +13,7 @@
 	var/landable = TRUE
 	var/map_generator_type = /datum/map_generator/planet_generator/rocky
 	var/datum/virtual_level/planet_level
+	var/datum/virtual_level/cave_level
 	var/list/obj/docking_port/stationary/reserve_docks
 	var/baseturf_type = /turf/open/space/basic
 	var/preserve_level = FALSE
@@ -59,6 +60,9 @@
 
 	planet_level = result[1]
 	reserve_docks = result[2]
+
+	if(length(result) >= 3)
+		cave_level = result[3]
 
 	if(!planet_level)
 		log_world("ERROR: Invalid planet level generated for [name]")
@@ -141,7 +145,7 @@
 		var/datum/orbital_vector/delta = position.Subtract(prev_pos)
 		velocity.Set(delta.x / seconds_per_tick, delta.y / seconds_per_tick, delta.z / seconds_per_tick)
 
-/datum/orbital_object/planet/interact(datum/orbital_object/shuttle/interacting_shuttle, mob/user)
+/datum/orbital_object/planet/interact(datum/orbital_object/shuttle/interacting_shuttle, mob/user, obj/machinery/computer/shuttle_flight/flight_console = null)
 	if(!istype(interacting_shuttle))
 		return "Only shuttles can interact with planets"
 
@@ -156,18 +160,24 @@
 		if(!generate_level())
 			to_chat(user, span_warning("ERROR: Failed to generate planet surface!"))
 			return "Failed to generate planet surface"
-		to_chat(user, span_boldnotice("Planet surface generated! Landing coordinates acquired."))
+		to_chat(user, span_boldnotice("Planet surface generated!"))
 
+	if(flight_console)
+		var/obj/machinery/computer/camera_advanced/shuttle_docker/orbital/docker = new()
+		if(!docker.launch(user, flight_console, src))
+			qdel(docker)
+			return "Failed to launch navigation camera"
+		return null
+
+	return list_based_dock(interacting_shuttle, user)
+
+/datum/orbital_object/planet/proc/list_based_dock(datum/orbital_object/shuttle/interacting_shuttle, mob/user)
 	var/list/available = get_dockable_locations()
 	if(!length(available))
 		to_chat(user, span_warning("All landing zones are currently occupied or reserved!"))
 		return "No available landing zones"
 
 	to_chat(user, span_info("[length(available)]/[length(reserve_docks)] landing zones available."))
-	to_chat(user, span_info("Available landing zones:"))
-	for(var/obj/docking_port/stationary/dock as anything in available)
-		to_chat(user, span_info("  - [dock.name] at ([dock.x], [dock.y], [dock.z])"))
-
 	var/obj/docking_port/stationary/selected_dock = tgui_input_list(user, "Select landing zone:", "Planet Landing", available)
 	if(!selected_dock)
 		to_chat(user, span_notice("Landing procedure cancelled."))
@@ -177,9 +187,7 @@
 		to_chat(user, span_warning("ERROR: Shuttle has no docking port!"))
 		return "Shuttle has no docking port"
 
-	to_chat(user, span_notice("Requesting landing clearance at [selected_dock.name]..."))
 	var/datum/docking_ticket/ticket = pre_docked(interacting_shuttle, selected_dock)
-
 	if(!ticket || ticket.docking_error)
 		var/error_msg = ticket?.docking_error || "Unknown error"
 		to_chat(user, span_warning("ERROR: Landing clearance denied! [error_msg]"))
@@ -187,9 +195,7 @@
 			qdel(ticket)
 		return "Ticket error: [error_msg]"
 
-	to_chat(user, span_notice("Landing clearance granted! Initiating landing at [selected_dock.name]..."))
 	var/docking_result = interacting_shuttle.shuttle_port.initiate_docking(ticket.target_port)
-
 	if(docking_result != DOCKING_SUCCESS)
 		to_chat(user, span_warning("ERROR: Landing failed! ([docking_result])"))
 		qdel(ticket)
@@ -198,9 +204,7 @@
 	to_chat(user, span_boldnotice("Landing successful! Welcome to [name]."))
 	interacting_shuttle.docked_at = src
 	qdel(ticket)
-
 	interacting_shuttle.docked_offset = interacting_shuttle.position.Subtract(position)
-
 	return null
 
 /datum/orbital_object/planet/proc/undock_shuttle(datum/orbital_object/shuttle/target_shuttle)
@@ -242,13 +246,18 @@
 		qdel(dock, TRUE)
 	reserve_docks = null
 
+	// Очищаем поверхность
 	planet_level.clear_reservation()
-
-	// Remove the planet's dedicated Z-level from tracking
 	SSmapping.destroy_planet_zlevel(planet_level)
-
 	qdel(planet_level)
 	planet_level = null
+
+	// Очищаем пещеры, если они есть
+	if(cave_level)
+		cave_level.clear_reservation()
+		SSmapping.destroy_planet_zlevel(cave_level)
+		qdel(cave_level)
+		cave_level = null
 
 	src.star_system.generate_planets(1)
 	qdel(src)

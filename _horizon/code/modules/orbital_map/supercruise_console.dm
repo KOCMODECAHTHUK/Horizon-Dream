@@ -314,7 +314,7 @@
 				to_chat(usr, span_warning("Object not found in current system!"))
 				return FALSE
 
-			var/interact_result = target_object.interact(controlled_shuttle, usr)
+			var/interact_result = target_object.interact(controlled_shuttle, usr, src)
 			if(interact_result)
 				last_action_error = interact_result
 				to_chat(usr, span_warning("Docking failed: [interact_result]"))

@@ -108,10 +108,6 @@
 	var/y_distance
 	/// Z value of the virtual level, for easy access
 	var/z_value
-	/// Virtual level that is above this one (multi-z)
-	var/datum/virtual_level/up_linkage
-	/// Virtual level that is below this one (multi-z)
-	var/datum/virtual_level/down_linkage
 	/// Neighboring virtual levels, associative by direction
 	var/list/crosslinked = list()
 	/// Traits of this virtual level
@@ -425,12 +421,6 @@
 	parent_level = null
 	SSmapping.virtual_z_translation -= "[id]"
 	parent_map_zone.remove_virtual_level(src)
-	if(up_linkage)
-		up_linkage.down_linkage = null
-		up_linkage = null
-	if(down_linkage)
-		down_linkage.up_linkage = null
-		down_linkage = null
 	return ..()
 
 /datum/virtual_level/proc/mark_turfs()
@@ -555,42 +545,6 @@
 
 /datum/virtual_level/proc/get_random_position()
 	return locate(rand(low_x, high_x), rand(low_y, high_y), z_value)
-
-/datum/virtual_level/proc/get_random_position_in_margin()
-	return locate(rand(low_x + reserved_margin, high_x - reserved_margin), rand(low_y + reserved_margin, high_y - reserved_margin), z_value)
-
-/datum/virtual_level/proc/get_below_turf(turf/Turf)
-	if(!down_linkage)
-		return
-	var/abs_x = Turf.x - low_x
-	var/abs_y = Turf.y - low_y
-	return locate(down_linkage.low_x + abs_x, down_linkage.low_y + abs_y, down_linkage.z_value)
-
-/datum/virtual_level/proc/get_above_turf(turf/Turf)
-	if(!up_linkage)
-		return
-	var/abs_x = Turf.x - low_x
-	var/abs_y = Turf.y - low_y
-	return locate(up_linkage.low_x + abs_x, up_linkage.low_y + abs_y, up_linkage.z_value)
-
-/datum/virtual_level/proc/get_zone_step(turf/source, direction)
-	// multiz dir is just the up/down dir flags
-	var/multiz_dir = direction & (UP|DOWN)
-	// while the passed dir is normalized to just the cardinals
-	direction &= ~(UP|DOWN)
-	var/turf/my_turf = get_step(source, direction)
-	if(isnull(my_turf))
-		return
-	switch(multiz_dir)
-		// the old version of this code prioritized UP over DOWN when
-		// both were passed. i don't want to fuck with that, so here it is preserved
-		if(UP|DOWN)
-			return get_above_turf(my_turf)
-		if(UP)
-			return get_above_turf(my_turf)
-		if(DOWN)
-			return get_below_turf(my_turf)
-	return my_turf
 
 /datum/virtual_level/proc/get_client_mobs()
 	return get_alive_client_mobs() + get_dead_client_mobs()

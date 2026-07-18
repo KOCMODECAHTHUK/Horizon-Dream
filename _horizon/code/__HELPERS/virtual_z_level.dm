@@ -63,13 +63,6 @@
 	if(!T)
 		return null
 
-	// Check for virtual level first
-	if(T.virtual_z)
-		var/datum/virtual_level/vlevel = SSmapping.virtual_z_translation["[T.virtual_z]"]
-		if(vlevel)
-			return vlevel.get_below_turf(T)
-		return null
-
 	// Check for reservation
 	if(T.turf_flags & RESERVATION_TURF)
 		var/datum/turf_reservation/reservation = SSmapping.get_reservation_from_turf(T)
@@ -87,13 +80,6 @@
 /proc/get_turf_above_helper(location)
 	var/turf/T = get_turf(location)
 	if(!T)
-		return null
-
-	// Check for virtual level first
-	if(T.virtual_z)
-		var/datum/virtual_level/vlevel = SSmapping.virtual_z_translation["[T.virtual_z]"]
-		if(vlevel)
-			return vlevel.get_above_turf(T)
 		return null
 
 	// Check for reservation

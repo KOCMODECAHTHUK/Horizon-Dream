@@ -14,20 +14,6 @@
 	if(!us || !them)
 		return NONE
 
-	// Check if we're in the same virtual level first
-	var/our_vz = us.virtual_z()
-	var/their_vz = them.virtual_z()
-
-	if(our_vz && their_vz && our_vz != their_vz)
-		// Different virtual levels - use virtual level linkage
-		var/datum/virtual_level/our_vlevel = us.get_virtual_level()
-		if(our_vlevel?.up_linkage?.id == their_vz)
-			return (UP | get_dir(us, them))
-		else if(our_vlevel?.down_linkage?.id == their_vz)
-			return (DOWN | get_dir(us, them))
-		// Not linked, return planar direction
-		return get_dir(us, them)
-
 	if(us.z == them.z)
 		return get_dir(us, them)
 	else

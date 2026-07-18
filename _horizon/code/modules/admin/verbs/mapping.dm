@@ -34,10 +34,6 @@ ADMIN_VERB(map_zones_info, R_DEBUG, "Map-Zones Info", "Displays information abou
 					else
 						zone_string = SUB_ZONE_INFO_FULL(linked_zone)
 					dat += "<BR> --- [dir_string]: [zone_string]"
-			if(virtual_level.up_linkage)
-				dat += "<BR> -- Up-linkage: [SUB_ZONE_INFO_FULL(virtual_level.up_linkage)]"
-			if(virtual_level.down_linkage)
-				dat += "<BR> -- Down-linkage: [SUB_ZONE_INFO_FULL(virtual_level.down_linkage)]"
 		dat += "<HR>"
 	dat += "Physical map dimensions: [world.maxx], [world.maxy], [world.maxz]"
 	dat += "<BR>Physical levels:"

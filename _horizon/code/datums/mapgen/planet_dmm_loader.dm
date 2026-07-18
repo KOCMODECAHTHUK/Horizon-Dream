@@ -103,7 +103,7 @@
 	var/total_size = width + 2 // margin for borders
 	var/datum/virtual_level/vlevel = SSmapping.create_planet_vlevel(
 		planet_name,
-		list(ZTRAIT_MINING = TRUE, ZTRAIT_BASETURF = /turf/open/space/basic),
+		list(ZTRAIT_MINING = TRUE, ZTRAIT_BASETURF = /turf/closed/void),
 		mapzone,
 		total_size,
 		total_size

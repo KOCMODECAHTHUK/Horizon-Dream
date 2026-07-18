@@ -4,6 +4,7 @@
 #include "orbital_station.dm"
 #include "overmap_star_system.dm"
 #include "supercruise_console.dm"
+#include "orbital_docker.dm"
 
 #include "object_types/orbital_outpost.dm"
 #include "object_types/planets.dm"

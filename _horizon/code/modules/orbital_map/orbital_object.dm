@@ -100,6 +100,6 @@
 		"system_id" = star_system?.system_id
 	)
 
-/datum/orbital_object/proc/interact(datum/orbital_object/shuttle/interacting_shuttle, mob/user)
+/datum/orbital_object/proc/interact(datum/orbital_object/shuttle/interacting_shuttle, mob/user, obj/machinery/computer/shuttle_flight/flight_console = null)
 	to_chat(user, span_notice("You examine [name] from a distance. Nothing happens."))
 	return null

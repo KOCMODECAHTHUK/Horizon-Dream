@@ -115,7 +115,7 @@
  *
  * Returns: A list containing [vlevel, list of docking_ports], or null if planet already exists
  */
-/datum/map_generator/planet_generator/proc/generate_planet_level(planet_name = "Planet", planet_size = 100, baseturf = /turf/open/space/basic, datum/map_zone/mapzone = null)
+/datum/map_generator/planet_generator/proc/generate_planet_level(planet_name = "Planet", planet_size = 100, baseturf = /turf/closed/void, datum/map_zone/mapzone = null)
 	// Set generating flag to prevent docking during planet generation
 	generating = TRUE
 
@@ -123,13 +123,10 @@
 	for(var/datum/map_zone/existing_zone as anything in SSmapping.map_zones)
 		if(existing_zone.name == "[planet_name] Zone")
 			log_world("WARNING: Planet [planet_name] already exists! Skipping regeneration.")
-			// Clear generating flag before returning
 			generating = FALSE
-			// Find the existing virtual level and docking ports
 			if(length(existing_zone.virtual_levels))
 				var/datum/virtual_level/existing_vlevel = existing_zone.virtual_levels[1]
 				var/list/existing_docks = list()
-				// Find docking ports in this z-level
 				for(var/obj/docking_port/stationary/dock in SSshuttle.stationary_docking_ports)
 					if(dock.z == existing_vlevel.z_value)
 						existing_docks += dock
@@ -147,70 +144,99 @@
 	// Add extra space for the 1-tile border on each side
 	var/total_size = planet_size + 2
 
-	// Create a virtual level on a NEW Z-level
-	var/datum/virtual_level/vlevel = SSmapping.create_planet_vlevel(
-		planet_name,
-		list(ZTRAIT_MINING = TRUE, ZTRAIT_BASETURF = baseturf),
+	// === КЛАССИЧЕСКИЙ МУЛЬТИ-Z (ПРАВИЛЬНЫЙ СПОСОБ TG) ===
+	// В BYOND Z1 - самый верхний, Z2 - под ним, и т.д.
+	// Мы создаем Пещеры ПЕРВЫМИ (они будут Z=N), а Поверхность ВТОРЫМИ (Z=N+1).
+	// Поверхность физически находится НАД пещерами.
+
+	// 1. Создаем уровень ПЕЩЕР (НИЖНИЙ Z-уровень)
+	// ZTRAIT_UP = TRUE говорит движку: "Надо мной есть другой Z-уровень"
+	var/datum/virtual_level/cave_vlevel = SSmapping.create_planet_vlevel(
+		"[planet_name] Caves",
+		list(ZTRAIT_MINING = TRUE, ZTRAIT_BASETURF = baseturf, ZTRAIT_UP = TRUE),
 		mapzone,
 		total_size,
 		total_size
 	)
 
-	if(!vlevel)
-		log_world("ERROR: Failed to create virtual level for [planet_name]")
+	// 2. Создаем уровень ПОВЕРХНОСТИ (ВЕРХНИЙ Z-уровень)
+	// ZTRAIT_DOWN = TRUE говорит движку: "Подо мной есть Z-уровень".
+	// Это автоматически запускает update_plane_tracking(), чинит свет и прозрачность!
+	var/datum/virtual_level/surface_vlevel = SSmapping.create_planet_vlevel(
+		"[planet_name] Surface",
+		list(ZTRAIT_MINING = TRUE, ZTRAIT_BASETURF = /turf/open/openspace, ZTRAIT_DOWN = TRUE),
+		mapzone,
+		total_size,
+		total_size
+	)
+
+	if(!surface_vlevel || !cave_vlevel)
+		log_world("ERROR: Failed to create virtual levels for [planet_name]")
 		generating = FALSE
 		return null
 
-	// Reserve a 1-tile margin to create indestructible borders
-	vlevel.reserve_margin(1)
+	// Резервируем края карты (неразрушимые границы)
+	surface_vlevel.reserve_margin(1)
+	cave_vlevel.reserve_margin(1)
 
-	// Create docking ports for ship landing
-	var/list/docking_ports = create_docking_ports(vlevel, planet_name)
+	// Док-порты создаем только на поверхности
+	var/list/docking_ports = create_docking_ports(surface_vlevel, planet_name)
 
-	// Get the bottom-left turf of the unreserved area (where we load the DMM)
-	var/turf/load_turf = vlevel.get_unreserved_bottom_left_turf()
-	if(!load_turf)
-		log_world("ERROR: No unreserved turfs available for [planet_name]")
+	// === ГЕНЕРАЦИЯ КАРТ (DMM) ===
+	// Сначала генерируем пещеры, потом поверхность.
+	// Это нужно, чтобы система прозрачности (vis_contents) корректно подхватила турфы.
+
+	// Генерируем пещеры ПЕРВЫМИ
+	var/turf/cave_load_turf = cave_vlevel.get_unreserved_bottom_left_turf()
+	if(!cave_load_turf)
+		log_world("ERROR: No unreserved turfs available for [planet_name] Caves")
 		generating = FALSE
 		return null
 
-	log_world("Generating planet [planet_name] ([planet_size]x[planet_size])...")
-
+	log_world("Generating [planet_name] Caves ([planet_size]x[planet_size])...")
 	if(use_dmm_generation)
-		// === DMM GENERATION PATH (fast: all CA + turf placement in Rust) ===
-		if(!generate_planet_dmm(planet_name, planet_size, load_turf))
+		if(!generate_planet_dmm("[planet_name] Caves", planet_size, cave_load_turf))
 			generating = FALSE
 			return null
 	else
-		// === LEGACY GENERATION PATH (DM-side perlin + biome iteration) ===
-		var/list/turf/turfs_to_generate = list()
-		var/turf/top_right = vlevel.get_unreserved_top_right_turf()
-		for(var/turf/T as anything in block(load_turf, top_right))
-			turfs_to_generate += T
+		var/list/turf/cave_turfs = list()
+		var/turf/cave_top_right = cave_vlevel.get_unreserved_top_right_turf()
+		for(var/turf/T as anything in block(cave_load_turf, cave_top_right))
+			cave_turfs += T
+		if(length(cave_turfs))
+			generate_terrain(cave_turfs, null)
+			override_turf_atmospheres(cave_turfs)
+			populate_terrain(cave_turfs, null)
+			smooth_generated_turfs(cave_turfs, cave_vlevel.z_value)
 
-		if(!length(turfs_to_generate))
-			log_world("ERROR: No turfs available for generation in [planet_name]")
+	// Генерируем поверхность ВТОРЫМИ
+	var/turf/surface_load_turf = surface_vlevel.get_unreserved_bottom_left_turf()
+	if(!surface_load_turf)
+		log_world("ERROR: No unreserved turfs available for [planet_name] Surface")
+		generating = FALSE
+		return null
+
+	log_world("Generating [planet_name] Surface ([planet_size]x[planet_size])...")
+	if(use_dmm_generation)
+		if(!generate_planet_dmm("[planet_name] Surface", planet_size, surface_load_turf))
 			generating = FALSE
 			return null
-
-		// Generate the terrain using biome tables
-		generate_terrain(turfs_to_generate, null)
-
-		// Override atmospheres on all generated turfs to use breathable air
-		override_turf_atmospheres(turfs_to_generate)
-
-		// Populate with flora/fauna
-		populate_terrain(turfs_to_generate, null)
-
-		// Smooth all generated turfs to fix borders and transitions
-		smooth_generated_turfs(turfs_to_generate, vlevel.z_value)
+	else
+		var/list/turf/turfs_to_generate = list()
+		var/turf/top_right = surface_vlevel.get_unreserved_top_right_turf()
+		for(var/turf/T as anything in block(surface_load_turf, top_right))
+			turfs_to_generate += T
+		if(length(turfs_to_generate))
+			generate_terrain(turfs_to_generate, null)
+			override_turf_atmospheres(turfs_to_generate)
+			populate_terrain(turfs_to_generate, null)
+			smooth_generated_turfs(turfs_to_generate, surface_vlevel.z_value)
 
 	log_world("Planet [planet_name] generation complete with [length(docking_ports)] docking ports!")
-
-	// Clear generating flag - planet generation is complete
 	generating = FALSE
 
-	return list(vlevel, docking_ports)
+	// Возвращаем список: [surface_vlevel, docking_ports, cave_vlevel]
+	return list(surface_vlevel, docking_ports, cave_vlevel)
 
 /**
  * Generates terrain via rust-g DMM and loads it at the target turf.
@@ -372,8 +398,8 @@
  * * biome_path - Type path of the biome (e.g. /datum/biome/rock)
  *
  * Returns: List with keys: open_turf, closed_turf, flora_chance, flora,
- *          feature_chance, features, fauna_chance, fauna,
- *          mob_exclusion_radius, feature_exclusion_radius
+ *		  feature_chance, features, fauna_chance, fauna,
+ *		  mob_exclusion_radius, feature_exclusion_radius
  */
 /datum/map_generator/planet_generator/proc/get_biome_def_json(biome_path)
 	var/datum/biome/B = new biome_path
