@@ -1,3 +1,4 @@
+// Atmos types used for planetary airs
 /datum/atmosphere/lavaland
 	id = LAVALAND_DEFAULT_ATMOS
 
@@ -27,6 +28,10 @@
 /datum/atmosphere/icemoon
 	id = ICEMOON_DEFAULT_ATMOS
 
+	base_gases = list(
+		/datum/gas/oxygen=5,
+		/datum/gas/nitrogen=10,
+	)
 	normal_gases = list(
 		/datum/gas/oxygen=10,
 		/datum/gas/nitrogen=10,
@@ -44,3 +49,4 @@
 
 	minimum_temp = ICEBOX_MIN_TEMPERATURE
 	maximum_temp = ICEBOX_MIN_TEMPERATURE
+
