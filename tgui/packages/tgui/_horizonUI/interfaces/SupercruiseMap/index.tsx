@@ -7,11 +7,14 @@ import { FlightControls } from './screens/FlightControls';
 import { NavigationStatus } from './screens/NavigationStatus';
 import { NearbyContacts } from './screens/NearbyContacts';
 import { JumpDrivePanel } from './screens/JumpDrivePanel';
+import { EnginePanel } from './screens/EnginePanel';
+import { EngineMiniGraph } from './screens/EngineMiniGraph';
 import { useShuttleControls } from './ShuttleControls';
 import '../../styles/OrbitalMap.scss';
 
 export const SupercruiseMap = () => {
   const { act, data } = useBackend();
+  const [showEnginePanel, setShowEnginePanel] = useState(false);
   const {
     map_objects = [],
     linkedToShuttle = false,
@@ -47,6 +50,8 @@ export const SupercruiseMap = () => {
     lastActionError = '',
     autopilotMode = 0,
     targetObjectId = null,
+    engineInfo = [],
+    estThrust = 0,
   } = data;
 
   const [selectedJumpDestination, setSelectedJumpDestination] = useState(null);
@@ -116,6 +121,19 @@ export const SupercruiseMap = () => {
                   Zoom: {zoomScale.toFixed(1)}x
                 </Box>
               </Flex>
+
+              {/* === МИНИ-ГРАФИК ДВИГАТЕЛЕЙ === */}
+              <EngineMiniGraph
+                engineInfo={engineInfo}
+                onTogglePanel={() => setShowEnginePanel(!showEnginePanel)}
+                panelOpen={showEnginePanel}
+              />
+
+              {showEnginePanel && (
+                <Box position="absolute" bottom="100px" left="calc(50% - 170px)" style={{ zIndex: 20 }}>
+                  <EnginePanel engineInfo={engineInfo} estThrust={estThrust} act={act} isDocked={isDocked} />
+                </Box>
+              )}
 
               <SupercruiseMapCanvas
                 map_objects={canvasMapObjects}

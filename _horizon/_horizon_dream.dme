@@ -32,5 +32,6 @@
 #include "code\modules\admin\all_verb_panel.dm"
 #include "code\modules\mob\dead\dead.dm"
 #include "code\modules\orbital_map\_orbital_map.dm"
+#include "code\modules\shuttle\_allTechShuttle.dm"
 #include "code\_remove_me\props.dm"
 // END_INCLUDE

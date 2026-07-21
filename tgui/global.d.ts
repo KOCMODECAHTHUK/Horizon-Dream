@@ -206,26 +206,3 @@ interface Window {
 
   __chatRenderer__: any;
 }
-
-declare module 'tgui-core/components' {
-  export const Box: any;
-  export const Button: any;
-  export const Flex: any;
-  export const NoticeBox: any;
-  export const Section: any;
-  export const Stack: any;
-  export const DmIcon: any;
-  export const Icon: any;
-  export const LabeledList: any;
-  export const Modal: any;
-  export const NumberInput: any;
-  export const VirtualList: any;
-  export const Divider: any;
-  export const Collapsible: any;
-  export const Knob: any;
-  export const Input: any;
-  export const Tooltip: any;
-  export const Image: any;
-  export function classes(...args: any[]): any;
-  export type BooleanLike = any;
-}

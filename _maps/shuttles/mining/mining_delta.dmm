@@ -1,62 +1,58 @@
 //MAP CONVERTED BY dmm2tgm.py THIS HEADER COMMENT PREVENTS RECONVERSION, DO NOT REMOVE
 "a" = (
 /turf/closed/wall/mineral/titanium,
-/area/shuttle/mining)
+/area/shuttle/custom)
 "b" = (
 /obj/effect/spawner/structure/window/reinforced/shuttle,
 /turf/open/floor/plating,
-/area/shuttle/mining)
+/area/shuttle/custom)
 "c" = (
-/obj/structure/table/reinforced,
-/obj/item/storage/toolbox/emergency,
 /obj/effect/turf_decal/stripes/line{
 	dir = 9
 	},
 /obj/machinery/light/small/directional/west,
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/structure/cable,
+/obj/machinery/power/apc/auto_name/directional/north,
+/obj/machinery/power/smes/full,
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "d" = (
 /obj/machinery/computer/shuttle_flight,
-/obj/effect/decal/cleanable/dirt,
 /obj/effect/turf_decal/stripes/line{
 	dir = 1
 	},
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/machinery/power/terminal{
+	dir = 8
+	},
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "e" = (
-/obj/structure/table/reinforced,
-/obj/effect/decal/cleanable/dirt,
-/obj/item/crowbar/red,
-/obj/item/wrench,
-/obj/item/tank/internals/emergency_oxygen,
-/obj/item/clothing/mask/gas,
 /obj/effect/turf_decal/stripes/line{
 	dir = 5
 	},
 /obj/machinery/light/small/directional/east,
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/machinery/atmospherics/components/tank/plasma,
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "f" = (
 /obj/effect/turf_decal/stripes/line{
 	dir = 8
 	},
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/structure/cable,
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "g" = (
 /obj/structure/chair/comfy/shuttle{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/neutral/fourcorners,
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "h" = (
-/obj/effect/decal/cleanable/dirt,
-/obj/effect/decal/cleanable/blood/old,
-/obj/effect/turf_decal/stripes/line{
-	dir = 4
+/obj/machinery/atmospherics/components/binary/pump{
+	name = "engine fuel pump"
 	},
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "i" = (
 /obj/machinery/door/airlock/shuttle{
 	name = "Mining Shuttle Airlock"
@@ -74,160 +70,59 @@
 	port_direction = 8
 	},
 /turf/open/floor/iron/white,
-/area/shuttle/mining)
+/area/shuttle/custom)
 "j" = (
-/obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/stripes/line{
-	dir = 8
+/obj/machinery/power/shuttle_engine/ship/electric{
+	dir = 1
 	},
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/effect/turf_decal/stripes/line,
+/obj/structure/cable,
+/obj/structure/window/reinforced/spawner/directional/north,
+/turf/open/floor/plating/airless,
+/area/shuttle/custom)
 "k" = (
-/obj/effect/turf_decal/tile/neutral/fourcorners,
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/structure/cable,
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "l" = (
-/obj/effect/turf_decal/stripes/line{
-	dir = 4
-	},
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/machinery/atmospherics/pipe/smart/manifold4w/orange/visible,
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "n" = (
-/obj/structure/chair/comfy/shuttle{
-	dir = 1
-	},
-/obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/stripes/end{
-	dir = 8
-	},
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/structure/cable,
+/obj/machinery/power/terminal,
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "o" = (
-/obj/structure/chair/comfy/shuttle{
-	dir = 1
-	},
-/obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/stripes/line,
-/obj/effect/turf_decal/stripes/line{
-	dir = 1
-	},
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "p" = (
-/obj/structure/chair/comfy/shuttle{
+/obj/structure/window/reinforced/spawner/directional/north,
+/obj/machinery/power/shuttle_engine/ship/fueled/plasma{
 	dir = 1
 	},
-/obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/stripes/end{
-	dir = 4
-	},
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/effect/turf_decal/stripes/line,
+/turf/open/floor/plating/airless,
+/area/shuttle/custom)
 "q" = (
-/obj/item/clothing/suit/hazardvest{
-	desc = "A high-visibility lifejacket complete with whistle and slot for oxygen tanks.";
-	name = "emergency lifejacket"
-	},
-/obj/item/clothing/suit/hazardvest{
-	desc = "A high-visibility lifejacket complete with whistle and slot for oxygen tanks.";
-	name = "emergency lifejacket"
-	},
-/obj/item/clothing/suit/hazardvest{
-	desc = "A high-visibility lifejacket complete with whistle and slot for oxygen tanks.";
-	name = "emergency lifejacket"
-	},
-/obj/item/clothing/suit/hazardvest{
-	desc = "A high-visibility lifejacket complete with whistle and slot for oxygen tanks.";
-	name = "emergency lifejacket"
-	},
-/obj/item/clothing/suit/hazardvest{
-	desc = "A high-visibility lifejacket complete with whistle and slot for oxygen tanks.";
-	name = "emergency lifejacket"
-	},
-/obj/item/tank/internals/emergency_oxygen{
-	pixel_x = 3
-	},
-/obj/item/tank/internals/emergency_oxygen{
-	pixel_x = 3
-	},
-/obj/item/tank/internals/emergency_oxygen{
-	pixel_x = 3
-	},
-/obj/item/tank/internals/emergency_oxygen{
-	pixel_x = 3
-	},
-/obj/item/tank/internals/emergency_oxygen{
-	pixel_x = 3
-	},
-/obj/item/clothing/mask/breath{
-	pixel_x = -3;
-	pixel_y = -3
-	},
-/obj/item/clothing/mask/breath{
-	pixel_x = -3;
-	pixel_y = -3
-	},
-/obj/item/clothing/mask/breath{
-	pixel_x = -3;
-	pixel_y = -3
-	},
-/obj/item/clothing/mask/breath{
-	pixel_x = -3;
-	pixel_y = -3
-	},
-/obj/item/clothing/mask/breath{
-	pixel_x = -3;
-	pixel_y = -3
-	},
-/obj/item/clothing/head/utility/hardhat/orange{
-	name = "protective hat";
-	pixel_y = 9
-	},
-/obj/item/clothing/head/utility/hardhat/orange{
-	name = "protective hat";
-	pixel_y = 9
-	},
-/obj/item/clothing/head/utility/hardhat/orange{
-	name = "protective hat";
-	pixel_y = 9
-	},
-/obj/item/clothing/head/utility/hardhat/orange{
-	name = "protective hat";
-	pixel_y = 9
-	},
-/obj/item/clothing/head/utility/hardhat/orange{
-	name = "protective hat";
-	pixel_y = 9
-	},
-/obj/structure/closet/crate/internals,
-/obj/effect/decal/cleanable/dirt,
-/obj/item/pickaxe/emergency,
-/obj/item/pickaxe/emergency,
-/obj/effect/turf_decal/delivery,
 /obj/machinery/light/small/directional/west,
-/turf/open/floor/iron,
-/area/shuttle/mining)
+/obj/machinery/power/smes/shuttle/precharged{
+	dir = 1
+	},
+/obj/structure/cable,
+/obj/effect/turf_decal/stripes/line,
+/turf/open/floor/plating,
+/area/shuttle/custom)
 "r" = (
-/obj/machinery/power/shuttle_engine/heater,
-/obj/structure/window/reinforced/spawner/directional/east,
-/obj/structure/window/reinforced/spawner/directional/north,
-/obj/structure/window/reinforced/spawner/directional/west,
-/obj/effect/turf_decal/stripes/line,
 /turf/open/floor/plating/airless,
-/area/shuttle/mining)
+/area/shuttle/custom)
 "s" = (
-/obj/structure/ore_box,
-/obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/delivery,
 /obj/machinery/light/small/directional/east,
-/turf/open/floor/iron,
-/area/shuttle/mining)
-"t" = (
-/obj/machinery/power/shuttle_engine/propulsion/burst,
-/obj/structure/window/reinforced/spawner/directional/north,
-/obj/effect/turf_decal/stripes/line,
-/turf/open/floor/plating/airless,
-/area/shuttle/mining)
+/obj/machinery/atmospherics/components/unary/fueled_engine_heater{
+	dir = 1
+	},
+/turf/open/floor/plating,
+/area/shuttle/custom)
 
 (1,1,1) = {"
 a
@@ -242,28 +137,28 @@ a
 a
 c
 f
-j
+k
 n
 q
-a
+j
 "}
 (3,1,1) = {"
 b
 d
 g
-k
+o
 o
 r
-t
+a
 "}
 (4,1,1) = {"
 a
 e
 h
 l
-p
+l
 s
-a
+p
 "}
 (5,1,1) = {"
 a

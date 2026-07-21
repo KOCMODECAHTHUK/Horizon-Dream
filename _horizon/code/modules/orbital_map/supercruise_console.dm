@@ -159,6 +159,38 @@
 	else
 		data["linkedToShuttle"] = FALSE
 
+	var/list/engine_info_list = list()
+	var/est_thrust = 0
+
+	if(controlled_shuttle?.shuttle_port)
+		for(var/obj/machinery/power/shuttle_engine/ship/ship_engine in controlled_shuttle.shuttle_port.engine_list)
+			if(QDELETED(ship_engine))
+				continue
+
+			ship_engine.update_engine()
+
+			if(ship_engine.enabled && ship_engine.thruster_active)
+				est_thrust += ship_engine.engine_power
+
+			var/has_smes = FALSE
+			if(istype(ship_engine, /obj/machinery/power/shuttle_engine/ship/electric))
+				var/obj/machinery/power/shuttle_engine/ship/electric/elec = ship_engine
+				has_smes = elec.has_smes()
+
+			var/list/engine_data = list(
+				"name" = ship_engine.name,
+				"fuel" = ship_engine.thruster_active ? (ship_engine.return_fuel() || 0) : 0,
+				"maxFuel" = ship_engine.thruster_active ? (ship_engine.return_fuel_cap() || 100) : 100,
+				"enabled" = ship_engine.enabled,
+				"connected" = ship_engine.thruster_active,
+				"hasSmes" = has_smes,
+				"ref" = REF(ship_engine)
+			)
+			engine_info_list += list(engine_data)
+
+	data["engineInfo"] = engine_info_list
+	data["estThrust"] = est_thrust
+
 	data["lastActionError"] = last_action_error
 	last_action_error = ""
 	return data
@@ -299,6 +331,14 @@
 				controlled_shuttle.rcs_power = clamp(power, 0, 10)
 
 			controlled_shuttle.rcs_strafe.Set(sx, sy, sz)
+			return TRUE
+
+		if("toggle_engine")
+			var/engine_ref = params["engine"]
+			var/obj/machinery/power/shuttle_engine/ship/engine = locate(engine_ref)
+			if(istype(engine) && (engine in controlled_shuttle.shuttle_port.engine_list))
+				engine.enabled = !engine.enabled
+				engine.update_appearance()
 			return TRUE
 
 		if("dock")

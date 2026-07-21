@@ -14,3 +14,34 @@
   --secondary-lightness-adjustment: -10;
   --base-gradient-spread: 0;
 }
+
+.engine-icon-container {
+  position: relative;
+  width: 26px;
+  height: 26px;
+}
+
+.engine-icon-base {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('./assets/engines-icon.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.engine-icon-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--icon-color, #ffffff);
+  -webkit-mask: url('./assets/engines-overlay-icon.svg') no-repeat center /
+    contain;
+  mask: url('./assets/engines-overlay-icon.svg') no-repeat center / contain;
+  transition: background-color 0.3s ease;
+}

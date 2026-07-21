@@ -50,6 +50,16 @@ export interface JumpDestination {
   description: string;
 }
 
+export interface EngineInfo {
+  name: string;
+  fuel: number;
+  maxFuel: number;
+  enabled: boolean;
+  connected: boolean;
+  hasSmes: boolean;
+  ref: string;
+}
+
 export interface SupercruiseMapData {
   map_objects: MapObject[];
   linkedToShuttle: boolean;
@@ -87,4 +97,6 @@ export interface SupercruiseMapData {
   lastActionError: string;
   autopilotMode?: number;
   targetObjectId?: string | null;
+  engineInfo?: EngineInfo[];
+  estThrust?: number;
 }
