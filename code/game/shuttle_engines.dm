@@ -62,7 +62,7 @@
 	if(!port)
 		return FALSE
 	connected_ship = port
-	connected_ship.engine_list += src
+	connected_ship.engine_list |= src
 	if(mapload)
 		connected_ship.initial_engine_power += engine_power
 	if(engine_state == ENGINE_WELDED)
