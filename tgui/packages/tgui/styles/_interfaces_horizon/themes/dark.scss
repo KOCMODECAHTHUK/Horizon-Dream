@@ -1,0 +1,120 @@
+/**
+ * Dark Theme
+ */
+
+.theme-ntos_darkmode:root,
+.theme-nanotrasen:root {
+  // Base
+  --color-base: hsl(227, 0%, 13%);
+  --color-primary: #ccc;
+  --color-secondary: hsl(226, 0%, 18%);
+  //--color-good: hsl(212, 90%, 67%);
+  //--color-bad: hsl(0, 70%, 59%);
+  //--color-average: hsl(42, 92%, 63%);
+  //--base-gradient-spread: 10;
+  //--secondary-lightness-adjustment: 8;
+  --titlebar-background: var(--color-secondary);
+  --button-border-radius: 0;
+
+  --progress-bar-fill: var(--color-grey);
+
+  --border-primary-saturation: 0;
+
+  --color-label: hsl(from var(--color-primary) h 0 57.5);
+
+  .Button {
+    line-height: 1.4em;
+  }
+
+  .Input {
+    border: var(--color-base);
+    background-color: var(--color-secondary);
+  }
+
+  .Section {
+    border: 1px solid var(--color-base);
+  }
+
+  .NoticeBox {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .Section__titleText {
+    font-size: 13px;
+  }
+
+  // Можно и через мик-син, но так понятнее
+  .Button--color-- {
+    &default {
+      --color: var(--color-secondary);
+
+      &:hover {
+        background-color: var(--color-primary);
+        color: var(--color-black);
+      }
+
+      &.Button--disabled {
+        background-color: var(--color-secondary) !important;
+        color: var(--color-white) !important;
+        opacity: 0.5;
+      }
+    }
+
+    &bad {
+      --color: var(--color-secondary) !important;
+      color: var(--color-bad);
+
+      &:hover {
+        background-color: var(--color-bad);
+        color: var(--color-secondary);
+      }
+
+      &.Button--disabled {
+        background-color: var(--color-secondary) !important;
+        color: var(--color-bad) !important;
+      }
+    }
+
+    &good {
+      --color: var(--color-secondary) !important;
+      color: var(--color-good);
+
+      &:hover {
+        background-color: var(--color-good);
+        color: var(--color-secondary);
+      }
+
+      &.Button--disabled {
+        background-color: var(--color-secondary) !important;
+        color: var(--color-good) !important;
+      }
+    }
+
+    &transparent {
+      --color: var(--color-secondary) !important;
+
+      &:hover {
+        background-color: var(--color-primary);
+        color: var(--color-secondary);
+      }
+
+      &.Button--disabled {
+        background-color: var(--color-secondary) !important;
+      }
+    }
+  }
+
+  .Button--selected {
+    --color: var(--color-secondary) !important;
+    color: var(--color-good);
+
+    &:hover {
+      background-color: var(--color-good);
+    }
+  }
+
+  .Section__title {
+    padding: var(--space-sm);
+    border-bottom: 1px solid var(--color-base);
+  }
+}
