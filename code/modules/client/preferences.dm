@@ -96,6 +96,11 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	/// The character profiles, saved so we can cheaply recompute them in ui_data only when necessary, without having to use expensive update_static_data calls.
 	var/list/cached_character_profiles
 
+	var/list/channel_volume = list(
+		"1005" = 100, //master starts at 100%
+		"1018" = 100, //heartbeats for some fuckin reason
+	)
+
 /datum/preferences/Destroy(force)
 	QDEL_NULL(character_preview_view)
 	QDEL_LIST(middleware)
@@ -132,6 +137,15 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	if(loaded_preferences_successfully)
 		if(load_character())
 			return
+
+	var/needs_save = FALSE
+	for(var/channel in GLOB.used_sound_channels)
+		if(isnull(channel_volume["[channel]"]))
+			channel_volume["[channel]"] = 50
+			needs_save = TRUE
+	if(needs_save)
+		save_preferences()
+
 	//we couldn't load character data so just randomize the character appearance + name
 	randomise_appearance_prefs() //let's create a random character then - rather than a fat, bald and naked man.
 	if(parent)
@@ -184,6 +198,27 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	for (var/datum/preference_middleware/preference_middleware as anything in middleware)
 		data += preference_middleware.get_ui_data(user)
 
+	// Initialize channel_volume if not already done (GLOB.used_sound_channels is only populated after Sounds.Initialize())
+	if(current_window == PREFERENCE_TAB_GAME_PREFERENCES)
+		var/list/channels = list()
+		var/list/seen_channels = list()
+		for(var/channel in GLOB.used_sound_channels)
+			if(channel in seen_channels)
+				continue
+			LAZYADD(seen_channels, channel)
+			var/volume = channel_volume["[channel]"]
+			if(isnull(volume) || !isnum(volume))
+				volume = 50
+				channel_volume["[channel]"] = volume
+			var/list/channel_info = get_channel_info(channel)
+			channels += list(list(
+				"num" = channel,
+				"name" = channel_info[1],
+				"desc" = channel_info[2],
+				"volume" = volume
+			))
+		data["channels"] = channels
+
 	return data
 
 /datum/preferences/ui_static_data(mob/user)
@@ -208,6 +243,24 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 		assets += preference_middleware.get_ui_assets()
 
 	return assets
+
+/datum/preferences/proc/set_channel_volume(channel, vol)
+	parent.mob.update_media_volume(channel)
+
+	//we gotta take into account existing sounds repeating/waiting, otherwise we completely wipe looping sounds (such as whitenoise).
+	for(var/sound/S in parent.SoundQuery())
+		//master channel affects all others.
+		if((channel != CHANNEL_MASTER_VOLUME) && (S.channel != channel))
+			continue
+		var/sound/new_sound = sound(
+			null,
+			repeat = S.repeat,
+			wait = S.wait,
+			channel = S.channel,
+			volume = calculate_mixed_volume(parent, S.volume, S.channel),
+		)
+		new_sound.status = SOUND_UPDATE
+		SEND_SOUND(parent.mob, new_sound)
 
 /datum/preferences/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
 	. = ..()
@@ -285,6 +338,26 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 				current_window = PREFERENCE_TAB_CHARACTER_PREFERENCES
 			update_static_data(ui.user)
 			ui_interact(ui.user)
+			return TRUE
+
+		if("volume")
+			var/channel = text2num(params["channel"])
+			var/volume = text2num(params["volume"])
+			if(isnull(channel))
+				return FALSE
+			channel_volume["[channel]"] = volume
+			save_preferences()
+			var/static/list/instrument_channels = list(
+				CHANNEL_INSTRUMENTS,
+				CHANNEL_INSTRUMENTS_ROBOT,
+			)
+			if(!(channel in GLOB.proxy_sound_channels)) //if its a proxy we are just wasting time
+				set_channel_volume(channel, volume)
+
+			else if((channel in instrument_channels))
+				var/datum/song/holder_song = new
+				for(var/used_channel in holder_song.channels_playing)
+					set_channel_volume(used_channel, volume)
 			return TRUE
 		// [/HORIZON-ADD]
 
@@ -514,7 +587,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 		stack_trace("[key_name(target)] preference datum was null")
 		return NONE
 
-	return preferences.chat_toggles
+		return preferences.chat_toggles
 
 /// Sanitizes the preferences, applies the randomization prefs, and then applies the preference to the human mob.
 /datum/preferences/proc/safe_transfer_prefs_to(mob/living/carbon/human/character, icon_updates = TRUE, is_antag = FALSE)

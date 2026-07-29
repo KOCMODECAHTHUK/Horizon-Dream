@@ -3097,3 +3097,8 @@ GLOBAL_LIST_EMPTY(fire_appearances)
 	static_image.name = "unknown humanoid"
 
 	return static_image
+
+/// Updates media volume for a sound channel
+/// Used as a hook for future volume preference systems
+/mob/proc/update_media_volume(channel)
+	return TRUE
