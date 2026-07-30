@@ -100,6 +100,8 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 		"1005" = 100, //master starts at 100%
 		"1018" = 100, //heartbeats for some fuckin reason
 	)
+	var/list/category_volume = list()
+	var/list/test_sound_channels = list()
 
 /datum/preferences/Destroy(force)
 	QDEL_NULL(character_preview_view)
@@ -143,6 +145,17 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 		if(isnull(channel_volume["[channel]"]))
 			channel_volume["[channel]"] = 50
 			needs_save = TRUE
+
+	var/list/seen_categories = list()
+	for(var/channel in GLOB.used_sound_channels)
+		var/list/info = get_channel_info(channel)
+		var/category = info[3]
+		if(category && !(category in seen_categories))
+			seen_categories += category
+			if(isnull(category_volume[category]))
+				category_volume[category] = 100
+				needs_save = TRUE
+
 	if(needs_save)
 		save_preferences()
 
@@ -215,9 +228,11 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 				"num" = channel,
 				"name" = channel_info[1],
 				"desc" = channel_info[2],
+				"category" = channel_info[3],
 				"volume" = volume
 			))
 		data["channels"] = channels
+		data["category_volume"] = category_volume
 
 	return data
 
@@ -351,15 +366,85 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 				CHANNEL_INSTRUMENTS,
 				CHANNEL_INSTRUMENTS_ROBOT,
 			)
-			if(!(channel in GLOB.proxy_sound_channels)) //if its a proxy we are just wasting time
+			if(!(channel in GLOB.proxy_sound_channels))
 				set_channel_volume(channel, volume)
-
 			else if((channel in instrument_channels))
 				var/datum/song/holder_song = new
 				for(var/used_channel in holder_song.channels_playing)
 					set_channel_volume(used_channel, volume)
 			return TRUE
-		// [/HORIZON-ADD]
+
+		if("category_volume")
+			var/category = params["category"]
+			var/volume = text2num(params["volume"])
+			if(isnull(category) || isnull(volume))
+				return FALSE
+			category_volume[category] = volume
+			save_preferences()
+			for(var/sound/S in parent.SoundQuery())
+				var/sound_category = GLOB.channel_to_category["[S.channel]"]
+				if(sound_category == category)
+					var/sound/new_sound = sound(null, repeat = S.repeat, wait = S.wait, channel = S.channel, volume = calculate_mixed_volume(parent, S.volume, S.channel))
+					new_sound.status = SOUND_UPDATE
+					SEND_SOUND(parent.mob, new_sound)
+			return TRUE
+
+		if("test_sound")
+			var/channel_num = params["channel"]
+			var/category_name = params["category"]
+
+			var/test_channel = SSsounds.random_available_channel()
+			test_sound_channels["[test_channel]"] = TRUE
+
+			if(!isnull(channel_num) && (channel_num in GLOB.used_sound_channels))
+				var/sound_file
+				switch(channel_num)
+					if(CHANNEL_LOBBYMUSIC)
+						sound_file = SSticker.login_music
+					if(CHANNEL_ADMIN, CHANNEL_ADMIN_SOUNDS)
+						sound_file = 'sound/effects/adminhelp.ogg'
+					if(CHANNEL_HEARTBEAT)
+						sound_file = 'sound/effects/heart_beat.ogg' // Поменять, в целом поменять подход
+					if(CHANNEL_INSTRUMENTS, CHANNEL_INSTRUMENTS_ROBOT)
+						sound_file = 'sound/music/sisyphus/sisyphus.ogg'
+					//if(CHANNEL_PRUDE)
+					//	sound_file = 'sound/misc/fart.ogg'
+					if(CHANNEL_SQUEAK)
+						sound_file = "sound/items/toy_squeak/toysqueak[rand(1,3)].ogg"
+					if(CHANNEL_VOICES)
+						sound_file = 'sound/runtime/chatter/griffin_10.ogg'
+					if(CHANNEL_AMBIENCE, CHANNEL_BUZZ, CHANNEL_WEATHER)
+						sound_file = "sound/ambience/general/ambigen[rand(1,14)].ogg"
+					if(CHANNEL_SHUTTLES)
+						sound_file = 'sound/runtime/hyperspace/hyperspace_begin.ogg'
+					if(CHANNEL_MACHINERY)
+						sound_file = 'sound/machines/door/door_close.ogg'
+					if(CHANNEL_SOUND_FOOTSTEPS)
+						sound_file = "sound/effects/footstep/catwalk[rand(1,5)].ogg"
+					if(CHANNEL_ANNOUNCEMENTS, CHANNEL_VOX)
+						sound_file = 'sound/announcer/vox_fem/announcement.ogg'
+					else
+						sound_file = 'sound/machines/ping.ogg'
+				usr.playsound_local(get_turf(usr), sound_file, 100, channel = test_channel, mixer_channel = channel_num)
+
+			else if(!isnull(category_name))
+				var/test_channel_for_cat
+				for(var/c in GLOB.used_sound_channels)
+					var/list/info = get_channel_info(c)
+					if(info[3] == category_name)
+						test_channel_for_cat = c
+						break
+				if(test_channel_for_cat)
+					usr.playsound_local(get_turf(usr), 'sound/machines/ping.ogg', 100, channel = test_channel, mixer_channel = test_channel_for_cat)
+			return TRUE
+
+		if("stop_all_sounds")
+			if(parent && parent.mob)
+				for(var/ch in test_sound_channels)
+					parent.mob.stop_sound_channel(text2num(ch))
+				test_sound_channels.Cut()
+			return TRUE
+			// [/HORIZON-ADD]
 
 	for (var/datum/preference_middleware/preference_middleware as anything in middleware)
 		var/delegation = preference_middleware.action_delegations[action]
