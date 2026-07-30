@@ -1,3 +1,19 @@
+// В начале файла orbital_shuttle.dm
+#define SAS_OFF 0
+#define SAS_PROGRADE 1
+#define SAS_RETROGRADE 2
+#define SAS_TARGET 3
+#define SAS_HOLD 4
+
+#define RCS_OFF 0
+#define RCS_TRANSLATE 1
+#define RCS_HOLD_POS 2
+
+#define AUTOPILOT_OFF 0
+#define AUTOPILOT_TRAVEL 1
+#define AUTOPILOT_ORBIT 2
+#define AUTOPILOT_HOLD 3
+
 /**
  * # Orbital Shuttle
  */
@@ -53,6 +69,10 @@
 	var/rotating_pitch_down = FALSE
 	var/rotation_rate = 30
 
+	var/sas_mode = 0
+	var/rcs_mode = 0
+	var/datum/orbital_vector/rcs_target_velocity = new()
+
 /datum/orbital_object/shuttle/process(seconds_per_tick)
 	var/obj/docking_port/stationary/current_dock = shuttle_port?.get_docked()
 	var/is_in_transit = istype(current_dock, /obj/docking_port/stationary/transit)
@@ -62,60 +82,36 @@
 		velocity.Set(0, 0, 0)
 		thrust.Set(0, 0, 0)
 		thrust_power = 0
-		autopilot_enabled = FALSE
+		autopilot_mode = AUTOPILOT_OFF
+		sas_mode = SAS_OFF
+		rcs_mode = RCS_OFF
 		has_target_position = FALSE
 		has_pending_target = FALSE
 		rcs_power = 0
 		return
 
-	// Record position history for trail
+	// История для следа
 	position_history += list(position.x, position.y, position.z)
 	if(length(position_history) > max_history)
 		position_history.Cut(1, 4)
 
-	// --- РУЧНОЕ УПРАВЛЕНИЕ ---
-	if(!autopilot_enabled)
-		var/is_rotating = FALSE
-		if(rotating_left)
-			thrust_angle = MODULUS(thrust_angle + rotation_rate * seconds_per_tick, 360)
-			is_rotating = TRUE
-		if(rotating_right)
-			thrust_angle = MODULUS(thrust_angle - rotation_rate * seconds_per_tick, 360)
-			is_rotating = TRUE
-		if(rotating_pitch_up)
-			thrust_pitch += rotation_rate * seconds_per_tick
-			is_rotating = TRUE
-		if(rotating_pitch_down)
-			thrust_pitch -= rotation_rate * seconds_per_tick
-			is_rotating = TRUE
+	// 1. Ручное вращение (только если нет SAS)
+	if(sas_mode == 0 && autopilot_mode == 0)
+		handle_manual_rotation(seconds_per_tick)
 
-		if(thrust_pitch > 90)
-			thrust_pitch = 180 - thrust_pitch
-			thrust_angle = MODULUS(thrust_angle + 180, 360)
-		else if(thrust_pitch < -90)
-			thrust_pitch = -180 - thrust_pitch
-			thrust_angle = MODULUS(thrust_angle + 180, 360)
+	// 2. SAS — стабилизация ориентации (высший приоритет над ручным курсом)
+	if(sas_mode > 0)
+		update_sas(seconds_per_tick)
 
-		if(is_rotating)
-			var/horizontal_component = cos(thrust_pitch)
-			var/tx = cos(thrust_angle) * horizontal_component
-			var/ty = sin(thrust_angle) * horizontal_component
-			var/tz = sin(thrust_pitch)
-			var/mag = sqrt(tx*tx + ty*ty + tz*tz)
-			if(mag > 0.001)
-				thrust.Set(tx / mag, ty / mag, tz / mag)
-
-			heading = thrust_angle
-			heading_pitch = thrust_pitch
-
-	// --- AUTOPILOT (SAS) ---
+	// 3. Автопилот — навигация и тяга
 	if(autopilot_mode > 0)
 		handle_autopilot(seconds_per_tick)
-	else if(thrust_power > 0)
-		heading = thrust_angle
-		heading_pitch = thrust_pitch
 
-	// --- THRUST ---
+	// 4. RCS — маневровые двигатели
+	if(rcs_power > 0 && rcs_mode > 0)
+		handle_rcs(seconds_per_tick)
+
+	// 5. Основная тяга
 	if(thrust_power > 0)
 		var/dir_mag = thrust.Length()
 		if(dir_mag > 0.001)
@@ -123,40 +119,132 @@
 			var/effective_accel = (thrust_power / 100) * acceleration
 			velocity.AddSelf(norm_thrust.ScaleSelf(effective_accel * seconds_per_tick))
 
-	// --- RCS ---
-	if(rcs_power > 0)
-		var/cos_pitch = cos(thrust_pitch)
-		var/sin_pitch = sin(thrust_pitch)
-		var/cos_yaw = cos(thrust_angle)
-		var/sin_yaw = sin(thrust_angle)
-
-		var/fwd_x = cos_yaw * cos_pitch
-		var/fwd_y = sin_yaw * cos_pitch
-		var/fwd_z = sin_pitch
-		var/loc_x = sin_yaw * cos_pitch
-		var/loc_y = -cos_yaw * cos_pitch
-
-		var/target_vx = (loc_x * rcs_strafe.x) + (fwd_x * rcs_strafe.z)
-		var/target_vy = (loc_y * rcs_strafe.x) + (fwd_y * rcs_strafe.z)
-		var/target_vz = rcs_strafe.y + (fwd_z * rcs_strafe.z)
-
-		var/datum/orbital_vector/target_v = new(target_vx, target_vy, target_vz)
-		var/mag = target_v.Length()
-
-		if(mag > 0.001)
-			var/datum/orbital_vector/norm_rcs = target_v.GetNormalized()
-			var/rcs_accel = (rcs_power / 100) * acceleration * 0.5
-			velocity.AddSelf(norm_rcs.ScaleSelf(rcs_accel * seconds_per_tick))
-
-	// --- КОЛЛИЗИИ И ГРАВИТАЦИЯ ---
+	// 6. Гравитация и коллизии
 	. = ..(seconds_per_tick)
 
-	// Ограничение максимальной скорости
+	// 7. Лимит скорости
 	var/current_speed = velocity.Length()
 	if(current_speed > max_speed && current_speed > 0)
 		velocity.ScaleSelf(max_speed / current_speed)
 
 	check_collisions()
+
+/datum/orbital_object/shuttle/proc/handle_manual_rotation(seconds_per_tick)
+	var/is_rotating = FALSE
+	if(rotating_left)
+		thrust_angle = MODULUS(thrust_angle + rotation_rate * seconds_per_tick, 360)
+		is_rotating = TRUE
+	if(rotating_right)
+		thrust_angle = MODULUS(thrust_angle - rotation_rate * seconds_per_tick, 360)
+		is_rotating = TRUE
+	if(rotating_pitch_up)
+		thrust_pitch += rotation_rate * seconds_per_tick
+		is_rotating = TRUE
+	if(rotating_pitch_down)
+		thrust_pitch -= rotation_rate * seconds_per_tick
+		is_rotating = TRUE
+
+	if(thrust_pitch > 90)
+		thrust_pitch = 180 - thrust_pitch
+		thrust_angle = MODULUS(thrust_angle + 180, 360)
+	else if(thrust_pitch < -90)
+		thrust_pitch = -180 - thrust_pitch
+		thrust_angle = MODULUS(thrust_angle + 180, 360)
+
+	if(is_rotating)
+		var/horizontal_component = cos(thrust_pitch)
+		var/tx = cos(thrust_angle) * horizontal_component
+		var/ty = sin(thrust_angle) * horizontal_component
+		var/tz = sin(thrust_pitch)
+		var/mag = sqrt(tx*tx + ty*ty + tz*tz)
+		if(mag > 0.001)
+			thrust.Set(tx / mag, ty / mag, tz / mag)
+		heading = thrust_angle
+		heading_pitch = thrust_pitch
+
+
+/datum/orbital_object/shuttle/proc/update_sas(seconds_per_tick)
+	var/target_yaw = heading
+	var/target_pitch = heading_pitch
+
+	switch(sas_mode)
+		if(SAS_PROGRADE)
+			if(velocity.Length() > 0.5)
+				var/datum/orbital_vector/n = velocity.GetNormalized()
+				target_yaw = ATAN2(n.y, n.x)
+				if(target_yaw < 0) target_yaw += 360
+				target_pitch = ATAN2(n.z, sqrt(n.x*n.x + n.y*n.y))
+		if(SAS_RETROGRADE)
+			if(velocity.Length() > 0.5)
+				var/datum/orbital_vector/n = velocity.GetNormalized()
+				target_yaw = ATAN2(-n.y, -n.x)
+				if(target_yaw < 0) target_yaw += 360
+				target_pitch = ATAN2(-n.z, sqrt(n.x*n.x + n.y*n.y))
+		if(SAS_TARGET)
+			if(target_object_id)
+				var/datum/orbital_object/T = SSsupercruise.find_object(target_object_id, star_system)
+				if(T)
+					var/datum/orbital_vector/d = T.position.Subtract(position)
+					var/datum/orbital_vector/n = d.GetNormalized()
+					target_yaw = ATAN2(n.y, n.x)
+					if(target_yaw < 0) target_yaw += 360
+					target_pitch = ATAN2(n.z, sqrt(n.x*n.x + n.y*n.y))
+		if(SAS_HOLD)
+			return // не меняем курс
+
+	// Плавный поворот (SAS в 3 раза быстрее ручного)
+	var/yaw_diff = MODULUS(target_yaw - heading, 360)
+	if(yaw_diff > 180) yaw_diff -= 360
+	var/pitch_diff = target_pitch - heading_pitch
+	var/max_turn = rotation_rate * seconds_per_tick * 3
+
+	if(abs(yaw_diff) > 0.1)
+		heading += clamp(yaw_diff, -max_turn, max_turn)
+		heading = MODULUS(heading, 360)
+	if(abs(pitch_diff) > 0.1)
+		heading_pitch += clamp(pitch_diff, -max_turn, max_turn)
+		heading_pitch = clamp(heading_pitch, -90, 90)
+
+	// Синхронизируем двигатель с носом (пока нет gimbal)
+	thrust_angle = heading
+	thrust_pitch = heading_pitch
+	var/hc = cos(heading_pitch)
+	thrust.Set(cos(heading) * hc, sin(heading) * hc, sin(heading_pitch))
+
+/datum/orbital_object/shuttle/proc/handle_rcs(seconds_per_tick)
+	if(rcs_mode == RCS_TRANSLATE)
+		var/yaw = TORADIANS(heading)
+		var/pitch = TORADIANS(heading_pitch)
+		var/cy = cos(yaw), sy = sin(yaw)
+		var/cp = cos(pitch), sp = sin(pitch)
+
+		// Локальные оси корабля
+		var/datum/orbital_vector/fwd = new(cy*cp, sy*cp, sp)
+		var/datum/orbital_vector/right = new(sy, -cy, 0)
+		var/datum/orbital_vector/up = new(-cy*sp, -sy*sp, cp)
+
+		var/datum/orbital_vector/rcs_world = new()
+		rcs_world.AddSelf(right.Scale(rcs_strafe.x))
+		rcs_world.AddSelf(up.Scale(rcs_strafe.y))
+		rcs_world.AddSelf(fwd.Scale(rcs_strafe.z))
+
+		var/mag = rcs_world.Length()
+		if(mag > 0.001)
+			var/acc = (rcs_power / 100) * acceleration * 0.35 * seconds_per_tick
+			velocity.AddSelf(rcs_world.Scale(acc / mag))
+
+	else if(rcs_mode == RCS_HOLD_POS)
+		if(!target_object_id) return
+		var/datum/orbital_object/target = SSsupercruise.find_object(target_object_id, star_system)
+		if(!target) return
+
+		var/datum/orbital_vector/desired_vel = target.velocity.Copy()
+		var/datum/orbital_vector/err_vel = desired_vel.Subtract(velocity)
+		var/ev_mag = err_vel.Length()
+		if(ev_mag > 0.2)
+			var/datum/orbital_vector/n = err_vel.GetNormalized()
+			var/acc = acceleration * 0.4 * seconds_per_tick
+			velocity.AddSelf(n.Scale(min(ev_mag, acc)))
 
 /**
  * Полностью векторный автопилот. Без арктангенсов и спагетти.
@@ -166,64 +254,114 @@
 	if(target_object_id)
 		target = SSsupercruise.find_object(target_object_id, star_system)
 		if(!target)
-			autopilot_mode = 0
+			autopilot_mode = AUTOPILOT_OFF
 			target_object_id = null
+			kill_thrust()
 			return
 
-	if(!target && !(autopilot_mode == 1 && has_target_position))
-		autopilot_mode = 0
-		return
-
-	// Получаем вектор до цели
 	var/datum/orbital_vector/t_pos = target ? target.position : target_pos
 	var/datum/orbital_vector/delta = t_pos.Subtract(position)
 	var/distance = delta.Length()
 
-	if(autopilot_mode == 1) // TRAVEL TO
-		if(distance < arrival_threshold)
-			autopilot_mode = 3 // Переходим в режим удержания
-			target_orbit_radius = max((target ? target.radius : 50) + 20, 50)
-			return
+	switch(autopilot_mode)
+		if(AUTOPILOT_TRAVEL) // 1
+			if(distance < arrival_threshold)
+				autopilot_mode = AUTOPILOT_HOLD
+				kill_thrust()
+				return
 
-		var/desired_speed = clamp(distance * 0.5, 0, max_speed)
-		var/datum/orbital_vector/norm_delta = delta.GetNormalized()
+			var/current_speed = velocity.Length()
+			// Тормозной путь с запасом
+			var/brake_dist = (current_speed * current_speed) / (2 * acceleration * 0.5)
+			var/desired_speed = max_speed
+			if(distance < brake_dist + arrival_threshold * 3)
+				desired_speed = max(2, (distance / max(brake_dist, 1)) * max_speed * 0.2)
 
-		// Добавляем скорость цели, чтобы догонять движущиеся станции/планеты
-		var/datum/orbital_vector/target_vel = target ? target.velocity : new()
-		var/datum/orbital_vector/desired_velocity = norm_delta.Scale(desired_speed)
-		desired_velocity.AddSelf(target_vel)
+			var/datum/orbital_vector/norm_delta = delta.GetNormalized()
+			var/datum/orbital_vector/target_vel = target ? target.velocity.Copy() : new()
+			var/datum/orbital_vector/desired_velocity = norm_delta.Scale(desired_speed)
+			desired_velocity.AddSelf(target_vel)
 
-		// Вектор разницы (куда нужно толкать корабль)
-		var/datum/orbital_vector/steer = desired_velocity.Subtract(velocity)
-		var/steer_mag = steer.Length()
+			// Упреждение гравитации (простое)
+			if(star_system?.central_star)
+				var/datum/orbital_vector/gdir = star_system.central_star.position.Subtract(position)
+				var/gdist = gdir.Length()
+				if(gdist > 0.1)
+					var/gpull = star_system.central_star.mass / (gdist * gdist)
+					desired_velocity.AddSelf(gdir.GetNormalized().Scale(gpull * 3))
 
-		if(steer_mag > 0.5)
-			var/datum/orbital_vector/norm_steer = steer.GetNormalized()
-			set_thrust_3d(norm_steer.x, norm_steer.y, norm_steer.z, 100)
-		else
-			kill_thrust()
+			var/datum/orbital_vector/steer = desired_velocity.Subtract(velocity)
+			var/steer_mag = steer.Length()
 
-	else if(autopilot_mode == 3) // HOLD POSITION
-		var/datum/orbital_vector/norm_delta = delta.GetNormalized()
+			if(steer_mag > 0.2)
+				var/datum/orbital_vector/ns = steer.GetNormalized()
+				var/power = clamp((steer_mag / acceleration) * 70 + 30, 20, 100)
+				set_thrust_3d(ns.x, ns.y, ns.z, power)
+				// Автопилот сам управляет ориентацией
+				heading = thrust_angle
+				heading_pitch = thrust_pitch
+			else
+				kill_thrust()
 
-		// Точка, которую мы хотим занять
-		var/datum/orbital_vector/desired_pos = t_pos.Subtract(norm_delta.Scale(target_orbit_radius))
-		var/datum/orbital_vector/error = desired_pos.Subtract(position)
-		var/err_mag = error.Length()
+		if(AUTOPILOT_ORBIT) // 2 — НОВЫЙ РЕЖИМ
+			if(!target)
+				autopilot_mode = AUTOPILOT_OFF
+				return
 
-		// Убиваем скорость относительно цели
-		var/datum/orbital_vector/target_vel = target ? target.velocity : new()
-		var/datum/orbital_vector/rvel = velocity.Subtract(target_vel)
-		var/rvel_mag = rvel.Length()
+			var/datum/orbital_vector/to_target = target.position.Subtract(position)
+			var/dist = to_target.Length()
+			var/datum/orbital_vector/radial = to_target.GetNormalized()
 
-		if(rvel_mag > 2)
-			var/datum/orbital_vector/norm_rvel = rvel.GetNormalized()
-			set_thrust_3d(-norm_rvel.x, -norm_rvel.y, -norm_rvel.z, 50)
-		else if(err_mag > 5)
-			var/datum/orbital_vector/norm_err = error.GetNormalized()
-			set_thrust_3d(norm_err.x, norm_err.y, norm_err.z, 30)
-		else
-			kill_thrust()
+			// Тангенциальный вектор (перпендикуляр в XY)
+			var/inc = 0
+			var/datum/orbital_vector/tangential = new(-radial.y, radial.x, 0)
+			if(istype(target, /datum/orbital_object/planet))
+				var/datum/orbital_object/planet/P = target
+				inc = TORADIANS(P.orbit_inclination)
+				tangential.z = sin(inc) * 0.3
+
+			// Орбитальная скорость: v = sqrt(GM/r). У вас нет G, подбираем коэффициент:
+			var/orbital_speed = sqrt(target.mass / max(target_orbit_radius, 1)) * 3.5
+
+			// Коррекция радиуса
+			var/alt_error = dist - target_orbit_radius
+			var/datum/orbital_vector/desired_vel = target.velocity.Copy()
+			desired_vel.AddSelf(tangential.Scale(orbital_speed))
+			desired_vel.AddSelf(radial.Scale(-clamp(alt_error * 0.4, -8, 8)))
+
+			var/datum/orbital_vector/steer = desired_vel.Subtract(velocity)
+			var/steer_mag = steer.Length()
+
+			if(steer_mag > 0.3)
+				var/datum/orbital_vector/ns = steer.GetNormalized()
+				var/power = clamp((steer_mag / acceleration) * 60 + 20, 15, 100)
+				set_thrust_3d(ns.x, ns.y, ns.z, power)
+				heading = thrust_angle
+				heading_pitch = thrust_pitch
+			else
+				kill_thrust()
+				sas_mode = SAS_PROGRADE // в орбите стабилизируемся
+
+		if(AUTOPILOT_HOLD) // 3
+			var/datum/orbital_vector/norm_delta = delta.GetNormalized()
+			var/datum/orbital_vector/desired_pos = target ? t_pos.Subtract(norm_delta.Scale(target_orbit_radius)) : t_pos.Copy()
+
+			var/datum/orbital_vector/error = desired_pos.Subtract(position)
+			var/err_mag = error.Length()
+
+			var/datum/orbital_vector/target_vel = target ? target.velocity.Copy() : new()
+			var/datum/orbital_vector/rvel = velocity.Subtract(target_vel)
+			var/rvel_mag = rvel.Length()
+
+			// Двухфазный: сначала гасим скорость, потом дрейфуем к точке
+			if(rvel_mag > 1.5)
+				var/datum/orbital_vector/nr = rvel.GetNormalized()
+				set_thrust_3d(-nr.x, -nr.y, -nr.z, 40)
+			else if(err_mag > 2)
+				var/datum/orbital_vector/ne = error.GetNormalized()
+				set_thrust_3d(ne.x, ne.y, ne.z, 25)
+			else
+				kill_thrust()
 
 /datum/orbital_object/shuttle/check_collisions()
 	if(!star_system)
@@ -306,14 +444,17 @@
 		return
 
 	thrust.Set(tx / mag, ty / mag, tz / mag)
-	heading = thrust_angle
+	thrust_angle = ATAN2(thrust.y, thrust.x)
+	if(thrust_angle < 0) thrust_angle += 360
 
-	var/horizontal_mag = sqrt(tx*tx + ty*ty)
+	var/horizontal_mag = sqrt(thrust.x*thrust.x + thrust.y*thrust.y)
 	if(horizontal_mag < 0.001)
-		thrust_pitch = tz > 0 ? 90 : -90
-		heading_pitch = thrust_pitch
+		thrust_pitch = thrust.z > 0 ? 90 : -90
 	else
-		thrust_pitch = ATAN2(tz, horizontal_mag)
+		thrust_pitch = ATAN2(thrust.z, horizontal_mag)
+
+	if(sas_mode == 0 && autopilot_mode == 0 && !rotating_left && !rotating_right && !rotating_pitch_up && !rotating_pitch_down)
+		heading = thrust_angle
 		heading_pitch = thrust_pitch
 
 /datum/orbital_object/shuttle/proc/set_thrust(angle, power, pitch)

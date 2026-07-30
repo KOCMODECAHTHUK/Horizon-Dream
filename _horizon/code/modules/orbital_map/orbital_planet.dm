@@ -125,8 +125,6 @@
 	if(!orbit_center)
 		return
 
-	var/datum/orbital_vector/prev_pos = position.Copy()
-
 	orbit_angle = MODULUS(orbit_angle + (orbit_speed * seconds_per_tick), 360)
 	var/base_x = orbit_radius * cos(orbit_angle)
 	var/base_y = orbit_radius * sin(orbit_angle)
@@ -140,10 +138,12 @@
 
 	position.Set(orbit_center.position.x + final_x, orbit_center.position.y + final_y, orbit_center.position.z + final_z)
 
-	// ВЫЧИСЛЯЕМ ВЕКТОР СКОРОСТИ
-	if(seconds_per_tick > 0)
-		var/datum/orbital_vector/delta = position.Subtract(prev_pos)
-		velocity.Set(delta.x / seconds_per_tick, delta.y / seconds_per_tick, delta.z / seconds_per_tick)
+	var/d_omega = orbit_speed * (PI / 180)
+	var/vx = -orbit_radius * sin(orbit_angle) * d_omega * cos(orbit_ascension) - (orbit_radius * cos(orbit_angle) * cos(orbit_inclination) * sin(orbit_ascension)) * d_omega
+	var/vy = orbit_radius * cos(orbit_angle) * d_omega * sin(orbit_ascension) - (orbit_radius * sin(orbit_angle) * cos(orbit_inclination) * cos(orbit_ascension)) * d_omega
+	var/vz = (orbit_radius * sin(orbit_angle) * sin(orbit_inclination)) * d_omega
+
+	velocity.Set(vx, vy, vz)
 
 /datum/orbital_object/planet/interact(datum/orbital_object/shuttle/interacting_shuttle, mob/user, obj/machinery/computer/shuttle_flight/flight_console = null)
 	if(!istype(interacting_shuttle))

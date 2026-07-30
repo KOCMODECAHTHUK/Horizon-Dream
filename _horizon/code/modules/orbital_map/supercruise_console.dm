@@ -380,3 +380,11 @@
 			if(jump_result)
 				to_chat(usr, span_warning("Jump failed: [jump_result]"))
 			return TRUE
+
+		if("set_sas_mode")
+			controlled_shuttle.sas_mode = text2num(params["mode"])
+			return TRUE
+
+		if("set_rcs_mode")
+			controlled_shuttle.rcs_mode = text2num(params["mode"])
+			return TRUE
