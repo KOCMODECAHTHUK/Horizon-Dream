@@ -50,32 +50,41 @@
 	return ..()
 
 /datum/orbital_object/process(seconds_per_tick)
-	if(static_object)
+	if(static_object || ignore_gravity || !star_system)
 		return
 
-	if(!ignore_gravity && star_system)
-		var/datum/orbital_vector/acceleration = new()
-		for(var/datum/orbital_object/body in star_system.orbital_objects)
-			if(!body.mass || body == src)
-				continue
+	var/datum/orbital_vector/total_accel = new()
+	var/datum/orbital_object/dominant_body = null
+	var/max_pull = 0
 
-			var/datum/orbital_vector/delta = body.position.Subtract(position)
-			var/dist_sq = delta.Dot(delta) // x*x + y*y + z*z
+	// Находим доминирующее тело (SOI)
+	for(var/datum/orbital_object/body in star_system.orbital_objects)
+		if(!body.mass || body == src) continue
+		var/datum/orbital_vector/delta = body.position.Subtract(position)
+		var/dist_sq = delta.Dot(delta)
+		if(dist_sq > 1000000) continue // увеличили cut-off
+		var/pull = body.mass / max(dist_sq, 1)
+		if(pull > max_pull)
+			max_pull = pull
+			dominant_body = body
 
-			if(dist_sq > 250000)
-				continue
+	// Ускорение от доминанта
+	if(dominant_body)
+		var/datum/orbital_vector/delta = dominant_body.position.Subtract(position)
+		var/dist = max(delta.Length(), 0.1)
+		var/pull = dominant_body.mass / (dist * dist)
+		var/datum/orbital_vector/norm = delta.GetNormalized()
+		total_accel.AddSelf(norm.Scale(pull))
 
-			var/dist = sqrt(dist_sq)
-			if(dist < 0.1)
-				continue
+	// Слабое влияние центральной звезды (для долгосрочной стабильности)
+	if(star_system.central_star && dominant_body != star_system.central_star)
+		var/datum/orbital_vector/delta = star_system.central_star.position.Subtract(position)
+		var/dist = max(delta.Length(), 0.1)
+		var/pull = star_system.central_star.mass / (dist * dist) * 0.05 // 5% от силы
+		var/datum/orbital_vector/norm = delta.GetNormalized()
+		total_accel.AddSelf(norm.Scale(pull))
 
-			var/pull = body.mass / max(dist_sq, 1)
-			var/norm_factor = pull / dist
-
-			acceleration.AddSelf(delta.ScaleSelf(norm_factor))
-
-		velocity.AddSelf(acceleration.ScaleSelf(seconds_per_tick))
-
+	velocity.AddSelf(total_accel.ScaleSelf(seconds_per_tick))
 	position.AddSelf(velocity.Scale(seconds_per_tick * velocity_multiplier))
 	check_collisions()
 

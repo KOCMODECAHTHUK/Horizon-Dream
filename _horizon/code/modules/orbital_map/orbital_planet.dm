@@ -20,7 +20,7 @@
 
 	var/datum/orbital_object/star/orbit_center = null
 	var/orbit_radius = 100
-	var/soi_radius = 500
+	var/soi_radius = 150
 
 	var/orbit_inclination = 0
 	var/orbit_ascension = 0

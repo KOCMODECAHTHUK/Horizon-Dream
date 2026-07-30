@@ -85,3 +85,28 @@
 	if(!len)
 		return new /datum/orbital_vector()
 	return new /datum/orbital_vector(x / len, y / len, z / len)
+
+/datum/orbital_vector/proc/Reflect(datum/orbital_vector/normal)
+	var/dp = Dot(normal) * 2
+	return Subtract(normal.Scale(dp))
+
+/datum/orbital_vector/proc/Project(datum/orbital_vector/onto)
+	var/len_sq = onto.Dot(onto)
+	if(len_sq < 0.0001) return new /datum/orbital_vector()
+	return onto.Scale(Dot(onto) / len_sq)
+
+/datum/orbital_vector/proc/Reject(datum/orbital_vector/from)
+	var/datum/orbital_vector/proj = Project(from)
+	return Subtract(proj)
+
+/datum/orbital_vector/proc/AngleBetween(datum/orbital_vector/other)
+	var/len_prod = Length() * other.Length()
+	if(len_prod < 0.0001) return 0
+	return arccos(clamp(Dot(other) / len_prod, -1, 1))
+
+/datum/orbital_vector/proc/Lerp(datum/orbital_vector/target, t)
+	var/inv = 1 - t
+	return new /datum/orbital_vector(x * inv + target.x * t, y * inv + target.y * t, z * inv + target.z * t)
+
+/datum/orbital_vector/proc/IsZero()
+	return abs(x) < 0.0001 && abs(y) < 0.0001 && abs(z) < 0.0001
