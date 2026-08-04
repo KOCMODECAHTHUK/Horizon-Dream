@@ -364,7 +364,6 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			save_preferences()
 			var/static/list/instrument_channels = list(
 				CHANNEL_INSTRUMENTS,
-				CHANNEL_INSTRUMENTS_ROBOT,
 			)
 			if(!(channel in GLOB.proxy_sound_channels))
 				set_channel_volume(channel, volume)
@@ -399,33 +398,55 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			if(!isnull(channel_num) && (channel_num in GLOB.used_sound_channels))
 				var/sound_file
 				switch(channel_num)
-					if(CHANNEL_LOBBYMUSIC)
-						sound_file = SSticker.login_music
-					if(CHANNEL_ADMIN, CHANNEL_ADMIN_SOUNDS)
-						sound_file = 'sound/effects/adminhelp.ogg'
-					if(CHANNEL_HEARTBEAT)
-						sound_file = 'sound/effects/heart_beat.ogg' // Поменять, в целом поменять подход
-					if(CHANNEL_INSTRUMENTS, CHANNEL_INSTRUMENTS_ROBOT)
-						sound_file = 'sound/music/sisyphus/sisyphus.ogg'
-					//if(CHANNEL_PRUDE)
-					//	sound_file = 'sound/misc/fart.ogg'
-					if(CHANNEL_SQUEAK)
-						sound_file = "sound/items/toy_squeak/toysqueak[rand(1,3)].ogg"
+					// if(CHANNEL_MASTER_VOLUME)
+					if(CHANNEL_SOUND_EFFECTS)
+						sound_file = "sound/items/weapons/punch[rand(1,4)].ogg"
+					if(CHANNEL_AMBIENCE)
+						sound_file = "sound/ambience/general/ambigen[rand(1,14)].ogg"
+					if(CHANNEL_WEATHER)
+						sound_file = pick(
+							'sound/ambience/weather/rain/rain_mid.ogg',
+							'sound/ambience/weather/ashstorm/outside/weak_mid2.ogg',
+							'sound/ambience/weather/ashstorm/outside/active_mid2.ogg',
+							'sound/ambience/weather/snowstorm/snow3.ogg',
+						)
+					if(CHANNEL_MACHINERY)
+						sound_file = 'sound/machines/mining/refinery.ogg'
+					if(CHANNEL_FOOTSTEPS)
+						sound_file = "sound/effects/footstep/[pick(flist("sound/effects/footstep/"))]"
+					if(CHANNEL_MOB_SOUNDS)
+						sound_file = "sound/mobs/non-humanoids/tourist/[pick(flist("sound/mobs/non-humanoids/tourist/"))]"
+					if(CHANNEL_MOB_EMOTES)
+						sound_file = "sound/mobs/humanoids/human/laugh/[pick(flist("sound/mobs/humanoids/human/laugh/"))]"
 					if(CHANNEL_VOICES)
 						sound_file = 'sound/runtime/chatter/griffin_10.ogg'
-					if(CHANNEL_AMBIENCE, CHANNEL_BUZZ, CHANNEL_WEATHER)
-						sound_file = "sound/ambience/general/ambigen[rand(1,14)].ogg"
 					if(CHANNEL_SHUTTLES)
 						sound_file = 'sound/runtime/hyperspace/hyperspace_begin.ogg'
-					if(CHANNEL_MACHINERY)
-						sound_file = 'sound/machines/door/door_close.ogg'
-					if(CHANNEL_SOUND_FOOTSTEPS)
-						sound_file = "sound/effects/footstep/catwalk[rand(1,5)].ogg"
-					if(CHANNEL_ANNOUNCEMENTS, CHANNEL_VOX)
-						sound_file = 'sound/announcer/vox_fem/announcement.ogg'
+					if(CHANNEL_UI)
+						sound_file = "sound/machines/arcade/[pick(flist("sound/machines/arcade/"))]"
+					if(CHANNEL_RINGTONES)
+						sound_file = 'sound/machines/beep/twobeep.ogg'
+					if(CHANNEL_VOX)
+						sound_file = "sound/announcer/vox_fem/[pick(flist("sound/announcer/vox_fem/"))]"
+					if(CHANNEL_ANNOUNCEMENTS)
+						sound_file = 'sound/announcer/announcement/announce.ogg'
+					if(CHANNEL_HEARTBEAT)
+						sound_file = 'sound/effects/health/fastbeat.ogg'
+					if(CHANNEL_LOBBYMUSIC)
+						sound_file = 'sound/music/antag/spy.ogg'
+					if(CHANNEL_EVENT_MUSIC)
+						sound_file = 'sound/music/antag/bloodcult/bloodcult_halos.ogg'
+					// if(CHANNEL_JUKEBOX)
+					if(CHANNEL_INSTRUMENTS)
+						sound_file = 'sound/music/sisyphus/sisyphus.ogg'
+					if(CHANNEL_ADMIN)
+						sound_file = 'sound/effects/adminhelp.ogg'
+					if(CHANNEL_ADMIN_SOUNDS)
+						sound_file = 'sound/music/antag/thatshowfamiliesworks.ogg'
 					else
 						sound_file = 'sound/machines/ping.ogg'
-				usr.playsound_local(get_turf(usr), sound_file, 100, channel = test_channel, mixer_channel = channel_num)
+				parent.mob.stop_sound_channel(CHANNEL_TEST_SOUND)
+				usr.playsound_local(get_turf(usr), sound_file, calculate_mixed_volume(usr.client, 100, channel_num), channel = CHANNEL_TEST_SOUND, mixer_channel = CHANNEL_TEST_SOUND)
 
 			else if(!isnull(category_name))
 				var/test_channel_for_cat
@@ -439,10 +460,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			return TRUE
 
 		if("stop_all_sounds")
-			if(parent && parent.mob)
-				for(var/ch in test_sound_channels)
-					parent.mob.stop_sound_channel(text2num(ch))
-				test_sound_channels.Cut()
+			parent.mob.stop_sound_channel(CHANNEL_TEST_SOUND)
 			return TRUE
 			// [/HORIZON-ADD]
 

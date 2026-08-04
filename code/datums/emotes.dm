@@ -145,7 +145,7 @@
 		if(use_sound_tokens && sound_wall_ignore)
 			playsoundtoken(source = user, soundin = tmp_sound, range = SOUND_RANGE, volume = sound_volume)
 		else
-			playsound(source = user,soundin = tmp_sound,vol = sound_volume, vary = FALSE, ignore_walls = sound_wall_ignore, frequency = frequency)
+			playsound(source = user,soundin = tmp_sound,vol = sound_volume, vary = FALSE, ignore_walls = sound_wall_ignore, frequency = frequency, mixer_channel = CHANNEL_MOB_EMOTES)
 
 
 	var/is_important = running_emote_type & EMOTE_IMPORTANT
