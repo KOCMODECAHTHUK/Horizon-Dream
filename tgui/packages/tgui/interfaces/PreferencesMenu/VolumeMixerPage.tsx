@@ -123,6 +123,13 @@ export const VolumeMixerPage = () => {
         >
           Stop Test Sound
         </Button>
+        <Button
+          icon="arrow-rotate-right"
+          ml={2}
+          onClick={() => act('reset_all_volumes')}
+        >
+          Reset All to Default
+        </Button>
       </Box>
     </Section>
   );

@@ -391,6 +391,12 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 				var/datum/song/holder_song = new
 				for(var/used_channel in holder_song.channels_playing)
 					set_channel_volume(used_channel, volume)
+
+			if(channel == CHANNEL_MASTER_VOLUME)
+				update_test_sound(master_changed = TRUE)
+			else
+				update_test_sound(mixer_channel_changed = channel)
+
 			return TRUE
 
 		if("category_volume")
@@ -415,6 +421,27 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 					var/sound/new_sound = sound(null, repeat = S.repeat, wait = S.wait, channel = S.channel, volume = calculate_mixed_volume(parent, base_volume, mixer_channel))
 					new_sound.status = SOUND_UPDATE
 					SEND_SOUND(parent.mob, new_sound)
+
+			update_test_sound(category_changed = category)
+
+			return TRUE
+
+		if("reset_all_volumes")
+			for(var/channel in GLOB.used_sound_channels)
+				var/default_vol = (channel == CHANNEL_MASTER_VOLUME) ? 100 : 50
+				channel_volume["[channel]"] = default_vol
+
+			var/list/seen_categories = list()
+			for(var/channel in GLOB.used_sound_channels)
+				var/list/info = get_channel_info(channel)
+				var/category = info[3]
+				if(category && !(category in seen_categories))
+					seen_categories += category
+					category_volume[category] = 100
+
+			save_preferences()
+			set_channel_volume(CHANNEL_MASTER_VOLUME, 100)
+			update_test_sound(master_changed = TRUE)
 			return TRUE
 
 		if("test_sound")
@@ -793,3 +820,29 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			default_randomization[preference_key] = RANDOM_ENABLED
 
 	return default_randomization
+
+/datum/preferences/proc/update_test_sound(mixer_channel_changed = null, category_changed = null, master_changed = FALSE)
+	var/list/test_info = test_sound_channels["[CHANNEL_TEST_SOUND]"]
+	if(!test_info)
+		return
+
+	var/test_mixer_channel = test_info["mixer_channel"]
+	var/should_update = FALSE
+
+	if(master_changed)
+		should_update = TRUE
+	else if(mixer_channel_changed && test_mixer_channel == mixer_channel_changed)
+		should_update = TRUE
+	else if(category_changed)
+		var/sound_category = GLOB.channel_to_category["[test_mixer_channel]"]
+		if(sound_category == category_changed)
+			should_update = TRUE
+
+	if(!should_update)
+		return
+
+	var/base_volume = test_info["base_volume"]
+	var/new_vol = calculate_mixed_volume(parent, base_volume, test_mixer_channel)
+	var/sound/new_sound = sound(null, channel = CHANNEL_TEST_SOUND, volume = new_vol)
+	new_sound.status = SOUND_UPDATE
+	SEND_SOUND(parent.mob, new_sound)
