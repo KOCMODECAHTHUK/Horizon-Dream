@@ -264,15 +264,35 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 
 	//we gotta take into account existing sounds repeating/waiting, otherwise we completely wipe looping sounds (such as whitenoise).
 	for(var/sound/S in parent.SoundQuery())
-		//master channel affects all others.
-		if((channel != CHANNEL_MASTER_VOLUME) && (S.channel != channel))
+		var/sound_channel = S.channel
+		var/mixer_channel = sound_channel
+		var/base_volume = S.volume
+
+		var/list/test_info = test_sound_channels["[sound_channel]"]
+		if(test_info)
+			mixer_channel = test_info["mixer_channel"]
+			base_volume = test_info["base_volume"]
+
+		var/should_update = FALSE
+		if(channel == CHANNEL_MASTER_VOLUME)
+			should_update = TRUE
+		else if(mixer_channel == channel)
+			should_update = TRUE
+		else
+			var/sound_category = GLOB.channel_to_category["[mixer_channel]"]
+			var/channel_category = GLOB.channel_to_category["[channel]"]
+			if(sound_category && sound_category == channel_category)
+				should_update = TRUE
+
+		if(!should_update)
 			continue
+
 		var/sound/new_sound = sound(
 			null,
 			repeat = S.repeat,
 			wait = S.wait,
 			channel = S.channel,
-			volume = calculate_mixed_volume(parent, S.volume, S.channel),
+			volume = calculate_mixed_volume(parent, base_volume, mixer_channel),
 		)
 		new_sound.status = SOUND_UPDATE
 		SEND_SOUND(parent.mob, new_sound)
@@ -381,24 +401,32 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			category_volume[category] = volume
 			save_preferences()
 			for(var/sound/S in parent.SoundQuery())
-				var/sound_category = GLOB.channel_to_category["[S.channel]"]
+				var/sound_channel = S.channel
+				var/mixer_channel = sound_channel
+				var/base_volume = S.volume
+
+				var/list/test_info = test_sound_channels["[sound_channel]"]
+				if(test_info)
+					mixer_channel = test_info["mixer_channel"]
+					base_volume = test_info["base_volume"]
+
+				var/sound_category = GLOB.channel_to_category["[mixer_channel]"]
 				if(sound_category == category)
-					var/sound/new_sound = sound(null, repeat = S.repeat, wait = S.wait, channel = S.channel, volume = calculate_mixed_volume(parent, S.volume, S.channel))
+					var/sound/new_sound = sound(null, repeat = S.repeat, wait = S.wait, channel = S.channel, volume = calculate_mixed_volume(parent, base_volume, mixer_channel))
 					new_sound.status = SOUND_UPDATE
 					SEND_SOUND(parent.mob, new_sound)
 			return TRUE
 
 		if("test_sound")
-			var/channel_num = params["channel"]
+			var/channel_num = text2num(params["channel"])
 			var/category_name = params["category"]
 
-			var/test_channel = SSsounds.random_available_channel()
-			test_sound_channels["[test_channel]"] = TRUE
+			parent.mob.stop_sound_channel(CHANNEL_TEST_SOUND)
+			test_sound_channels.Cut()
 
 			if(!isnull(channel_num) && (channel_num in GLOB.used_sound_channels))
 				var/sound_file
 				switch(channel_num)
-					// if(CHANNEL_MASTER_VOLUME)
 					if(CHANNEL_SOUND_EFFECTS)
 						sound_file = "sound/items/weapons/punch[rand(1,4)].ogg"
 					if(CHANNEL_AMBIENCE)
@@ -445,8 +473,9 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 						sound_file = 'sound/music/antag/thatshowfamiliesworks.ogg'
 					else
 						sound_file = 'sound/machines/ping.ogg'
-				parent.mob.stop_sound_channel(CHANNEL_TEST_SOUND)
-				usr.playsound_local(get_turf(usr), sound_file, calculate_mixed_volume(usr.client, 100, channel_num), channel = CHANNEL_TEST_SOUND, mixer_channel = CHANNEL_TEST_SOUND)
+
+				test_sound_channels["[CHANNEL_TEST_SOUND]"] = list("mixer_channel" = channel_num, "base_volume" = 100)
+				usr.playsound_local(get_turf(usr), sound_file, 100, channel = CHANNEL_TEST_SOUND, mixer_channel = channel_num)
 
 			else if(!isnull(category_name))
 				var/test_channel_for_cat
@@ -456,11 +485,13 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 						test_channel_for_cat = c
 						break
 				if(test_channel_for_cat)
-					usr.playsound_local(get_turf(usr), 'sound/machines/ping.ogg', 100, channel = test_channel, mixer_channel = test_channel_for_cat)
+					test_sound_channels["[CHANNEL_TEST_SOUND]"] = list("mixer_channel" = test_channel_for_cat, "base_volume" = 100)
+					usr.playsound_local(get_turf(usr), 'sound/machines/ping.ogg', 100, channel = CHANNEL_TEST_SOUND, mixer_channel = test_channel_for_cat)
 			return TRUE
 
 		if("stop_all_sounds")
 			parent.mob.stop_sound_channel(CHANNEL_TEST_SOUND)
+			test_sound_channels.Cut()
 			return TRUE
 			// [/HORIZON-ADD]
 
