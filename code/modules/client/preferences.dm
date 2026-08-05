@@ -508,6 +508,12 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	QDEL_NULL(character_preview_view)
 	cached_character_profiles = null
 
+	// [HORIZON-ADD]
+	if(test_sound_channels)
+		user.stop_sound_channel(CHANNEL_TEST_SOUND)
+		test_sound_channels.Cut()
+	// [/HORIZON-ADD]
+
 /datum/preferences/Topic(href, list/href_list)
 	. = ..()
 	if (.)
