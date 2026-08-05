@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useBackend } from 'tgui/backend';
 import { Box, Button, Section, Slider, Stack, Tooltip } from 'tgui-core/components';
 import type { Channel, PreferencesMenuData } from './types';
@@ -28,14 +29,11 @@ export const VolumeMixerPage = () => {
           <Box fontSize="1rem" color="label" mb={1}>Global Master Volume</Box>
           <Stack align="center">
             <Stack.Item grow={1}>
-              <Slider
-                minValue={0}
-                maxValue={100}
-                stepPixelSize={4}
+              <SmoothSlider
                 value={globalMaster.volume}
-                onChange={(_, value) =>
-                  act('volume', { channel: globalMaster.num, volume: Math.round(value) })
-                }
+                fontSize="1.1rem"
+                stepPixelSize={4}
+                onChange={(v) => act('volume', { channel: globalMaster.num, volume: v })}
               />
             </Stack.Item>
             <Stack.Item>
@@ -80,14 +78,11 @@ export const VolumeMixerPage = () => {
 
               <Stack align="center" mb={2}>
                 <Stack.Item grow={1}>
-                  <Slider
-                    minValue={0}
-                    maxValue={100}
-                    stepPixelSize={3}
+                  <SmoothSlider
                     value={catVol}
-                    onChange={(_, value) =>
-                      act('category_volume', { category, volume: Math.round(value) })
-                    }
+                    fontSize="0.95rem"
+                    stepPixelSize={3}
+                    onChange={(v) => act('category_volume', { category, volume: v })}
                   />
                 </Stack.Item>
                 <Stack.Item>
@@ -133,10 +128,39 @@ export const VolumeMixerPage = () => {
   );
 };
 
+const SmoothSlider = (props: {
+  value: number;
+  onChange: (value: number) => void;
+  fontSize?: string;
+  stepPixelSize?: number;
+}) => {
+  const { value, onChange, fontSize, stepPixelSize = 2 } = props;
+  const [localValue, setLocalValue] = useState(Math.round(value));
+
+  useEffect(() => {
+    setLocalValue(Math.round(value));
+  }, [value]);
+
+  return (
+    <Slider
+      minValue={0}
+      maxValue={100}
+      step={1}
+      stepPixelSize={stepPixelSize}
+      value={localValue}
+      fontSize={fontSize}
+      onChange={(_, val) => {
+        const rounded = Math.max(0, Math.min(100, Math.round(Number(val) || 0)));
+        setLocalValue(rounded);
+        onChange(rounded);
+      }}
+    />
+  );
+};
+
 const VolumeSlider = (props: { channel: Channel }) => {
   const { act } = useBackend<PreferencesMenuData>();
   const { channel } = props;
-  const sliderValue = Math.max(0, Math.min(100, Number.isFinite(channel.volume) ? channel.volume : 50));
 
   return (
     <Box backgroundColor="rgba(0, 0, 0, 0.15)" style={{ padding: '3px 5px', borderRadius: '3px' }}>
@@ -150,18 +174,13 @@ const VolumeSlider = (props: { channel: Channel }) => {
           {channel.name}
         </Box>
       </Tooltip>
-      <Stack align="center" style={{ height: '12px' }}>
+      <Stack align="center">
         <Stack.Item grow={1}>
-          <Slider
-            minValue={0}
-            maxValue={100}
+          <SmoothSlider
+            value={channel.volume}
+            fontSize="0.65rem"
             stepPixelSize={2}
-            value={sliderValue}
-            style={{ height: '10px', fontSize: '0.6rem' }}
-            onChange={(_, value) => {
-              const nextValue = Math.max(0, Math.min(100, Math.round(Number(value) || sliderValue)));
-              act('volume', { channel: channel.num, volume: nextValue });
-            }}
+            onChange={(v) => act('volume', { channel: channel.num, volume: v })}
           />
         </Stack.Item>
         <Stack.Item ml="2px">
