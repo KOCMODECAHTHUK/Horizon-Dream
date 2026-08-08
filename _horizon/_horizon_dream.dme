@@ -31,4 +31,5 @@
 #include "code\modules\physics\physics_tester.dm"
 #include "code\datums\particles\leaves.dm"
 #include "code\structures\flora.dm"
+#include "code\structures\markings.dm"
 // END_INCLUDE
