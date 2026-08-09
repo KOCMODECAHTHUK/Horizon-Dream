@@ -14,6 +14,9 @@
 	desc = "The beautiful pink leaves of a cherry tree."
 	icon = '_horizon/icons/obj/flora/cherry.dmi'
 	icon_state = "cherry_leaf"
+	plane = FLOOR_PLANE
+	layer = TURF_DECAL_LAYER
+	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	pixel_x = -68
 	pixel_y = -20
 
@@ -27,14 +30,25 @@
 		leaf.setDir(dir)
 
 	new /obj/effect/abstract/particle_holder(src, leaves_particle_type, PARTICLE_FADEOUT)
-/* // TODO: Сделать при рубке листву
-	RegisterSignal(src, COMSIG_ATOM_TAKE_DAMAGE, PROC_REF(fall_leaves))
 
-/obj/structure/flora/tree/cherry/proc/fall_leaves()
-	var/turf/T = get_turf(src)
-	if(!T)
-		return
+	var/atom/movable/tree_shadow/shadow = new(null, src)
+	shadow.icon = icon
+	vis_contents += shadow
 
-	new /obj/effect/abstract/particle_holder(T, leaves_hit_particle_type, PARTICLE_FADEOUT|PARTICLE_FLICK)
-	//shake_act(1)
-*/
+/atom/movable/tree_shadow
+	name = "shadow"
+	icon_state = "shadow"
+	anchored = TRUE
+	plane = WALL_PLANE
+	layer = BELOW_CLOSED_TURF_LAYER
+	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	vis_flags = VIS_INHERIT_DIR
+	var/parent
+
+/atom/movable/tree_shadow/Initialize(mapload, parent)
+	. = ..()
+	src.parent = parent
+	RegisterSignal(parent, COMSIG_QDELETING, PROC_REF(parent_destroy))
+
+/atom/movable/tree_shadow/proc/parent_destroy()
+    Destroy()
