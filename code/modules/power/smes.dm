@@ -4,7 +4,7 @@
 /obj/machinery/power/smes
 	name = "power storage unit"
 	desc = "A high-capacity superconducting magnetic energy storage (SMES) unit."
-	icon = 'icons/obj/machines/engine/smes.dmi'	// [HORIZON-ADD]
+//	icon = 'icons/obj/machines/engine/smes.dmi'	// [HORIZON-ADD]
 	icon_state = "smes"
 	density = TRUE
 	use_power = NO_POWER_USE
