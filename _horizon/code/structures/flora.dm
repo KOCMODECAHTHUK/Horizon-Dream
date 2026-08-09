@@ -8,7 +8,7 @@
 
 	var/leaves_particle_type = /particles/leaves/cherry
 	var/leaves_hit_particle_type = /particles/leaves/cherry/hit
-	var/atom/movable/tree_shadow/tree_shadow
+	var/atom/movable/tree_shadow/tree_shadow = /atom/movable/tree_shadow/cherry
 	stump_type = /obj/structure/flora/tree/stump/cherry
 
 /obj/structure/flora/tree/cherry/Destroy(force)
@@ -43,9 +43,7 @@
 
 	new /obj/effect/abstract/particle_holder(src, leaves_particle_type, PARTICLE_FADEOUT)
 
-	tree_shadow = new(null, src)
-	tree_shadow.icon = icon
-	tree_shadow.icon_state = "[icon_state]_shadow"
+	tree_shadow = new tree_shadow(null, src)
 	vis_contents += tree_shadow
 
 /obj/structure/flora/tree/cherry/take_damage()
@@ -65,3 +63,7 @@
 	layer = BELOW_CLOSED_TURF_LAYER
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	vis_flags = VIS_INHERIT_DIR
+
+/atom/movable/tree_shadow/cherry
+	icon = '_horizon/icons/obj/flora/cherry.dmi'
+	icon_state = "cherry_shadow"
