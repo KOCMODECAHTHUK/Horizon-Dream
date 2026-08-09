@@ -8,6 +8,12 @@
 
 	var/leaves_particle_type = /particles/leaves/cherry
 	var/leaves_hit_particle_type = /particles/leaves/cherry/hit
+	var/atom/movable/tree_shadow/tree_shadow
+	stump_type = /obj/structure/flora/tree/stump/cherry
+
+/obj/structure/flora/tree/cherry/Destroy(force)
+	. = ..()
+	tree_shadow?.Destroy()
 
 /obj/structure/flora/cherry_leaf
 	name = "cherry leaf"
@@ -17,6 +23,12 @@
 	plane = FLOOR_PLANE
 	layer = TURF_DECAL_LAYER
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	pixel_x = -68
+	pixel_y = -20
+
+/obj/structure/flora/tree/stump/cherry
+	icon = '_horizon/icons/obj/flora/cherry.dmi'
+	icon_state = "cherry_stump"
 	pixel_x = -68
 	pixel_y = -20
 
@@ -31,9 +43,19 @@
 
 	new /obj/effect/abstract/particle_holder(src, leaves_particle_type, PARTICLE_FADEOUT)
 
-	var/atom/movable/tree_shadow/shadow = new(null, src)
-	shadow.icon = icon
-	vis_contents += shadow
+	tree_shadow = new(null, src)
+	tree_shadow.icon = icon
+	tree_shadow.icon_state = "[icon_state]_shadow"
+	vis_contents += tree_shadow
+
+/obj/structure/flora/tree/cherry/take_damage()
+	. = ..()
+	var/turf/T = get_turf(src)
+	if(!T)
+		return
+
+	new /obj/effect/abstract/particle_holder(T, leaves_hit_particle_type, PARTICLE_FADEOUT|PARTICLE_FLICK)
+	Shake(2, 1, 0.2 SECONDS, 0.001 SECONDS)
 
 /atom/movable/tree_shadow
 	name = "shadow"
@@ -43,12 +65,3 @@
 	layer = BELOW_CLOSED_TURF_LAYER
 	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
 	vis_flags = VIS_INHERIT_DIR
-	var/parent
-
-/atom/movable/tree_shadow/Initialize(mapload, parent)
-	. = ..()
-	src.parent = parent
-	RegisterSignal(parent, COMSIG_QDELETING, PROC_REF(parent_destroy))
-
-/atom/movable/tree_shadow/proc/parent_destroy()
-    Destroy()

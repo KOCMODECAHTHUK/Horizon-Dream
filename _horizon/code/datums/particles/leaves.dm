@@ -15,7 +15,8 @@
 	friction = 0.3
 
 /particles/leaves/hit
-	spawning = 50
+	count = 8
+	spawning = 6
 	position = generator("box", list(-48, 92, 0), list(48, 44, 0), "SQUARE_RAND")
 
 // Small
@@ -24,7 +25,8 @@
 	position = generator("box", list(0, 80, 0), list(120, 32, 0), "SQUARE_RAND")
 
 /particles/leaves/small/hit
-	spawning = 50
+	count = 8
+	spawning = 6
 	position = generator("box", list(-32, 80, 0), list(64, 32, 0), "SQUARE_RAND")
 
 // Cherry
@@ -32,5 +34,6 @@
 	icon = '_horizon/icons/obj/flora/leaves_cherry.dmi'
 
 /particles/leaves/cherry/hit
-	spawning = 50
+	count = 8
+	spawning = 6
 	position = generator("box", list(-48, 92, 0), list(48, 44, 0), "SQUARE_RAND")
