@@ -343,9 +343,10 @@
 	desc = "This represents our promise to the crew, and the station itself, to cut down as many trees as possible." //running naked through the trees
 	icon = 'icons/obj/fluff/flora/pinetrees.dmi'
 	icon_state = "tree_stump"
+	layer = BELOW_OBJ_LAYER
+	plane = GAME_PLANE
 	density = FALSE
 	delete_on_harvest = TRUE
-	vis_flags = VIS_INHERIT_DIR
 
 /obj/structure/flora/tree/stump/harvest(mob/living/user, product_amount_multiplier)
 	to_chat(user, span_notice("You manage to remove [src]."))
