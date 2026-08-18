@@ -178,7 +178,6 @@
 
 	z_lock = list()
 
-	// Явно объявляем переменную для планеты
 	var/datum/orbital_object/planet/planet_target = null
 
 	if(istype(target, /datum/orbital_object/planet))
@@ -190,7 +189,8 @@
 		if(!planet_target.planet_level)
 			to_chat(user, span_notice("Generating planet surface..."))
 			if(!planet_target.generate_level())
-				to_chat(user, span_warning("ERROR: Failed to generate planet surface!"))
+				log_world("ORBITAL DOCKER: generate_level() failed for [planet_target.name]!")
+				to_chat(user, span_warning("ERROR: Failed to generate planet surface! Check server logs."))
 				return FALSE
 			to_chat(user, span_boldnotice("Planet surface generated!"))
 
@@ -220,7 +220,6 @@
 
 	var/turf/start_loc = null
 
-	// Используем типизированную переменную
 	if(planet_target?.reserve_docks?.len)
 		start_loc = get_turf(planet_target.reserve_docks[1])
 

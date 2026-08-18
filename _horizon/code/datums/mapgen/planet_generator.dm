@@ -1,127 +1,49 @@
 /**
  * # Planet Generator
- *
- * Basic planet generation system integrated with the supercruise system.
  */
 
 /datum/map_generator/planet_generator
-	// === BIOME TABLES ===
-	/// 2D associative list: biome_table[heat_level][humidity_level] = biome_type
-	/// Heat levels: BIOME_COLDEST, BIOME_COLD, BIOME_WARM, BIOME_TEMPERATE, BIOME_HOT, BIOME_HOTTEST
-	/// Humidity levels: BIOME_LOWEST_HUMIDITY, BIOME_LOW_HUMIDITY, BIOME_MEDIUM_HUMIDITY, BIOME_HIGH_HUMIDITY, BIOME_HIGHEST_HUMIDITY
 	var/list/biome_table
-
-	/// 2D associative list for cave biomes: cave_biome_table[heat_level][humidity_level] = cave_biome_type
-	/// Heat levels: BIOME_COLDEST_CAVE, BIOME_COLD_CAVE, BIOME_WARM_CAVE, BIOME_HOT_CAVE
-	/// Humidity levels: same as surface
 	var/list/cave_biome_table
-
-	// === PERLIN NOISE SEEDS ===
-	/// Random seed for height perlin noise (determines cave vs surface)
 	var/height_seed
-	/// Random seed for heat/temperature perlin noise
 	var/heat_seed
-	/// Random seed for humidity perlin noise
 	var/humidity_seed
-
-	// === TERRAIN PARAMETERS ===
-	/// If a turf's perlin-calculated "height" is above this value, a cave will be generated
-	/// Lower values = more caves. Values: 0.45 (55% caves) to 0.95 (5% caves). 1.0 = no caves
 	var/mountain_height = 0.80
-	/// Higher values create larger biome zones and cave systems
 	var/perlin_zoom = 65
-	/// TRUE when planet is actively generating, used to block docking during generation
 	var/generating = FALSE
-
-	// === CELLULAR AUTOMATA (for organic cave shapes) ===
-	/// Chance for a cell in the cave cellular automaton to start closed (wall)
 	var/initial_closed_chance = 45
-	/// Number of smoothing iterations for cave generation
 	var/smoothing_iterations = 20
-	/// If an open cell has more than this many closed neighbors, it becomes closed
 	var/birth_limit = 4
-	/// If a closed cell has fewer than this many closed neighbors, it becomes open
 	var/death_limit = 3
-
-	// === AREAS ===
-	/// The area type to use for the planet surface
 	var/area/primary_area_type = /area/planet
-	/// The area instance for the surface
 	var/area/primary_area
-	/// The area type to use for caves
 	var/area/cave_area_type = /area/planet/cave
-	/// The area instance for caves
 	var/area/cave_area
-
-	// === DMM GENERATION (rust-g) ===
-	/// When TRUE, uses rust-g DMM generation instead of DM-side perlin/biome terrain.
-	/// DMM generation is significantly faster: all Perlin noise, CA, biome selection,
-	/// turf placement, and flora spawning happens in Rust.
 	var/use_dmm_generation = TRUE
-	/// Seed for DMM generation. If 0, a random seed is generated in New().
 	var/dmm_seed = 0
-
-	// === INTERNAL ===
-	/// Stored CA string for cave generation
 	var/string_gen
-	/// Cache mapping turfs to their selected biomes (to avoid recalculation)
 	var/list/turf_biome_cache
-	/// Temporary lists for feature/mob spawning
 	var/list/created_features
 	var/list/created_mobs
 
 /datum/map_generator/planet_generator/New()
 	. = ..()
-
-	// Initialize random perlin seeds
 	height_seed = rand(0, 50000)
 	heat_seed = rand(0, 50000)
 	humidity_seed = rand(0, 50000)
-
-	// Initialize DMM seed if not set
 	if(!dmm_seed)
 		dmm_seed = rand(0, 999999)
-
-	// Create NEW area instances for this planet (don't reuse global instances)
-	// Each planet needs its own area instance to avoid conflicts when multiple planets exist
 	primary_area = new primary_area_type
 	cave_area = new cave_area_type
-
-	// Generate cellular automata for caves if mountain_height < 1
-	// Only needed for legacy (non-DMM) generation path
-	if(mountain_height < 1 && !use_dmm_generation)
-		// This generates the cave layout using cellular automata
-		// The string represents a 2D grid where '0' = open space, '1' = wall
-		string_gen = rustg_cnoise_generate("[initial_closed_chance]", "[smoothing_iterations]", "[birth_limit]", "[death_limit]", "[world.maxx]", "[world.maxy]")
-
-	// Initialize caches
 	turf_biome_cache = list()
 
-/**
- * Generates a planet level using the virtual level system.
- *
- * When use_dmm_generation is TRUE (default), all terrain is generated in Rust
- * via rust-g's planet_generator_generate_dmm and loaded through /datum/parsed_map.
- * This is significantly faster than DM-side perlin/biome iteration.
- *
- * The legacy path (perlin noise + biome tables) is still available by setting
- * use_dmm_generation = FALSE on the generator subtype.
- *
- * Arguments:
- * * planet_name - Name of the planet
- * * planet_size - Size of the planet (default 100x100)
- * * baseturf - The base turf type for this planet
- * * mapzone - Optional existing mapzone to use
- *
- * Returns: A list containing [vlevel, list of docking_ports], or null if planet already exists
- */
 /datum/map_generator/planet_generator/proc/generate_planet_level(planet_name = "Planet", planet_size = 100, baseturf = /turf/closed/void, datum/map_zone/mapzone = null)
+	log_world("MAPGEN: Starting generation for [planet_name] ([planet_size]x[planet_size])")
 	generating = TRUE
 
-	// Проверка на существующую планету
 	for(var/datum/map_zone/existing_zone as anything in SSmapping.map_zones)
 		if(existing_zone.name == "[planet_name] Zone")
-			log_world("WARNING: Planet [planet_name] already exists! Skipping regeneration.")
+			log_world("MAPGEN: Planet [planet_name] already exists! Skipping regeneration.")
 			generating = FALSE
 			if(length(existing_zone.virtual_levels))
 				var/datum/virtual_level/existing_vlevel = existing_zone.virtual_levels[1]
@@ -129,34 +51,32 @@
 				for(var/obj/docking_port/stationary/dock in SSshuttle.stationary_docking_ports)
 					if(dock.z == existing_vlevel.z_value)
 						existing_docks += dock
-				return list(existing_vlevel, existing_docks)
+				return list(existing_vlevel, existing_docks, existing_zone.virtual_levels.Copy())
 			return null
 
-	// Создаем Map Zone
 	if(!mapzone)
+		log_world("MAPGEN: Creating map zone for [planet_name]...")
 		mapzone = SSmapping.create_map_zone("[planet_name] Zone")
 		if(!mapzone)
-			log_world("ERROR: Failed to create map zone for [planet_name]")
+			log_world("MAPGEN ERROR: Failed to create map zone for [planet_name]")
 			generating = FALSE
 			return null
 
 	var/total_size = planet_size + 2
 
-	// === КОНФИГУРАЦИЯ 5 УРОВНЕЙ (СНИЗУ ВВЕРХ) ===
-	// Флаг generate_terrain = FALSE означает, что уровень будет просто заполнен openspace
 	var/list/level_definitions = list(
 		list("name" = "[planet_name] Dungeon", "baseturf" = /turf/closed/void, "generate_terrain" = TRUE),
 		list("name" = "[planet_name] Deep Caves", "baseturf" = /turf/open/openspace/airless/planetary, "generate_terrain" = TRUE),
 		list("name" = "[planet_name] Caves", "baseturf" = /turf/open/openspace/airless/planetary, "generate_terrain" = TRUE),
 		list("name" = "[planet_name] Surface", "baseturf" = /turf/open/openspace/airless/planetary, "generate_terrain" = TRUE),
-		list("name" = "[planet_name] Second Floor", "baseturf" = /turf/open/openspace, "generate_terrain" = FALSE) // Пустой уровень для структур
+		list("name" = "[planet_name] Second Floor", "baseturf" = /turf/open/openspace, "generate_terrain" = FALSE)
 	)
 
 	var/list/datum/virtual_level/created_levels = list()
 	var/datum/virtual_level/surface_vlevel = null
-	var/surface_index = 4 // Поверхность это 4-й элемент в списке
+	var/surface_index = 4
 
-	// 1. СОЗДАЕМ УРОВНИ (СНИЗУ ВВЕРХ)
+	log_world("MAPGEN: Creating [length(level_definitions)] virtual levels...")
 	for(var/i in 1 to length(level_definitions))
 		var/list/def = level_definitions[i]
 		var/level_name = def["name"]
@@ -166,8 +86,6 @@
 			ZTRAIT_MINING = TRUE,
 			ZTRAIT_BASETURF = level_baseturf
 		)
-
-		// Линковка
 		if(i < length(level_definitions))
 			traits[ZTRAIT_UP] = TRUE
 		if(i > 1)
@@ -182,7 +100,7 @@
 		)
 
 		if(!new_vlevel)
-			log_world("ERROR: Failed to create virtual level [level_name]")
+			log_world("MAPGEN ERROR: Failed to create virtual level [level_name]")
 			generating = FALSE
 			return null
 
@@ -192,31 +110,28 @@
 		if(i == surface_index)
 			surface_vlevel = new_vlevel
 
-	// Док-порты создаем только на поверхности
 	var/list/docking_ports = create_docking_ports(surface_vlevel, planet_name)
 
-	// 2. ГЕНЕРАЦИЯ И ЗАПОЛНЕНИЕ КАРТ (СНИЗУ ВВЕРХ)
 	var/original_dmm_seed = dmm_seed
+	log_world("MAPGEN: Filling levels with terrain...")
 	for(var/i in 1 to length(created_levels))
 		var/datum/virtual_level/vlevel = created_levels[i]
 		var/list/def = level_definitions[i]
 		var/generate_terrain = def["generate_terrain"]
 
 		if(generate_terrain)
-			// Генерируем биомы через DMM
 			var/turf/load_turf = vlevel.get_unreserved_bottom_left_turf()
-
 			if(!load_turf)
-				log_world("ERROR: No unreserved turfs available for [vlevel.name]")
+				log_world("MAPGEN ERROR: No unreserved turfs available for [vlevel.name]")
 				generating = FALSE
 				return null
 
-			// Смещаем сид для каждого уровня, чтобы они не были одинаковыми
 			dmm_seed = original_dmm_seed + i
 
-			log_world("Generating [vlevel.name] ([planet_size]x[planet_size])...")
+			log_world("MAPGEN: Generating [vlevel.name] via DMM...")
 			if(use_dmm_generation)
 				if(!generate_planet_dmm(vlevel.name, planet_size, load_turf))
+					log_world("MAPGEN ERROR: generate_planet_dmm failed for [vlevel.name]")
 					dmm_seed = original_dmm_seed
 					generating = FALSE
 					return null
@@ -231,78 +146,58 @@
 					populate_terrain(turfs_to_generate, null)
 					smooth_generated_turfs(turfs_to_generate, vlevel.z_value)
 		else
-			// Заполняем уровень пустым openspace
-			log_world("Filling [vlevel.name] with openspace...")
+			log_world("MAPGEN: Filling [vlevel.name] with openspace...")
 			vlevel.fill_in(/turf/open/openspace)
 
 	dmm_seed = original_dmm_seed
-	log_world("Planet [planet_name] generation complete with [length(docking_ports)] docking ports and [length(created_levels)] Z-levels!")
+	log_world("MAPGEN: Planet [planet_name] generation complete!")
 	generating = FALSE
-
-	// Возвращаем: [surface_vlevel, docking_ports, all_created_levels]
 	return list(surface_vlevel, docking_ports, created_levels)
 
-/**
- * Generates terrain via rust-g DMM and loads it at the target turf.
- *
- * Serializes the biome tables and biome definitions into a JSON config string,
- * passes it to rust-g which performs all Perlin noise, CA, biome selection,
- * turf placement, and flora spawning, then parses and loads the resulting
- * TGM-format DMM string through /datum/parsed_map.
- *
- * Arguments:
- * * planet_name - Name for logging
- * * planet_size - Width/height of the generated map
- * * load_turf - Bottom-left turf where the map is placed
- *
- * Returns: TRUE on success, FALSE on failure
- */
 /datum/map_generator/planet_generator/proc/generate_planet_dmm(planet_name, planet_size, turf/load_turf)
-	// Build JSON config from DM-side biome tables and definitions
+	log_world("MAPGEN_DMM: Building JSON config for [planet_name]...")
 	var/config_json = build_biome_config_json(planet_size, planet_size, dmm_seed)
 
-	// Call rust-g to generate the complete DMM string
-	var/dmm_string = rustg_planet_generator_generate_dmm(config_json)
+	var/file_name = "data/tmp/planet_[dmm_seed].dmm"
+	if(fexists(file_name))
+		fdel(file_name)
 
-	if(!dmm_string)
-		log_world("ERROR: rust-g returned empty DMM string for [planet_name]")
+	log_world("MAPGEN_DMM: Calling rust-g to save DMM to [file_name]...")
+	var/result = rustg_planet_generator_save_dmm(config_json, file_name)
+	if(result != "1")
+		log_world("MAPGEN_DMM ERROR: rust-g failed: [result]")
 		return FALSE
 
-	// Parse the DMM string directly (no file I/O needed)
-	var/datum/parsed_map/parsed = new(dmm_string)
-	if(!parsed || !parsed.bounds)
-		log_world("ERROR: Failed to parse DMM string for [planet_name]")
+	log_world("MAPGEN_DMM: Setting up map_template...")
+	var/datum/map_template/template = new()
+	template.name = "planet_[planet_name]"
+	template.mappath = file_name
+	template.should_place_on_top = FALSE // НЕ ЗАБЫТЬ УБРАТЬ
+
+	log_world("MAPGEN_DMM: Preloading template size...")
+	if(!template.preload_size(template.mappath, TRUE))
+		log_world("MAPGEN_DMM ERROR: Failed to preload template.")
+		fdel(file_name)
 		return FALSE
 
-	// Load the parsed map into the world at the target turf.
-	// place_on_top = TRUE is critical: it uses load_on_top() instead of ChangeTurf(),
-	// parsed.load() returns TRUE/FALSE (not bounds); actual bounds are in parsed.bounds.
-	var/load_success = parsed.load(
-		load_turf.x,
-		load_turf.y,
-		load_turf.z,
-		crop_map = TRUE,
-		no_changeturf = (SSatoms.initialized == INITIALIZATION_INSSATOMS),
-		place_on_top = TRUE,
-	)
-	if(!load_success)
-		log_world("ERROR: DMM load failed for [planet_name]")
+	log_world("MAPGEN_DMM: Loading template into world at [load_turf.x],[load_turf.y],[load_turf.z]...")
+	var/list/bounds = template.load(load_turf, centered = FALSE)
+
+	fdel(file_name)
+
+	if(!bounds)
+		log_world("MAPGEN_DMM ERROR: Template.load() failed.")
 		return FALSE
 
-	// Initialize atoms in the loaded area (turfs, areas, movables)
-	var/datum/map_template/dummy = new()
-	dummy.name = "planet_dmm_[planet_name]"
-	dummy.initTemplateBounds(parsed.bounds)
-
-	// Post-generation: smooth turfs and apply atmosphere
+	log_world("MAPGEN_DMM: Post-processing turfs...")
 	var/list/turf/turfs_to_smooth = block(
-		parsed.bounds[MAP_MINX], parsed.bounds[MAP_MINY], parsed.bounds[MAP_MINZ],
-		parsed.bounds[MAP_MAXX], parsed.bounds[MAP_MAXY], parsed.bounds[MAP_MAXZ]
+		bounds[MAP_MINX], bounds[MAP_MINY], bounds[MAP_MINZ],
+		bounds[MAP_MAXX], bounds[MAP_MAXY], bounds[MAP_MAXZ]
 	)
 	smooth_generated_turfs(turfs_to_smooth, load_turf.z)
 	override_turf_atmospheres(turfs_to_smooth)
 
-	log_world("DMM planet [planet_name] loaded at [load_turf.x],[load_turf.y],[load_turf.z]")
+	log_world("MAPGEN_DMM: Success for [planet_name]")
 	return TRUE
 
 /**

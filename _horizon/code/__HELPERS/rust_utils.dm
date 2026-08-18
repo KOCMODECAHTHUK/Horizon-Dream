@@ -30,5 +30,5 @@
  * * config_json - JSON string with all generation params and biome configs.
  *                 See /datum/map_generator/planet_generator/proc/build_biome_config_json()
  */
-#define rustg_planet_generator_generate_dmm(config_json) \
-	RUSTG_CALL(RUST_UTILS, "planet_generator_generate_dmm")(config_json)
+#define rustg_planet_generator_save_dmm(config_json, file_path) \
+	RUSTG_CALL(RUST_UTILS, "planet_generator_save_dmm")(config_json, file_path)

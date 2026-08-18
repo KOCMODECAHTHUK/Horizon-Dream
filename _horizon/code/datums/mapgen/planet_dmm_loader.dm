@@ -52,25 +52,36 @@
 	if(!generator)
 		CRASH("generate_and_load_planet_dmm: generator is null")
 
-	// Build JSON config from the generator's biome tables
 	var/config_json = generator.build_biome_config_json(width, height, seed)
+	var/file_name = "data/tmp/planet_[seed].dmm"
+	if(fexists(file_name))
+		fdel(file_name)
 
-	// Call rust-g to generate the complete DMM string
-	var/dmm_string = rustg_planet_generator_generate_dmm(config_json)
+	var/result = rustg_planet_generator_save_dmm(config_json, file_name)
+	if(result != "1")
+		CRASH("generate_and_load_planet_dmm: rust-g failed to save DMM file: [result]")
 
-	if(!dmm_string)
-		CRASH("generate_and_load_planet_dmm: rust-g returned empty string")
+	var/datum/map_template/template = new()
+	template.name = "Planet [generator.type] #[seed]"
+	template.mappath = file_name
 
-	// Create a map template directly from the DMM string (no file I/O needed)
-	var/datum/map_template/planet_dmm/template = new(dmm_string, "Planet [generator.type] #[seed]")
+	//template.should_place_on_top = FALSE
+	if(!template.preload_size(template.mappath, TRUE))
+		CRASH("generate_and_load_planet_dmm: failed to preload DMM file")
 
-	if(!template.cached_map || !template.cached_map.bounds)
-		CRASH("generate_and_load_planet_dmm: failed to parse DMM string")
+	var/list/bounds = template.load(target_turf, centered = FALSE)
 
-	// Load the template at the target turf — this places all turfs/areas/objects
-	var/result = template.load(target_turf)
-	if(!result)
+	fdel(file_name)
+
+	if(!bounds)
 		CRASH("generate_and_load_planet_dmm: template.load() failed")
+
+	var/list/turf/turfs_to_smooth = block(
+		bounds[MAP_MINX], bounds[MAP_MINY], bounds[MAP_MINZ],
+		bounds[MAP_MAXX], bounds[MAP_MAXY], bounds[MAP_MAXZ]
+	)
+	generator.smooth_generated_turfs(turfs_to_smooth, target_turf.z)
+	generator.override_turf_atmospheres(turfs_to_smooth)
 
 	log_game("Planet DMM loaded: [generator.type] [width]x[height] at [target_turf.x],[target_turf.y],[target_turf.z]")
 	return template
@@ -127,3 +138,57 @@
 
 	log_game("Planet [planet_name] created on new virtual level [vlevel.id] at [load_turf.x],[load_turf.y],[vlevel.z_value]")
 	return list(vlevel, template)
+
+// MARK: Planet Debug
+
+// ============================================================================
+// PLANET GENERATION DEBUG TOOLS
+// Генерирует Multi-Z DMM через Rust и корректно сохраняет в TGM формате.
+// ============================================================================
+/client/proc/debug_planet_generation()
+	set name = "Debug Planet Generation"
+	set category = "Debug"
+	set desc = "Generate a planet DMM via Rust and save it to a file."
+
+	if(!holder)
+		return
+
+	var/list/planet_types = list(
+		"Lava" = /datum/map_generator/planet_generator/lava,
+		"Ice" = /datum/map_generator/planet_generator/ice,
+		"Jungle" = /datum/map_generator/planet_generator/jungle,
+		"Rocky" = /datum/map_generator/planet_generator/rocky,
+		"Desert" = /datum/map_generator/planet_generator/desert,
+		"Beach" = /datum/map_generator/planet_generator/beach,
+		"Grassland" = /datum/map_generator/planet_generator/grassland,
+		"Wasteland" = /datum/map_generator/planet_generator/wasteland,
+	)
+
+	var/choice = input(src, "Выберите тип планеты:", "Debug Planet Gen") as null|anything in planet_types
+	if(!choice) return
+
+	var/planet_type = planet_types[choice]
+	var/datum/map_generator/planet_generator/generator = new planet_type
+
+	var/size = input(src, "Введите размер (ширина=высота):", "Debug Planet Gen", 50) as num
+	if(!size || size < 10) return
+
+	var/seed = input(src, "Введите сид (0 для случайного):", "Debug Planet Gen", 0) as num
+	if(seed == 0) seed = rand(1, 999999)
+
+	generator.dmm_seed = seed
+
+	to_chat(src, "<span class='notice'>Генерация [size]x[size] (Сид: [seed])...</span>")
+	var/config_json = generator.build_biome_config_json(size, size, seed)
+	var/file_name = "data/debug_planet_[choice]_[seed].dmm"
+	var/result = rustg_planet_generator_save_dmm(config_json, file_name)
+
+	if(result == "1")
+		to_chat(src, "<span class='green'>Успех! Карта сохранена: [file_name]</span>")
+	else
+		to_chat(src, "<span class='danger'>ОШИБКА: [result]</span>")
+
+// MARK: Admin Verb
+
+ADMIN_VERB(debug_planet_generation_admin, R_DEBUG, "Debug Planet Gen", "Generate a planet DMM via Rust, save to file, and load for preview.", ADMIN_CATEGORY_DEBUG)
+	user.debug_planet_generation()

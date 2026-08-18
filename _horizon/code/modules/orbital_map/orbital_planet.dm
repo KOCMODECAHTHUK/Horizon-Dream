@@ -48,16 +48,20 @@
 		return TRUE
 
 	if(!map_generator_type)
-		log_world("ERROR: Planet [name] has no map generator type!")
+		log_world("ORBITAL ERROR: Planet [name] has no map generator type!")
 		return FALSE
 
+	log_world("ORBITAL: Creating generator [map_generator_type] for [name]...")
 	var/datum/map_generator/planet_generator/generator = new map_generator_type()
+
+	log_world("ORBITAL: Calling generate_planet_level...")
 	var/list/result = generator.generate_planet_level(name, planet_size, baseturf_type, null)
 
 	if(!result || !length(result))
-		log_world("ERROR: Failed to generate planet level for [name]")
+		log_world("ORBITAL ERROR: generate_planet_level returned null or empty for [name]!")
 		return FALSE
 
+	log_world("ORBITAL: Assigning planet_level and docks...")
 	planet_level = result[1]
 	reserve_docks = result[2]
 
@@ -65,10 +69,10 @@
 		cave_level = result[3]
 
 	if(!planet_level)
-		log_world("ERROR: Invalid planet level generated for [name]")
+		log_world("ORBITAL ERROR: planet_level is null after generation for [name]!")
 		return FALSE
 
-	log_world("Planet [name] successfully generated with [length(reserve_docks)] docking ports")
+	log_world("ORBITAL: Planet [name] successfully generated with [length(reserve_docks)] docking ports")
 	return TRUE
 
 /datum/orbital_object/planet/proc/get_dockable_locations()
