@@ -42,6 +42,13 @@
 		/obj/item/clothing/ears/earmuffs/debug=1,
 		/obj/item/gps/visible_debug=1,
 		/obj/item/clothing/glasses/meson/engine/admin=1,
+		/obj/item/door_remote/omni=1,
+		/obj/item/construction/rcd/arcd/debug=1,
+		/obj/item/inducer=1,
+		/obj/item/gun/energy/plasmacutter/adv=1,
+		/obj/item/gun/medbeam=1,
+		/obj/item/defibrillator/compact/loaded=1,
+		///obj/item/storage/belt/medical/surgery_belt_adv=1,
 		)
 	generate_items_inside(items_inside, src)
 

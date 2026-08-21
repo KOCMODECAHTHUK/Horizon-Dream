@@ -427,7 +427,7 @@
 		/obj/item/debug/human_spawner = 1,
 		/obj/item/debug/omnitool = 1,
 )
-	belt = /obj/item/storage/belt/utility/full/powertools
+	belt = /obj/item/storage/belt/utility/full/powertools/holding
 	ears = /obj/item/radio/headset/headset_cent/commander
 	glasses = /obj/item/clothing/glasses/debug
 	gloves = /obj/item/clothing/gloves/combat
