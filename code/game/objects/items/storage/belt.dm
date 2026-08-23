@@ -1246,7 +1246,22 @@
 	worn_icon = '_horizon/icons/obj/in_mob/belt_mob.dmi'
 	icon_state = "holdingbelt"
 	worn_icon_state = "holdingbelt"
-	storage_type = /datum/storage/utility_belt
+	content_overlays = FALSE
+	storage_type = /datum/storage/utility_belt/holding
+
+/obj/item/storage/belt/utility/full/powertools/holding/PopulateContents()
+	new /obj/item/screwdriver/power(src)
+	new /obj/item/crowbar/power(src)
+	new /obj/item/weldingtool/experimental(src)
+	new /obj/item/multitool(src)
+	new /obj/item/holosign_creator/atmos(src)
+	new /obj/item/extinguisher/mini(src)
+	new /obj/item/stack/cable_coil(src)
+	new /obj/item/analyzer/ranged(src)
+	new /obj/item/geiger_counter(src)
+	new /obj/item/pipe_dispenser(src)
+	new /obj/item/construction/rcd/arcd/debug(src)
+	new /obj/item/inducer(src)
 
 // /obj/item/storage/belt/medical/surgery_belt_adv
 
@@ -1419,30 +1434,31 @@
 	else ..()
 	return
 
-
-/obj/item/storage/firstaid/medical/field_surgery
+/obj/item/storage/medkit/field_surgery
 	name = "укладка полевого хирурга"
 	desc = "Компактный набор самых необходимых медицинских инструментов для неотложного хирургического вмешательства в полевых условиях."
+	icon_state = "medkit_tactical"
+	inhand_icon_state = "medkit-tactical"
+	damagetype_healed = HEAL_ALL_DAMAGE
+	storage_type = /datum/storage/medkit/surgery/holding
 
-/obj/item/storage/firstaid/medical/field_surgery/PopulateContents()
-	//if(empty)
-	//	return
+/obj/item/storage/medkit/field_surgery/PopulateContents()
+	if(empty)
+		return
 	var/static/items_inside = list(
-		/obj/item/stack/medical/wrap/gauze/twelve = 1,
-		/obj/item/stack/medical/suture/medicated = 1,
-		/obj/item/stack/medical/mesh/advanced = 1,
-		/obj/item/reagent_containers/hypospray/medipen = 1,
+		/obj/item/scalpel/advanced = 1,
+		/obj/item/retractor/advanced = 1,
+		/obj/item/cautery/advanced = 1,
 		/obj/item/surgical_drapes = 1,
-		/obj/item/scalpel = 1,
-		/obj/item/hemostat = 1,
-		/obj/item/retractor = 1,
-		/obj/item/circular_saw = 1,
+		/obj/item/reagent_containers/medigel/sterilizine = 1,
 		/obj/item/bonesetter = 1,
 		/obj/item/blood_filter = 1,
-		/obj/item/cautery = 1,
-		/obj/item/healthanalyzer/range = 1)
+		/obj/item/breathing_bag=1,
+		/obj/item/defibrillator/compact/loaded = 1,
+		/obj/item/stack/medical/bone_gel = 1,
+		/obj/item/stack/medical/wrap/sticky_tape/surgical = 1,
+		/obj/item/healthanalyzer/super = 1)
 	generate_items_inside(items_inside,src)
-
 
 // MARK: Дыхательная груша
 /obj/item/breathing_bag
@@ -1474,3 +1490,17 @@
 			return
 		to_chat(user, span_notice("Произвожу искуственную вентиляцию легких!"))
 		M.adjust_oxy_loss(-15)
+
+/obj/item/storage/box/traitorbundledebug
+	name = "box of traitor"
+	icon_state = "syndiebox"
+	illustration = "writing_syndie"
+
+/obj/item/storage/box/traitorbundledebug/PopulateContents()
+	var/static/items_inside = list(
+		/obj/item/card/emag=1,\
+		/obj/item/uplink/debug=1,\
+		/obj/item/uplink/nuclear/debug=1,\
+		/obj/item/flashlight/emp/debug=1,\
+	)
+	generate_items_inside(items_inside,src)

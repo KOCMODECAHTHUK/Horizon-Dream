@@ -1,5 +1,5 @@
 // Экипировка СБ
-
+/*
 //	Переносной зарядник - предмет для переноски
 /obj/item/recharger_item
 	name = "портативная зарядная станция"
@@ -76,9 +76,9 @@
 	build_path = /obj/machinery/recharger/portable
 	req_components = list(
 		/obj/item/stock_parts/capacitor = 2,
-		/obj/item/stock_parts/cell = 1,
+		/obj/item/stock_parts/power_store/cell = 1,
 		)
-	def_components = list(/obj/item/stock_parts/cell = /obj/item/stock_parts/cell/high)
+	def_components = list(/obj/item/stock_parts/power_store/cell = /obj/item/stock_parts/power_store/cell/high)
 	needs_anchored = FALSE
 
 // 	Сворачивание станции
@@ -86,7 +86,7 @@
 /obj/machinery/recharger/portable/MouseDrop(over_object, src_location, over_location)
 	. = ..()
 	if(over_object == usr && Adjacent(usr))
-		if(!ishuman(usr) || !usr.canUseTopic(src, BE_CLOSE))
+		if(!ishuman(usr) || !usr.can_perform_action(src, BE_CLOSE))
 			return FALSE
 		if(charging || charging_port2)
 			to_chat(usr, span_warning("Невозможно свернуть зарядную станцию в процессе зарядки!"))
@@ -154,7 +154,7 @@
 				var/obj/item/tactical_recharger/CI = charging
 				port_1_cell_percent_num = CI.cell_imitator_lvl*100/CI.cell_imitator_max
 			else
-				var/obj/item/stock_parts/cell/C = charging.get_cell()	// запрос к реальной батарее
+				var/obj/item/stock_parts/power_store/cell/C = charging.get_cell()	// запрос к реальной батарее
 				port_1_cell_percent_num = C.percent()
 			switch(port_1_cell_percent_num)		// процент заряда оружия
 				if(0 to 14)
@@ -194,7 +194,7 @@
 				var/obj/item/tactical_recharger/CI2 = charging_port2
 				port_2_cell_percent_num = CI2.cell_imitator_lvl*100/CI2.cell_imitator_max
 			else
-				var/obj/item/stock_parts/cell/C2 = charging_port2.get_cell()	// запрос к реальной батарее
+				var/obj/item/stock_parts/power_store/cell/C2 = charging_port2.get_cell()	// запрос к реальной батарее
 				port_2_cell_percent_num = C2.percent()
 			switch(port_2_cell_percent_num)			// процент заряда оружия
 				if(0 to 14)
@@ -224,15 +224,15 @@
 			if(!isarea(a) || a.power_equip == 0)	// питания нет, внутренняя батарея пуста
 				. += mutable_appearance(icon, "[base_icon_state]-p2-cell-fail", layer)
 				. += emissive_appearance(icon, "[base_icon_state]-p2-cell-fail", src, alpha = src.alpha)
-
+*/
 
 //  Тактический наспинный зарядник
 /obj/item/tactical_recharger
 	name = "тактический оружейный зарядник"
 	desc = "Продвинутая переносная зарядная станция для энергетического оружия. Скорость зарядки немного ниже по сравнению с более крупными образцами, однако ее использование все равно значительно расширяет общую потенциальную емкость энергетического оружия."
-	icon = 'white/Feline/icons/tactical_recharger.dmi'
+	icon = '_horizon/icons/obj/tactical_recharger.dmi'
 	icon_state = "toz"
-	worn_icon = 'white/Feline/icons/tactical_recharger_body.dmi'
+	worn_icon = '_horizon/icons/obj/in_mob/tactical_recharger_body.dmi'
 	worn_icon_state = "toz"
 	force = 15
 	dog_fashion = null
@@ -254,13 +254,11 @@
 	var/static/list/holdable_weapons_list = list(
 		/obj/item/gun/energy/disabler = "disabler",
 		/obj/item/gun/energy/laser = "laser",
-		/obj/item/gun/energy/laser/rangers = "rangerlaser",
 		/obj/item/gun/energy/laser/captain = "cap",
 		/obj/item/gun/energy/e_gun = "egun",
 		/obj/item/gun/energy/e_gun/nuclear = "nuke",
 		/obj/item/gun/energy/e_gun/hos = "hos",
 		/obj/item/gun/energy/e_gun/stun = "egun_taser",
-		/obj/item/gun/energy/xray = "xray",
 		/obj/item/gun/energy/e_gun/mini = "pistol",
 		/obj/item/gun/energy/pulse = "pulse",
 		/obj/item/gun/energy/pulse/pistol = "pistol",
@@ -271,7 +269,7 @@
 	. += "<hr><span class='notice'>Дисплей:</span>"
 	. += "</br><span class='notice'>- Уроверь батареи: <b>[cell_imitator_lvl*100/cell_imitator_max]%</b>.</span>"
 	if(charging)
-		var/obj/item/stock_parts/cell/C = charging.get_cell()
+		var/obj/item/stock_parts/power_store/cell/C = charging.get_cell()
 		. += "</br><span class='notice'>- Заряд оружия: <b>[charging]</b> - <b>[C.percent()]%</b>.</span>"
 /*
 //Параметры кармана
@@ -304,7 +302,7 @@
 // Инициализация обработки и кармана
 /obj/item/tactical_recharger/Initialize(mapload)
 	. = ..()
-	create_storage(type = /datum/storage/pockets/tactical_recharger)
+	create_storage(storage_type = /datum/storage/pockets/tactical_recharger)
 	START_PROCESSING(SSmachines, src)
 	update_icon()
 	update_appearance()
@@ -320,14 +318,9 @@
 	new /obj/item/gun/energy/pulse(src)
 	update_appearance()
 
-/obj/item/tactical_recharger/disabler/Initialize(mapload)	// Подавитель - Специалист
-	. = ..()
-	new /obj/item/gun/energy/e_gun/suppressor(src)
-	update_appearance()
-
 //Быстрое извлечение через ЛКМ, быстрое разоружение через "E" тут code\modules\mob\inventory.dm
 /obj/item/tactical_recharger/attack_hand(mob/user)
-	if(loc != user || user.get_item_by_slot(ITEM_SLOT_SUITSTORE) != src || !user.canUseTopic(src, BE_CLOSE, NO_DEXTERITY, FALSE, TRUE))
+	if(loc != user || user.get_item_by_slot(ITEM_SLOT_SUITSTORE) != src || !user.can_perform_action(src))
 		return ..()
 
 	if(length(contents))
@@ -337,7 +330,7 @@
 		user.put_in_hands(I)
 		update_appearance()
 		update_icon()
-		user.update_inv_s_store()
+		user.update_suit_storage()
 	else
 		to_chat(user, span_warning("Крепления расстегнуты, [capitalize(src.name)] пуст."))
 
@@ -378,7 +371,7 @@
 		charging = null
 
 	if(charging)
-		var/obj/item/stock_parts/cell/C = charging.get_cell()
+		var/obj/item/stock_parts/power_store/cell/C = charging.get_cell()
 		if(C)
 			if(C.charge < C.maxcharge)
 				using_power = TRUE
@@ -404,7 +397,7 @@
 			. += emissive_appearance(icon, "toz-full", src, alpha = src.alpha)
 
 		var/w_cell_percent
-		var/obj/item/stock_parts/cell/C = charging.get_cell()
+		var/obj/item/stock_parts/power_store/cell/C = charging.get_cell()
 		switch(C.percent())
 			if(0 to 10)
 				w_cell_percent = "1"
