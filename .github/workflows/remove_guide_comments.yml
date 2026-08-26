@@ -7,12 +7,23 @@ on:
 jobs:
   remove_guide_comments:
     runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
     steps:
+      - name: Generate App Token
+        id: app-token-generation
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v7
+
       - name: Remove guide comments
         uses: actions/github-script@v9
         with:
+          github-token: ${{ steps.app-token-generation.outputs.token }}
           script: |
             const { removeGuideComments } = await import('${{ github.workspace }}/tools/pull_request_hooks/removeGuideComments.js')
             await removeGuideComments({ github, context })

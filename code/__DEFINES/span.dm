@@ -162,3 +162,11 @@
 // Spans that use embedded tgui components:
 // Sorted alphabetically
 #define span_tooltip(tip, main_text) ("<span data-component=\"Tooltip\" data-content=\"" + tip + "\" class=\"tooltip\">" + main_text + "</span>")
+
+// [HORIZON-ADD]
+#define span_init_green(str) ("<span class='init_green'>" + str + "</span>")
+#define SPAN_ROUNDHEADER(X) "<span class='round_header'>[X]</span>"
+#define SPAN_ROUNDBODY(X) "<span class='round_body'>[X]</span>"
+#define SPAN_ROLE_HEADER(X) "<span class='role_header'>[X]</span>"
+#define SPAN_ROLE_BODY(X) "<span class='role_body'>[X]</span>"
+// [/HORIZON-ADD]

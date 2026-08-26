@@ -206,6 +206,7 @@ export const DmTarget = new Juke.Target({
     BehaviorTreeCompilerTarget,
   ],
   inputs: [
+    '_horizon/**', //  [HORIZON-ADD]
     '_maps/map_files/generic/**',
     'maps/**/*.dm',
     'code/**',

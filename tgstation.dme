@@ -17,6 +17,10 @@
 #define DEBUG
 // END_PREFERENCES
 
+/*    ---    DEFINES MODULUS    ---    *\
+\* Abandon hope, all ye who enter here */
+#include "_horizon/_horizon_defines.dme"
+
 // BEGIN_INCLUDE
 #include "__odlint.dm"
 #include "_maps\_basemap.dm"
@@ -7184,3 +7188,7 @@
 #include "interface\fonts\tiny_unicode.dm"
 #include "interface\fonts\vcr_osd_mono.dm"
 // END_INCLUDE
+
+/* ---   MODULUS EXTRA   --- *\
+\* No truth, just to suffer. */
+#include "_horizon/_horizon_dream.dme"

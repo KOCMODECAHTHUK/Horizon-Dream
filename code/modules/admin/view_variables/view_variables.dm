@@ -274,7 +274,7 @@ ADMIN_VERB_ONLY_CONTEXT_MENU(debug_variables, R_NONE, "View Variables", /datum)
 			}
 
 		</script>
-		<div align='center'>
+		<div align='center' style="position: relative;">
 			<table width='100%'>
 				<tr>
 					<td width='50%'>
@@ -298,9 +298,8 @@ ADMIN_VERB_ONLY_CONTEXT_MENU(debug_variables, R_NONE, "View Variables", /datum)
 						</div>
 					</td>
 					<td width='50%'>
-						<div align='center'>
-							<a id='refresh_link' href='byond://?_src_=vars;
-datumrefresh=[refid];[HrefToken()]'>Refresh</a>
+					<div align='center' style="position: relative;">
+							<a class='button' id='refresh_link' href='byond://?_src_=vars;datumrefresh=[refid];[HrefToken()]'>Refresh</a>
 							<div class="dropdown-content">
 								<input type="text" placeholder="Select Action" id="vvDropdownInput" onkeyup="filterDropdown()" onselect="filterDropdown()" onfocus="filterDropdown()" onblur="delayHide()">
 								<div id="vvDropdownDiv" class="dropdown-options">
