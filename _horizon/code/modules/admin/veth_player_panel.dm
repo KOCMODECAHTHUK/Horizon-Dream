@@ -11,7 +11,7 @@ ADMIN_VERB(player_panel_veth, R_ADMIN, "Player Panel Veth", "Updated Player Pane
 	tgui.ui_interact(user.mob)
 	to_chat(user, span_interface("VUAP has been opened!"), type = MESSAGE_TYPE_ADMINLOG, confidential = TRUE)
 	BLACKBOX_LOG_ADMIN_VERB("VUAP")
-
+/*
 ADMIN_VERB_AND_CONTEXT_MENU(vuap_personal, R_ADMIN, "Open TGUI PP", "Player options panel for a mob.", ADMIN_CATEGORY_GAME, mob/target in GLOB.player_list)
 	if(!target)
 		to_chat(user, span_warning("Could not find desired target mob!"), type = MESSAGE_TYPE_ADMINLOG, confidential = TRUE)
@@ -32,7 +32,7 @@ ADMIN_VERB_AND_CONTEXT_MENU(vuap_personal, R_ADMIN, "Open TGUI PP", "Player opti
 		var/datum/vuap_personal/tgui = new(user.mob)
 		tgui.ui_interact(user.mob)
 	BLACKBOX_LOG_ADMIN_VERB("VUAP_personal")
-
+*/
 /datum/player_panel_veth/proc/player_ui_data(mob/player)
 #ifndef TESTING
 	if(QDELETED(player) || !player.ckey)
@@ -110,10 +110,10 @@ ADMIN_VERB_AND_CONTEXT_MENU(vuap_personal, R_ADMIN, "Open TGUI PP", "Player opti
 		if("allVerbsPanel")
 			SSadmin_verbs.dynamic_invoke_verb(usr, /datum/admin_verb/show_all_verbs)  //logs/rightscheck inside the proc
 			return
-		if("openAdditionalPanel") //logs/rightscheck inside the proc
-			var/mob/target = selected_mob
-			SSadmin_verbs.dynamic_invoke_verb(usr, /datum/admin_verb/vuap_personal, target)
-			return
+		//if("openAdditionalPanel") //logs/rightscheck inside the proc
+		//	var/mob/target = selected_mob
+		//	SSadmin_verbs.dynamic_invoke_verb(usr, /datum/admin_verb/vuap_personal, target)
+		//	return
 		if("createCommandReport")
 			SSadmin_verbs.dynamic_invoke_verb(usr, /datum/admin_verb/create_command_report) //logs/rightscheck inside the proc
 			return
