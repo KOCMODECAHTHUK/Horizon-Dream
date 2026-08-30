@@ -392,7 +392,7 @@ function ListItem(props: AtomSpanProps) {
         {displayPath}
       </span>
       <span
-        className="label label-info"
+        className="label label-info spawnClass"
       >
         {item.name}
       </span>

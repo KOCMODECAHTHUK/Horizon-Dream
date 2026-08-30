@@ -17,7 +17,7 @@
   //--secondary-lightness-adjustment: 8;
   --button-border-radius: 0;
   //--button-transition: var(0s);
-  --progress-bar-fill: var(--color-grey);
+  --progress-bar-fill: hsl(40, 52%, 50%);
 
   --border-primary-saturation: 0;
 
@@ -154,7 +154,7 @@
   .Button__content {
     &:hover {
       .spawnClass {
-        color: var(--color-grey);
+        color: hsl(0, 0%, 30%);
       }
     }
 
