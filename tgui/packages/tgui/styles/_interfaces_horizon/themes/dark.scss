@@ -4,7 +4,8 @@
 @use '../../colors';
 
 .theme-ntos_darkmode:root,
-.theme-nanotrasen:root {
+.theme-nanotrasen:root,
+.theme-horizon:root {
   // Base
   --color-base: hsl(225, 0%, 13%);
   --color-primary: #ccc;
@@ -151,6 +152,12 @@
   }
 
   .Button__content {
+    &:hover {
+      .spawnClass {
+        color: var(--color-grey);
+      }
+    }
+
     .ChemDispenser__buttonLabel {
       color: white;
       text-overflow: ellipsis;
