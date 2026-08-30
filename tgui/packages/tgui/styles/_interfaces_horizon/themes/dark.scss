@@ -9,7 +9,7 @@
   --color-base: hsl(225, 0%, 13%);
   --color-primary: #ccc;
   --color-secondary: hsl(225, 0%, 18%);
-  --color-dark-secondary: hsl(225, 0%, 10%);
+  --color-dark-secondary: hsl(225, 0%, 9%);
   --titlebar-background: var(--color-dark-secondary);
   --color-good: hsl(77, 62%, 39%);
   //--base-gradient-spread: 10;
@@ -52,6 +52,35 @@
     text-shadow: -1px 1px 0px #000;
   }
 
+  .Techweb__ {
+    &HeaderContent {
+      background-color: var(--color-dark-secondary);
+      border: none;
+    }
+
+    &HeaderSectionTabs {
+      background-color: var(--color-dark-secondary);
+      border: none;
+      .Tabs {
+        background-color: var(--color-dark-secondary) !important;
+      }
+    }
+
+    &Locked {
+      color: var(--color-primary);
+    }
+  }
+
+  .ExperimentTechwebServer__Web,
+  .ExperimentConfigure__ExperimentPanel {
+    background: var(--color-dark-secondary);
+    border: none;
+
+    &--selected {
+      border: none;
+    }
+  }
+
   @mixin button-swap-color($color) {
     background-color: var(--color-base);
     color: #{$color};
@@ -73,7 +102,7 @@
 
       &:hover {
         background-color: var(--color-primary);
-        color: var(--color-black);
+        color: var(--color-black); // Текст
       }
 
       &.Button--disabled {
@@ -126,7 +155,7 @@
 
     &:hover .ChemDispenser__buttonLabel {
       text-shadow: none;
-      color: var(--color-black);
+      color: var(--color-black); // Текст
     }
   }
 }
