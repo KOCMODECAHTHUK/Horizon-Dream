@@ -1,21 +1,21 @@
 /**
  * Dark Theme
  */
+@use '../../colors';
 
 .theme-ntos_darkmode:root,
 .theme-nanotrasen:root {
   // Base
-  --color-base: hsl(227, 0%, 13%);
+  --color-base: hsl(225, 0%, 13%);
   --color-primary: #ccc;
-  --color-secondary: hsl(226, 0%, 18%);
-  //--color-good: hsl(212, 90%, 67%);
-  //--color-bad: hsl(0, 70%, 59%);
-  //--color-average: hsl(42, 92%, 63%);
+  --color-secondary: hsl(225, 0%, 18%);
+  --color-dark-secondary: hsl(225, 0%, 10%);
+  --titlebar-background: var(--color-dark-secondary);
+  --color-good: hsl(77, 62%, 39%);
   //--base-gradient-spread: 10;
   //--secondary-lightness-adjustment: 8;
-  --titlebar-background: var(--color-secondary);
   --button-border-radius: 0;
-
+  //--button-transition: var(0s);
   --progress-bar-fill: var(--color-grey);
 
   --border-primary-saturation: 0;
@@ -24,6 +24,10 @@
 
   .Button {
     line-height: 1.4em;
+    //transition-duration: --transition-time-fast !important;
+    &:hover {
+      transition-duration: 0.005s !important;
+    }
   }
 
   .Input {
@@ -43,7 +47,26 @@
     font-size: 13px;
   }
 
-  // Можно и через мик-син, но так понятнее
+  .ProgressBar__content {
+    font-weight: bold;
+    text-shadow: -1px 1px 0px #000;
+  }
+
+  @mixin button-swap-color($color) {
+    background-color: var(--color-base);
+    color: #{$color};
+
+    &:hover {
+      background-color: #{$color};
+      color: var(--color-base);
+    }
+
+    &.Button--disabled {
+      background-color: var(--color-base) !important;
+      color: #{$color} !important;
+    }
+  }
+
   .Button--color-- {
     &default {
       --color: var(--color-secondary);
@@ -60,33 +83,9 @@
       }
     }
 
-    &bad {
-      --color: var(--color-secondary) !important;
-      color: var(--color-bad);
-
-      &:hover {
-        background-color: var(--color-bad);
-        color: var(--color-secondary);
-      }
-
-      &.Button--disabled {
-        background-color: var(--color-secondary) !important;
-        color: var(--color-bad) !important;
-      }
-    }
-
-    &good {
-      --color: var(--color-secondary) !important;
-      color: var(--color-good);
-
-      &:hover {
-        background-color: var(--color-good);
-        color: var(--color-secondary);
-      }
-
-      &.Button--disabled {
-        background-color: var(--color-secondary) !important;
-        color: var(--color-good) !important;
+    @each $color-name, $color-value in colors.$color-map {
+      &#{$color-name} {
+        @include button-swap-color($color-value);
       }
     }
 
@@ -116,5 +115,18 @@
   .Section__title {
     padding: var(--space-sm);
     border-bottom: 1px solid var(--color-base);
+  }
+
+  .Button__content {
+    .ChemDispenser__buttonLabel {
+      color: white;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    &:hover .ChemDispenser__buttonLabel {
+      text-shadow: none;
+      color: var(--color-black);
+    }
   }
 }
