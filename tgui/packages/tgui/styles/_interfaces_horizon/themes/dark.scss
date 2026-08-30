@@ -35,10 +35,6 @@
     background-color: var(--color-secondary);
   }
 
-  .Section {
-    border: 1px solid var(--color-base);
-  }
-
   .NoticeBox {
     padding: var(--space-xs) var(--space-sm);
   }
@@ -115,6 +111,14 @@
     @each $color-name, $color-value in colors.$color-map {
       &#{$color-name} {
         @include button-swap-color($color-value);
+      }
+    }
+    &caution {
+      background-color: var(--color-secondary) !important;
+      color: var(--color); // Текст
+      &:hover {
+        background-color: var(--color) !important;
+        color: var(--color-black) !important;
       }
     }
 

@@ -393,11 +393,6 @@ function ListItem(props: AtomSpanProps) {
       </span>
       <span
         className="label label-info"
-        style={{
-          marginLeft: '0.5em',
-          color: 'rgba(200, 200, 200, 0.5)',
-          fontSize: '10px',
-        }}
       >
         {item.name}
       </span>
