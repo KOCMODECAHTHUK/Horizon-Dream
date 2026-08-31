@@ -352,7 +352,7 @@
 // if world.time is past the casing's fired timestamp plus this offset, casing is considered cold, and won't burn hands.
 #define CASING_HOT_DELAY (5 SECONDS)
 
-/obj/item/gun/ballistic/handle_chamber(empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE)
+/obj/item/gun/ballistic/handle_chamber(mob/living/user, empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE) // [HORIZON-EDIT] PHYSICS
 	if(!semi_auto && from_firing)
 		return
 	var/obj/item/ammo_casing/casing = chambered //Find chambered round
@@ -360,56 +360,17 @@
 		if(QDELING(casing))
 			stack_trace("Trying to move a qdeleted casing of type [casing.type]!")
 			chambered = null
+// [HORIZON-EDIT] PHYSICS
 		else if(casing_ejector || !from_firing)
 			casing.forceMove(drop_location()) //Eject casing onto ground.
 			if(!QDELETED(casing))
+				var/bounce_angle
+				if(user)
+					var/sign_x = (istype(user) && !(user.get_held_index_of_item(src) % RIGHT_HANDS)) ? 1 : -1
+					bounce_angle = SIMPLIFY_DEGREES(dir2angle(user.dir) + (sign_x * 90) + rand(-45, 45))
+				casing.bounce_away(bounce_angle = bounce_angle, still_warm = TRUE) // [HORIZON-EDIT] PHYSICS
+// [/HORIZON-EDIT]
 				SEND_SIGNAL(casing, COMSIG_CASING_EJECTED)
-				var/hitting_ground = TRUE
-				if(ishuman(loc))
-					var/mob/living/carbon/human/wielder = loc
-					var/caught_casing = can_catch_casing(casing, wielder, from_firing)
-					switch(caught_casing)
-						if(CASING_CATCH_NO_ATTEMPT)
-							hitting_ground = TRUE
-						if(CASING_CATCH_FAILED_SPICY)
-							hitting_ground = TRUE
-							wielder.visible_message(
-								span_warning("[wielder] reaches out for \the [casing] as it ejects from [src], and catches it... before fumbling it because it's a hot casing. Uncool!"),
-								span_warning("You reach out and catch \the [casing] as it ejects from [src]... before dropping it, because it's a hot casing! Ouch! Uncool!"),
-								span_notice("You hear someone reaching for something before a hiss of pain and the sound of something clattering."),
-							)
-							var/obj/item/bodypart/affecting = wielder.get_inactive_hand()
-							wielder.apply_damage(2, BURN, affecting, wound_bonus = CANT_WOUND)
-						if(CASING_CATCH_FAILED_CLUMSY)
-							hitting_ground = TRUE
-							wielder.visible_message(
-								span_warning("[wielder] reaches out for \the [casing] as it ejects from [src]... before fumbling it in an incredibly unlikely, comical manner! Uncool!"),
-								span_warning("You reach out and catch \the [casing] as it ejects from [src]... before fumbling it in an incredibly unlikely, comical manner! Uncool!"),
-								span_notice("You hear someone reaching for something, shortly followed by an embarassingly loud, comedic clattering."),
-							)
-							if(!(world.time >= casing.shot_timestamp + CASING_HOT_DELAY))
-								var/obj/item/bodypart/affecting = wielder.get_inactive_hand()
-								to_chat(wielder, span_warning("As if to add insult to injury, \the [casing] lands in the perfect way... to burn your [affecting.plaintext_zone]."))
-								wielder.apply_damage(5, BURN, affecting, wound_bonus = CANT_WOUND)
-						if(CASING_CATCH_FAILED_PLACEMENT)
-							hitting_ground = TRUE
-							wielder.visible_message(
-								span_warning("[wielder] reaches out for \the [casing] as it ejects from [src] and fumbles it due to [wielder.p_their()] full hands. Uncool!"),
-								span_warning("You try and reach out for \the [casing] as it ejects from [src], and fumble it because your hands are full. Uncool!"),
-								span_notice("You hear someone reaching for something, before a metallic clattering."),
-							)
-						if(CASING_CATCH_SUCCESSFUL)
-							hitting_ground = FALSE
-							casing.update_appearance()
-							to_chat(wielder, span_notice("You reach out and catch \the [casing] as it ejects from [src]. Awesome."))
-						if(CASING_CATCH_SUCCESSFUL_OUCH)
-							hitting_ground = FALSE
-							casing.update_appearance()
-							var/obj/item/bodypart/affecting = wielder.get_inactive_hand()
-							to_chat(wielder, span_notice("You reach out and catch \the [casing] as it ejects from [src]. Awesome. Your [affecting.plaintext_zone] hurts, though."))
-							wielder.apply_damage(4, BURN, affecting, wound_bonus = CANT_WOUND)
-				if(hitting_ground)
-					casing.bounce_away(TRUE)
 		else if(empty_chamber)
 			clear_chambered()
 	if (chamber_next_round && (magazine?.max_ammo > 1))
@@ -477,7 +438,7 @@
 		bolt_locked = FALSE
 	if (user)
 		balloon_alert(user, "[bolt_wording] racked")
-	process_chamber(!chambered, FALSE)
+	process_chamber(user, empty_chamber = !chambered, from_firing = FALSE) // [HORIZON-EDIT] PHYSICS
 	if (bolt_type == BOLT_TYPE_LOCKING && !chambered)
 		bolt_locked = TRUE
 		playsound(src, lock_back_sound, lock_back_sound_volume, lock_back_sound_vary)
@@ -708,13 +669,19 @@
 
 /obj/item/gun/ballistic/proc/unload_ammo(mob/living/user, forced = FALSE)
 	var/num_unloaded = 0
-	var/turf/drop_turf = get_turf(drop_location())
 	for(var/obj/item/ammo_casing/casing as anything in get_ammo_list(FALSE))
 		casing.forceMove(drop_location())
-		casing.bounce_away(FALSE, NONE)
+// [HORIZON-EDIT] PHYSICS
+		var/bounce_angle
+		if(user)
+			var/sign_x = (istype(user) && !(user.get_held_index_of_item(src) % RIGHT_HANDS)) ? 1 : -1
+			bounce_angle = SIMPLIFY_DEGREES(dir2angle(user.dir) + (sign_x * 90) + rand(-45, 45))
+		casing.bounce_away(bounce_angle = bounce_angle, still_warm = FALSE, sound_delay = 0)
 		num_unloaded++
+		var/turf/drop_turf = get_turf(drop_location())
 		if(drop_turf && is_station_level(drop_turf.z))
 			SSblackbox.record_feedback("tally", "station_mess_created", 1, casing.name)
+// [/HORIZON-EDIT]
 
 	if (!num_unloaded)
 		if (!forced)

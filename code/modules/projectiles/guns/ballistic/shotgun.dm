@@ -214,6 +214,7 @@
 	internal_magazine = FALSE
 	tac_reloads = TRUE
 	burst_fire_selection = TRUE
+	casing_ejector = TRUE
 	/// The type of secondary magazine for the bulldog
 	var/secondary_magazine_type
 	/// The secondary magazine
@@ -248,7 +249,7 @@
 		if(!secondary_magazine.ammo_count())
 			. += "[icon_state]_secondary_mag_empty"
 
-/obj/item/gun/ballistic/shotgun/bulldog/handle_chamber(empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE)
+/obj/item/gun/ballistic/shotgun/bulldog/handle_chamber(mob/living/user, empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE) // [HORIZON-EDIT] PHYSICS
 	if(!secondary_magazine)
 		return ..()
 	var/secondary_shells_left = LAZYLEN(secondary_magazine.stored_ammo)
