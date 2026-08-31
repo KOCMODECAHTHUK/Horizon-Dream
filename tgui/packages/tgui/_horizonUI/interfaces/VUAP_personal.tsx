@@ -3,9 +3,9 @@
  * @author Original Absolucy
  * @author Changes KOCMOHABT
  */
-import { useBackend } from '../backend';
+import { useBackend } from '../../backend';
 import { Box, Button, Section, Table, Stack } from 'tgui-core/components';
-import { Window } from '../layouts';
+import { Window } from '../../layouts';
 
 interface MuteStates {
   ic: boolean;

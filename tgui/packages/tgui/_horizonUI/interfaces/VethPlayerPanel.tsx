@@ -3,7 +3,7 @@
  * @author Original Veth-s + Absolucy
  * @author Changes KOCMOHABT
  */
-import { useBackend, useLocalState } from '../backend';
+import { useBackend, useLocalState } from '../../backend';
 import {
   Box,
   Button,
@@ -13,7 +13,7 @@ import {
   Stack,
 } from 'tgui-core/components';
 import { ComponentProps, } from 'react';
-import { Window } from '../layouts';
+import { Window } from '../../layouts';
 
 type PlayerData = {
   name?: string;

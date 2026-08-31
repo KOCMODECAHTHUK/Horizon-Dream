@@ -4,8 +4,8 @@
  * @author Changes KOCMOHABT
  */
 import { Section, LabeledList } from 'tgui-core/components';
-import { Window } from '../layouts';
-import { useBackend } from '../backend';
+import { Window } from '../../layouts';
+import { useBackend } from '../../backend';
 type Data = {
   total_clients: number;
   living_players: number;

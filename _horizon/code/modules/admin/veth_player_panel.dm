@@ -11,28 +11,28 @@ ADMIN_VERB(player_panel_veth, R_ADMIN, "Player Panel Veth", "Updated Player Pane
 	tgui.ui_interact(user.mob)
 	to_chat(user, span_interface("VUAP has been opened!"), type = MESSAGE_TYPE_ADMINLOG, confidential = TRUE)
 	BLACKBOX_LOG_ADMIN_VERB("VUAP")
-/*
-ADMIN_VERB_AND_CONTEXT_MENU(vuap_personal, R_ADMIN, "Open TGUI PP", "Player options panel for a mob.", ADMIN_CATEGORY_GAME, mob/target in GLOB.player_list)
+
+ADMIN_VERB_AND_CONTEXT_MENU(vuap_personal, R_ADMIN, "Open TGUI PP", ADMIN_VERB_NO_DESCRIPTION, ADMIN_CATEGORY_HIDDEN, /mob)
+	VERB_ARG_TYPED(target, VERB_ARG_TYPE_MOB, VERB_ARG_SOURCE_WORLD, /mob)
 	if(!target)
 		to_chat(user, span_warning("Could not find desired target mob!"), type = MESSAGE_TYPE_ADMINLOG, confidential = TRUE)
 		return
 	if(!length(target.ckey) || target.ckey[1] == "@")
 		var/mob/player = target
 		var/datum/mind/player_mind = get_mind(player, include_last = TRUE)
-		var/player_mind_ckey = ckey(player_mind.key)
+		var/player_mind_ckey = ckey(player_mind?.key)
 		user.selectedPlayerCkey = player_mind_ckey
 		user.VUAP_selected_mob = target
 		var/datum/vuap_personal/tgui = new(user.mob)
 		tgui.ui_interact(user.mob)
 		tgui_alert(user, "WARNING! This mob has no associated Mind! Most actions will not work. Last ckey to control this mob is [player_mind_ckey].", "No Mind!")
-
 	else
 		user.selectedPlayerCkey = target.ckey
 		user.VUAP_selected_mob = target
 		var/datum/vuap_personal/tgui = new(user.mob)
 		tgui.ui_interact(user.mob)
 	BLACKBOX_LOG_ADMIN_VERB("VUAP_personal")
-*/
+
 /datum/player_panel_veth/proc/player_ui_data(mob/player)
 #ifndef TESTING
 	if(QDELETED(player) || !player.ckey)
@@ -485,7 +485,7 @@ love, veth
 			return
 		//health section
 		if("healthscan")
-			healthscan(usr, selected_mob, advanced = TRUE, tochat = TRUE)
+			healthscan(usr, selected_mob, scanpower = SCANPOWER_ADVANCED, tochat = TRUE)
 			SSblackbox.record_feedback("tally", "VUAP", 1, "HealthScan")
 		if("chemscan")
 			chemscan(usr, selected_mob)
