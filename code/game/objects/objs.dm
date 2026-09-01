@@ -69,7 +69,7 @@ GLOBAL_LIST_EMPTY(objects_by_id_tag)
 	if(opacity)
 		SScameras.update_visibility(src)
 
-	add_debris_element() //monkestation edit
+	add_debris_element() // [HORIZON-ADD] Ballistic_Impact
 
 /obj/Destroy(force)
 	if(!ismachinery(src))

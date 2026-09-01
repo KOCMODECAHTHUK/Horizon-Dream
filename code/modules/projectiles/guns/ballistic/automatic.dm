@@ -337,6 +337,7 @@
 	actions_types = list()
 	fire_sound = 'sound/items/weapons/laser.ogg'
 	casing_ejector = FALSE
+	gun_flags = NONE
 
 // NT Battle Rifle //
 

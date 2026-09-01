@@ -30,7 +30,6 @@
 /datum/element/debris
 	element_flags = ELEMENT_BESPOKE | ELEMENT_DETACH_ON_HOST_DESTROY
 	argument_hash_start_idx = 2
-
 	///Icon state of debris when impacted by a projectile
 	var/debris = null
 	///Velocity of debris particles

@@ -70,6 +70,7 @@
 	fire_delay = 0 SECONDS
 	actions_types = list()
 	casing_ejector = FALSE
+	gun_flags = GUN_SMOKE_PARTICLES
 
 /obj/item/gun/ballistic/rocketlauncher
 	name = "\improper Dardo-RE Rocket Launcher"

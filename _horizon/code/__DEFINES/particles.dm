@@ -1,4 +1,3 @@
-
 #define DEBRIS_SPARKS "spark"
 #define DEBRIS_WOOD "wood"
 #define DEBRIS_ROCK "rock"
