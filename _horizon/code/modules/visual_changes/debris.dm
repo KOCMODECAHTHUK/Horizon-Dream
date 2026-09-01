@@ -1,5 +1,5 @@
 /particles/debris
-	icon = 'icons/effects/particles/generic_particles.dmi'
+	icon = '_horizon/icons/effects/particles/generic_particles.dmi'
 	width = 500
 	height = 500
 	count = 10

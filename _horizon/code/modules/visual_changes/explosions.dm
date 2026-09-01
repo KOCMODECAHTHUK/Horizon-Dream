@@ -1,91 +1,5 @@
-/particles/explosion_smoke
-	icon = 'icons/effects/96x96.dmi'
-	icon_state = "smoke3"
-	width = 1000
-	height = 1000
-	count = 75
-	spawning = 75
-	gradient = list("#FA9632", "#C3630C", "#333333", "#808080", "#FFFFFF")
-	lifespan = 20
-	fade = 60
-	color = generator(GEN_NUM, 0, 0.25)
-	color_change = generator(GEN_NUM, 0.04, 0.05)
-	velocity = generator(GEN_CIRCLE, 15, 15)
-	drift = generator(GEN_CIRCLE, 0, 1, NORMAL_RAND)
-	spin = generator(GEN_NUM, -20, 20)
-	friction = generator(GEN_NUM, 0.1, 0.5)
-	gravity = list(1, 2)
-	scale = 0.25
-	grow = 0.05
-
-/particles/explosion_smoke/deva
-	scale = 0.5
-	velocity = generator(GEN_CIRCLE, 23, 23)
-
-/particles/explosion_smoke/small
-	count = 25
-	spawning = 25
-	scale = 0.25
-	velocity = generator(GEN_CIRCLE, 10, 10)
-
-/particles/explosion_water
-	icon = 'icons/effects/96x96.dmi'
-	icon_state = list("smoke4" = 1, "smoke5" = 1)
-	width = 1000
-	height = 1000
-	count = 75
-	spawning = 75
-	lifespan = 20
-	fade = 80
-	velocity = generator(GEN_CIRCLE, 15, 15)
-	drift = generator(GEN_CIRCLE, 0, 1, NORMAL_RAND)
-	spin = generator(GEN_NUM, -20, 20)
-	friction = generator(GEN_NUM, 0.1, 0.5)
-	gravity = list(1, 2)
-	scale = 0.15
-	grow = 0.02
-
-/particles/smoke_wave
-	icon = 'icons/effects/96x96.dmi'
-	icon_state = "smoke3"
-	width = 750
-	height = 750
-	count = 75
-	spawning = 75
-	lifespan = 15
-	fade = 70
-	gradient = list("#BA9F6D", "#808080", "#FFFFFF")
-	color = generator(GEN_NUM, 0, 0.25)
-	color_change = generator(GEN_NUM, 0.08, 0.07)
-	velocity = generator(GEN_CIRCLE, 25, 25)
-	rotation = generator(GEN_NUM, -45, 45)
-	scale = 0.25
-	grow = 0.05
-	friction = 0.05
-
-/particles/smoke_wave/small
-	count = 45
-	spawning = 45
-	scale = 0.1
-
-/particles/wave_water
-	icon = 'icons/effects/96x96.dmi'
-	icon_state = "smoke5"
-	width = 750
-	height = 750
-	count = 75
-	spawning = 75
-	lifespan = 15
-	fade = 25
-	color_change = generator(GEN_NUM, 0.08, 0.07)
-	velocity = generator(GEN_CIRCLE, 25, 25)
-	rotation = generator(GEN_NUM, -45, 45)
-	scale = 0.45
-	grow = 0.05
-	friction = 0.05
-
 /particles/dirt_kickup
-	icon = 'icons/effects/96x157.dmi'
+	icon = '_horizon/icons/effects/particles/96x157.dmi'
 	icon_state = "smoke"
 	width = 500
 	height = 500
@@ -102,7 +16,7 @@
 	gravity = list(0, -1.25)
 
 /particles/water_splash
-	icon = 'icons/effects/96x157.dmi'
+	icon = '_horizon/icons/effects/particles/96x157.dmi'
 	icon_state = "smoke2"
 	width = 500
 	height = 500
@@ -118,7 +32,7 @@
 	gravity = list(0, -1.25)
 
 /particles/dirt_kickup_large
-	icon = 'icons/effects/96x157.dmi'
+	icon = '_horizon/icons/effects/particles/96x157.dmi'
 	icon_state = "smoke"
 	width = 750
 	height = 750
@@ -144,7 +58,7 @@
 	fade = 10
 
 /particles/water_splash_large
-	icon = 'icons/effects/96x157.dmi'
+	icon = '_horizon/icons/effects/particles/96x157.dmi'
 	icon_state = "smoke2"
 	width = 750
 	height = 750
@@ -160,7 +74,7 @@
 	gravity = list(0, -1)
 
 /particles/falling_debris
-	icon = 'icons/effects/particles/generic_particles.dmi'
+	icon = '_horizon/icons/effects/particles/generic_particles.dmi'
 	icon_state = "rock"
 	width = 750
 	height = 750
@@ -181,7 +95,7 @@
 	spawning = 40
 
 /particles/water_falling
-	icon = 'icons/effects/particles/generic_particles.dmi'
+	icon = '_horizon/icons/effects/particles/generic_particles.dmi'
 	icon_state = "cross"
 	width = 750
 	height = 750
@@ -211,7 +125,7 @@
 	friction = 0.1
 
 /particles/water_outwards
-	icon = 'icons/effects/particles/generic_particles.dmi'
+	icon = '_horizon/icons/effects/particles/generic_particles.dmi'
 	icon_state = "cross"
 	width = 750
 	height = 750
@@ -223,7 +137,7 @@
 	velocity = generator(GEN_CIRCLE, 30, 30)
 	scale = 1.25
 	friction = 0.1
-
+/*
 /obj/effect/temp_visual/explosion
 	name = "boom"
 	icon = 'icons/effects/96x96.dmi'
@@ -326,3 +240,4 @@
 	QDEL_NULL(falling_debris)
 	QDEL_NULL(dirt_kickup)
 	return ..()
+*/
