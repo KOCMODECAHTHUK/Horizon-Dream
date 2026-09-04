@@ -13,7 +13,7 @@ GLOBAL_LIST_INIT_TYPED(starlight_objects, /obj, list(starlight_object(0)))
 
 /proc/starlight_object(offset)
 	var/obj/starlight_appearance/glow = new()
-	SET_PLANE_W_SCALAR(glow, LIGHTING_PLANE, offset)
+	SET_PLANE_W_SCALAR(glow, STARLIGHT_SOURCE_PLANE, offset)
 	glow.layer = LIGHTING_PRIMARY_LAYER
 	glow.blend_mode = BLEND_ADD
 	glow.color = GLOB.starlight_color

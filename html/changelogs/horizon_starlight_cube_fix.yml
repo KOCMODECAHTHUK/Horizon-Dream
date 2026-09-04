@@ -1,0 +1,4 @@
+author: "horizon-dev-sync[bot]"
+delete-after: True
+changes:
+  - code_imp: "Starlight source objects moved to a hidden STARLIGHT_SOURCE_PLANE so the 32x32 cube artifact no longer appears in the bottom-left corner of the screen. Starlight visuals on space tiles are unchanged - they come from starlight_overlay consumers that copy the source via render_source."

@@ -214,6 +214,24 @@
 /atom/movable/screen/plane_master/parallax/proc/narsie_unsummoned()
 	animate(src, color = null, time = 8 SECONDS)
 
+/// Hidden holder plane for starlight source objects.
+/// Never rendered to screen - exists purely so starlight_appearance has a
+/// rendering context that keeps its render_target updated. The visible
+/// starlight overlay on space tiles is applied via starlight_overlay()
+/// consumers on LIGHTING_PLANE that copy this source through render_source.
+/atom/movable/screen/plane_master/starlight_source
+	name = "Starlight Source"
+	documentation = "Hidden plane that holds the starlight_appearance source objects.\
+		<br>This plane is never drawn to screen - it exists purely so the source objects have\
+		<br>a rendering context that keeps their render_target updated.\
+		<br>The actual starlight visuals are applied via starlight_overlay mutable_appearances\
+		<br>on LIGHTING_PLANE which use render_source to copy the source appearance onto each space turf.\
+		<br>Same pattern as the displacement plane - render_relay_planes is empty so nothing is relayed."
+	plane = STARLIGHT_SOURCE_PLANE
+	appearance_flags = PLANE_MASTER|NO_CLIENT_COLOR
+	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+	render_relay_planes = list()
+
 /atom/movable/screen/plane_master/displacement
 	name = "Displacement"
 	documentation = "Ok so this one's fun. Basically, we want to be able to distort the game plane when a grav annom or similar is around.\

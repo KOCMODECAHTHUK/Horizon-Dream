@@ -13,6 +13,13 @@
 #define PLANE_SPACE -21
 #define PLANE_SPACE_PARALLAX -20
 
+/// Hidden plane that holds starlight source objects.
+/// Never rendered to screen - exists purely so starlight_appearance has a
+/// rendering context that keeps its render_target updated. Visible starlight
+/// on space tiles comes from starlight_overlay consumers on LIGHTING_PLANE
+/// that copy this source via render_source. Same trick as DISPLACEMENT_PLANE.
+#define STARLIGHT_SOURCE_PLANE -22
+
 #define WEATHER_MASK_PLANE -13
 #define WEATHER_MASK_RENDER_TARGET "*WEATHER_MASK_RENDER_TARGET"
 
