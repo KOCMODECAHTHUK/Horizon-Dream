@@ -837,3 +837,36 @@
 
 /obj/effect/temp_visual/focus_ring/proc/dissipate()
 	animate(src, alpha = 0, time = 0.5 SECONDS, easing = QUAD_EASING|EASE_OUT)
+
+/// Cosmetic shockwave spawned by large explosions.
+/// Ported from TGMC PR #9655 (https://github.com/tgstation/TerraGov-Marine-Corps/pull/9655).
+/// In TGMC this lives on GRAVITY_PULSE_PLANE; in /tg/ Horizon uses DISPLACEMENT_PLANE, which
+/// is the equivalent distortion-driver plane (render target consumed by the displacement_map_filter
+/// on the game_plate). We toggle TRAIT_DISTORTION_IN_USE on GLOB for the duration of the effect,
+/// mirroring how /atom/movable/warp_effect drives the same pipeline.
+/obj/effect/temp_visual/shockwave
+	icon = 'icons/effects/light_overlays/shockwave.dmi'
+	icon_state = "shockwave"
+	plane = DISPLACEMENT_PLANE
+	pixel_x = -496
+	pixel_y = -496
+	randomdir = FALSE
+
+/obj/effect/temp_visual/shockwave/Initialize(mapload, radius)
+	. = ..()
+	var/turf/T = get_turf(src)
+	if(T)
+		var/offset = GET_TURF_PLANE_OFFSET(T)
+		ADD_TRAIT(GLOB, TRAIT_DISTORTION_IN_USE(offset), ref(src))
+	// The base Initialize sets a generic duration timer; override it with the radius-driven one.
+	deltimer(timerid)
+	timerid = QDEL_IN_STOPPABLE(src, 0.5 * radius)
+	transform = matrix().Scale(32 / 1024, 32 / 1024)
+	animate(src, time = 1/2 * radius, transform = matrix().Scale((32 / 1024) * radius * 1.5, (32 / 1024) * radius * 1.5))
+
+/obj/effect/temp_visual/shockwave/Destroy()
+	var/turf/T = get_turf(src)
+	if(T)
+		var/offset = GET_TURF_PLANE_OFFSET(T)
+		REMOVE_TRAIT(GLOB, TRAIT_DISTORTION_IN_USE(offset), ref(src))
+	return ..()

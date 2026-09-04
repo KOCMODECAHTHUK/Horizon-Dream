@@ -1,0 +1,6 @@
+author: "horizon-dev-sync[bot]"
+delete-after: True
+changes:
+  - rscadd: "Large explosions now release a cosmetic shockwave, ported from TGMC."
+  - imageadd: "Added shockwave icon (icons/effects/light_overlays/shockwave.dmi) for explosion visuals."
+  - code_imp: "Wired the shockwave through Horizon's existing DISPLACEMENT_PLANE / TRAIT_DISTORTION_IN_USE pipeline so it warps the game plane the same way GRAVITY_PULSE_PLANE does on TGMC."
