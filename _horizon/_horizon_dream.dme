@@ -18,7 +18,6 @@
 // END_PREFERENCES
 
 // BEGIN_INCLUDE
-#include "code\SSdebugview.dm"
 #include "code\__HELPERS\mobs.dm"
 #include "code\modules\admin\all_verb_panel.dm"
 // END_INCLUDE
