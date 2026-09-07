@@ -1,5 +1,5 @@
 import { Window } from '../layouts';
-import { Button, Input, Section, Stack } from 'tgui-core/components';
+import { Button, Stack } from 'tgui-core/components';
 
 export function Changelog() {
   return (
