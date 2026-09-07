@@ -23,7 +23,7 @@
 	if (bolt_locked == FALSE)
 		balloon_alert(user, "bolt opened")
 		playsound(src, rack_sound, rack_sound_volume, rack_sound_vary)
-		process_chamber(FALSE, FALSE, FALSE)
+		process_chamber(user, empty_chamber = FALSE, from_firing = FALSE, chamber_next_round = FALSE) // [HORIZON-EDIT] PHYSICS
 		bolt_locked = TRUE
 		update_appearance()
 		return
@@ -75,6 +75,10 @@
 
 	SET_BASE_PIXEL(-8, 0)
 
+/obj/item/gun/ballistic/rifle/boltaction/presawn
+	WHEN_MAP(icon_state = "sakhno_sawn")
+	spawn_sawn_off = TRUE
+
 /obj/item/gun/ballistic/rifle/boltaction/add_deep_lore()
 	AddElement(/datum/element/examine_lore, \
 		lore = "The Sakhno Precision Rifle's origins are closely tied to the Sakhno Concern, one of the Third Soviet Union's \
@@ -95,12 +99,10 @@
 /obj/item/gun/ballistic/rifle/boltaction/add_bayonet_point()
 	AddComponent(/datum/component/bayonet_attachable, offset_x = 41, offset_y = 14, bayonet_overlay = "bayonet_thin")
 
-/obj/item/gun/ballistic/rifle/boltaction/sawoff(mob/user)
+/obj/item/gun/ballistic/rifle/boltaction/do_sawoff()
 	. = ..()
-	if(.)
-		spread = 36
-		SET_BASE_PIXEL(0, 0)
-		update_appearance()
+	spread = 36
+	SET_BASE_PIXEL(0, 0)
 
 /obj/item/gun/ballistic/rifle/boltaction/attack_self(mob/user)
 	if(jammed)
@@ -194,10 +196,9 @@
 	. = ..()
 	AddComponent(/datum/component/scope, range_modifier = 1.5)
 
-/obj/item/gun/ballistic/rifle/boltaction/prime/sawoff(mob/user)
+/obj/item/gun/ballistic/rifle/boltaction/prime/do_sawoff()
 	. = ..()
-	if(.)
-		name = "\improper Obrez Moderna" // wear it loud and proud
+	name = "\improper Obrez Moderna" // wear it loud and proud
 
 /obj/item/gun/ballistic/rifle/boltaction/donkrifle
 	name = "\improper Donk Co. Jezail"
@@ -230,11 +231,10 @@
 			no risk of receiving a refurbished, poorly-kept surplus arm that jams more than it shoots." \
 	)
 
-/obj/item/gun/ballistic/rifle/boltaction/donkrifle/sawoff(mob/user) //the heavy price one pays for fitting this in a backpack
+/obj/item/gun/ballistic/rifle/boltaction/donkrifle/do_sawoff() //the heavy price one pays for fitting this in a backpack
 	. = ..()
-	if(.)
-		projectile_damage_multiplier = 0.75
-		spread = 50
+	projectile_damage_multiplier = 0.75
+	spread = 50
 
 /obj/item/gun/ballistic/rifle/rebarxbow
 	name = "heated rebar crossbow"
@@ -379,7 +379,7 @@
 /obj/item/gun/ballistic/rifle/boltaction/pipegun/add_bayonet_point()
 	AddComponent(/datum/component/bayonet_attachable, offset_x = 35, offset_y = 10)
 
-/obj/item/gun/ballistic/rifle/boltaction/pipegun/handle_chamber(empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE)
+/obj/item/gun/ballistic/rifle/boltaction/pipegun/handle_chamber(mob/living/user, empty_chamber = TRUE, from_firing = TRUE, chamber_next_round = TRUE) // [HORIZON-EDIT] PHYSICS
 	. = ..()
 	do_sparks(1, TRUE, src)
 

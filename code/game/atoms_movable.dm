@@ -63,9 +63,6 @@
 	 * do NOT add channels to this for little reason as it can add considerable memory usage.
 	 */
 	var/list/important_recursive_contents
-	///contains every client mob corresponding to every client eye in this container. lazily updated by SSparallax and is sparse:
-	///only the last container of a client eye has this list assuming no movement since SSparallax's last fire
-	var/list/client_mobs_in_contents
 
 	/// String representing the spatial grid groups we want to be held in.
 	/// acts as a key to the list of spatial grid contents types we exist in via SSspatial_grid.spatial_grid_categories.
@@ -249,8 +246,6 @@
 
 	if(spatial_grid_key)
 		SSspatial_grid.force_remove_from_grid(src)
-
-	LAZYNULL(client_mobs_in_contents)
 
 #ifndef DISABLE_DREAMLUAU
 	// These lists cease existing when src does, so we need to clear any lua refs to them that exist.
@@ -830,8 +825,6 @@
 					setDir(first_step_dir)
 				else if(!inertia_moving)
 					newtonian_move(dir2angle(direct))
-				if(client_mobs_in_contents)
-					update_parallax_contents()
 			moving_diagonally = 0
 			return
 
@@ -905,11 +898,6 @@
 
 	if (!moving_diagonally && !inertia_moving && momentum_change && movement_dir)
 		newtonian_move(dir2angle(movement_dir))
-	// If we ain't moving diagonally right now, update our parallax
-	// We don't do this all the time because diag movements should trigger one call to this, not two
-	// Waste of cpu time, and it fucks the animate
-	if (!moving_diagonally && client_mobs_in_contents)
-		update_parallax_contents()
 
 	SEND_SIGNAL(src, COMSIG_MOVABLE_MOVED, old_loc, movement_dir, forced, old_locs, momentum_change)
 
@@ -1786,6 +1774,7 @@
 	VV_DROPDOWN_OPTION(VV_HK_GET_MOVABLE, "Get Movable")
 	VV_DROPDOWN_OPTION(VV_HK_GET_FACTIONS, "Get Factions")
 	VV_DROPDOWN_OPTION(VV_HK_ADD_REMOVE_FACTION, "Add/Remove Faction")
+	VV_DROPDOWN_OPTION(VV_HK_EDIT_MOVABLE_PHYSICS, "Edit Movable Physics")	// [HORIZON-ADD] PHYSICS
 	VV_DROPDOWN_OPTION(VV_HK_EDIT_PARTICLES, "Edit Particles")
 	VV_DROPDOWN_OPTION(VV_HK_DEADCHAT_PLAYS, "Start/Stop Deadchat Plays")
 	VV_DROPDOWN_OPTION(VV_HK_ADD_FANTASY_AFFIX, "Add Fantasy Affix")
@@ -1826,6 +1815,12 @@
 			return
 		var/list/factions_printout = faction_to_text()
 		to_chat(usr, span_notice(span_notice("Factions for [src]:[factions_printout]")))
+
+// [HORIZON-ADD] PHYSICS
+	if(href_list[VV_HK_EDIT_MOVABLE_PHYSICS] && check_rights(R_VAREDIT))
+		var/client/C = usr.client
+		C?.open_movable_physics_editor(src)
+// [/HORIZON-ADD]
 
 	if(href_list[VV_HK_EDIT_PARTICLES])
 		var/client/C = usr.client
