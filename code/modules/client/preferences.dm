@@ -286,7 +286,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			update_static_data(ui.user)
 			ui_interact(ui.user)
 			return TRUE
-		// BANDASTATION ADDITION - END
+		// [/HORIZON-ADD]
 
 	for (var/datum/preference_middleware/preference_middleware as anything in middleware)
 		var/delegation = preference_middleware.action_delegations[action]

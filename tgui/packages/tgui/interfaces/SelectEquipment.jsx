@@ -61,7 +61,7 @@ export function SelectEquipment(props) {
   );
 
   return (
-    <Window width={750} height={415} theme="ntos_darkmode">
+    <Window width={750} height={415} theme="horizon">
       <Window.Content>
         <Stack fill>
           <Stack.Item>
