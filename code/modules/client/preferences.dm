@@ -520,7 +520,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 			parent.mob.stop_sound_channel(CHANNEL_TEST_SOUND)
 			test_sound_channels.Cut()
 			return TRUE
-			// [/HORIZON-ADD]
+		// [/HORIZON-ADD]
 
 	for (var/datum/preference_middleware/preference_middleware as anything in middleware)
 		var/delegation = preference_middleware.action_delegations[action]
@@ -754,7 +754,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 		stack_trace("[key_name(target)] preference datum was null")
 		return NONE
 
-		return preferences.chat_toggles
+	return preferences.chat_toggles
 
 /// Sanitizes the preferences, applies the randomization prefs, and then applies the preference to the human mob.
 /datum/preferences/proc/safe_transfer_prefs_to(mob/living/carbon/human/character, icon_updates = TRUE, is_antag = FALSE)
@@ -821,6 +821,7 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 
 	return default_randomization
 
+// [HORIZON-ADD]
 /datum/preferences/proc/update_test_sound(mixer_channel_changed = null, category_changed = null, master_changed = FALSE)
 	var/list/test_info = test_sound_channels["[CHANNEL_TEST_SOUND]"]
 	if(!test_info)
@@ -846,3 +847,4 @@ GLOBAL_LIST_EMPTY(preferences_datums)
 	var/sound/new_sound = sound(null, channel = CHANNEL_TEST_SOUND, volume = new_vol)
 	new_sound.status = SOUND_UPDATE
 	SEND_SOUND(parent.mob, new_sound)
+// [/HORIZON-ADD]

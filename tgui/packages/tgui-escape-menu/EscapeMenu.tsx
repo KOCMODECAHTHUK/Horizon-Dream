@@ -2,7 +2,7 @@ import './styles/main.scss';
 
 import { useEffect, useReducer, useRef } from 'react';
 
-import { playCloseSounds, playOpenSounds, setUiVolume } from './audio'; // <-- Импортируем setUiVolume
+import { playCloseSounds, playOpenSounds, setUiVolume } from './audio';
 import { AdminPage } from './pages/AdminPage';
 import { HomePage } from './pages/HomePage';
 import { LeaveBodyPage } from './pages/LeaveBodyPage';

@@ -3098,7 +3098,9 @@ GLOBAL_LIST_EMPTY(fire_appearances)
 
 	return static_image
 
+// [HORIZON-ADD] Master_Sounds
 /// Updates media volume for a sound channel
 /// Used as a hook for future volume preference systems
 /mob/proc/update_media_volume(channel)
 	return TRUE
+// [/HORIZON-ADD]

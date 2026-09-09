@@ -1,3 +1,4 @@
+// [HORIZON-EDIT] Master_Sounds
 //max channel is 1024. Only go lower from here, because byond tends to pick the first available channel to play sounds on
 #define CHANNEL_MASTER_VOLUME 1024
 #define CHANNEL_SOUND_EFFECTS 1023 // Everything gameplay affecting and not local (Explosion, fighting, doors/shutters, magic)
@@ -31,6 +32,7 @@
 //THIS SHOULD ALWAYS BE THE LOWEST ONE!
 //KEEP IT UPDATED
 #define CHANNEL_HIGHEST_AVAILABLE 980
+// [/HORIZON-EDIT]
 
 #define MAX_INSTRUMENT_CHANNELS (128 * 6)
 
