@@ -558,7 +558,7 @@
 	update_appearance()
 
 /obj/item/tactical_recharger/Destroy()
-    STOP_PROCESSING(SSmachines, src)
+	STOP_PROCESSING(SSmachines, src)
 	QDEL_NULL(internal_cell)
 	return ..()
 
