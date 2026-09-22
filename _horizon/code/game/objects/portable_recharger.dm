@@ -663,13 +663,13 @@
 	if(!weapon_cell || weapon_cell.charge >= weapon_cell.maxcharge)
 		return
 
-	var/delta = weapon_cell.chargerate * seconds_per_tick
-	var/actually_drained = internal_cell.use(delta, TRUE)
+	var/backup_charge = min(weapon_cell.chargerate * seconds_per_tick, internal_cell.charge)
+	var/actually_drained = internal_cell.use(backup_charge)
 	if(!actually_drained)
 		return PROCESS_KILL
 
 	using_power = TRUE
-	weapon_cell.give(delta * recharge_coeff)
+	weapon_cell.give(backup_charge * recharge_coeff)
 	charging.update_icon()
 	update_appearance()
 
