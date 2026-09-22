@@ -558,6 +558,7 @@
 	update_appearance()
 
 /obj/item/tactical_recharger/Destroy()
+    STOP_PROCESSING(SSmachines, src)
 	QDEL_NULL(internal_cell)
 	return ..()
 
@@ -583,6 +584,7 @@
 		return NONE
 	item.moveToNullspace()
 	internal_cell = item
+	START_PROCESSING(SSmachines, src)
 
 	if(!old_cell)
 		to_chat(user, span_notice("You install [item] in [src]."))
@@ -660,9 +662,13 @@
 	var/obj/item/stock_parts/power_store/cell/weapon_cell = charging.get_cell()
 	if(!weapon_cell || weapon_cell.charge >= weapon_cell.maxcharge)
 		return
+
+	var/delta = weapon_cell.chargerate * recharge_coeff * seconds_per_tick
+	var/actually_drained = internal_cell.use(delta * 4, TRUE)
+	if(!actually_drained)
+		return PROCESS_KILL
+
 	using_power = TRUE
-	var/delta = weapon_cell.chargerate * recharge_coeff * seconds_per_tick / 2
-	internal_cell.use(delta * 4)
 	weapon_cell.give(delta)
 	charging.update_icon()
 	update_appearance()
