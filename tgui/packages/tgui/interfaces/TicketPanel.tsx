@@ -54,7 +54,7 @@ export const TicketPanel = (props) => {
   const [ticketUpdateTime, setTicketUpdateTime] = useState(0);
 
   const FONT_SIZE_KEY = 'ticketPanelFontSize';
-  const FONT_SIZE_DEFAULT = 13;
+  const FONT_SIZE_DEFAULT = 12;
   const FONT_SIZE_MIN = 9;
   const FONT_SIZE_MAX = 20;
 
