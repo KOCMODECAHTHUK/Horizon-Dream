@@ -1,7 +1,7 @@
 import { decodeHtmlEntities } from 'tgui-core/string';
 import { useEffect, useState } from 'react';
-import { useBackend } from '../backend';
-import { Window } from '../layouts';
+import { useBackend } from '../../backend';
+import { Window } from '../../layouts';
 import {
   Box,
   Button,

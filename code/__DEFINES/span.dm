@@ -168,7 +168,6 @@
 #define span_mentorhelp(str) ("<span class='mentorhelp'>" + str + "</span>")
 #define span_mentor(str) ("<span class='mentor'>" + str + "</span>")
 #define span_mentornotice(str) ("<span class='mentornotice'>" + str + "</span>")
-#define span_policy(str) ("<span class='policy'>" + str + "</span>")
 // [/HORIZON-ADD]
 
 // Spans that use embedded tgui components:
