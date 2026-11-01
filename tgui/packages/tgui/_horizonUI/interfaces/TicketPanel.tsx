@@ -720,7 +720,7 @@ export const TicketPanel = (props) => {
                                           <Stack align="flex-start">
                                             <Stack.Item
                                               style={{
-                                                width: '120px',
+                                                width: '60px',
                                                 fontSize: '1em',
                                                 color: 'gray',
                                               }}
