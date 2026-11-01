@@ -8,6 +8,9 @@ type ServerState = {
   canLeaveBody: boolean;
   canAdminHelp: boolean;
   hasTicketNotification: boolean;
+  canOpenTicketPanel?: boolean;
+  ticketPanelLabel?: string | null;
+  pendingTickets?: number;
   resources: ResourceLink[];
 };
 
@@ -75,6 +78,26 @@ export function HomePage({
             Settings
           </MenuButton>
           <MenuButton onClick={() => onNavigate('players')}>Players</MenuButton>
+          {!!serverState.canOpenTicketPanel && (
+            <MenuButton
+              onClick={() => {
+                onAction('open_ticket_panel');
+                onClose();
+              }}
+              blinking={(serverState.pendingTickets ?? 0) > 0}
+              tooltip={
+                (serverState.pendingTickets ?? 0) > 0
+                  ? `${serverState.pendingTickets} open ticket${
+                      serverState.pendingTickets === 1 ? '' : 's'
+                    } waiting for you!`
+                  : undefined
+              }
+            >
+              {serverState.ticketPanelLabel || 'Ticket Panel'}
+              {!!serverState.pendingTickets &&
+                ` (${serverState.pendingTickets})`}
+            </MenuButton>
+          )}
           <MenuButton
             onClick={() => onNavigate('admin')}
             blinking={serverState.hasTicketNotification}
