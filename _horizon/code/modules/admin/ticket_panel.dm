@@ -502,7 +502,7 @@
 				return FALSE
 
 			// Use the existing ban panel system
-			current_client.holder.ban_panel(ckey = banned_mob.ckey, ip = banned_mob.client?.address, cid = banned_mob.client?.computer_id, role = "Server", duration = BAN_PANEL_PERMANENT)
+			current_client.holder.ban_panel(player_key = banned_mob.ckey, player_ip = banned_mob.client?.address, player_cid = banned_mob.client?.computer_id, role = "Server", duration = BAN_PANEL_PERMANENT)
 
 			return TRUE
 
