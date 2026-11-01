@@ -964,10 +964,6 @@ GLOBAL_LIST_INIT(unrecommended_builds, list(
 		return inactivity
 	return FALSE
 
-/// Returns the display username for this client (the byond key)
-/client/proc/username()
-	return key
-
 /// Send resources to the client.
 /// Sends both game resources and browser assets.
 /client/proc/send_resources()

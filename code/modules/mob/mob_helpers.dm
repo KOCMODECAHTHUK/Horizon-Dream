@@ -1,9 +1,5 @@
 // see _DEFINES/is_helpers.dm for mob type checks
 
-/// Returns the display username (byond key) for this mob's client
-/mob/proc/username()
-	return client?.username() || key || real_name || name
-
 ///Find the mob at the bottom of a buckle chain
 /mob/proc/lowest_buckled_mob()
 	. = src

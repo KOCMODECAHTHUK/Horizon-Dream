@@ -518,7 +518,7 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 		initiator.current_ticket = src
 
 	AddInteraction(span_purple("Reopened by [key_name_admin(usr)]"),
-	plain_message = "Reopened by [usr.username()]", message_type = "system")
+	plain_message = "Reopened by [usr.key]", message_type = "system")
 	var/msg = span_adminhelp("Ticket [TicketHref("#[id]")] reopened by [key_name_admin(usr)].")
 	message_admins(msg)
 	log_admin_private(msg)
@@ -552,7 +552,7 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 	RemoveActive()
 	state = AHELP_CLOSED
 	GLOB.ahelp_tickets.ListInsert(src)
-	AddInteraction(span_red("Closed by [key_name]."), plain_message = "Closed by [usr.username()]", message_type = "system")
+	AddInteraction(span_red("Closed by [key_name]."), plain_message = "Closed by [usr.key]", message_type = "system")
 	if(!silent)
 		SSblackbox.record_feedback("tally", "ahelp_stats", 1, "closed")
 		var/msg = "Ticket [TicketHref("#[id]")] closed by [key_name]."
@@ -577,7 +577,7 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 	addtimer(CALLBACK(initiator, TYPE_PROC_REF(/client, giveadminhelpverb)), 5 SECONDS)
 
 	AddInteraction(span_green("Resolved by [key_name]."),
-	plain_message = "Resolved by [usr.username()]", message_type = "system")
+	plain_message = "Resolved by [usr.key]", message_type = "system")
 	to_chat(initiator, span_adminhelp("Your ticket has been resolved by an admin. The Adminhelp verb will be returned to you shortly."), confidential = TRUE)
 	if(!silent)
 		SSblackbox.record_feedback("tally", "ahelp_stats", 1, "resolved")
@@ -609,7 +609,7 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 	message_admins(msg)
 	log_admin_private(msg)
 	AddInteraction("Rejected by [key_name].",
-		plain_message = "Rejected by [usr.username()]", message_type = "system")
+		plain_message = "Rejected by [usr.key]", message_type = "system")
 	SSblackbox.LogAhelp(id, "Rejected", "Rejected by [usr.key]", null, usr.ckey)
 	Close(silent = TRUE)
 
@@ -656,7 +656,7 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 			var/custom_msg = tgui_input_text(usr, "Text to Send to Mentors", "Defer to Mentors")
 			if(!custom_msg)
 				return
-			message = "DEFERRED BY ADMIN [usr.username()]: [custom_msg]\n\nOriginal message: [initial_message]"
+			message = "DEFERRED BY ADMIN [usr.key]: [custom_msg]\n\nOriginal message: [initial_message]"
 
 	if(!message)
 		return
@@ -667,13 +667,13 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 	MH.subject = subject
 	MH.broadcast_unhandled(message, initiator)
 
-	AddInteraction("Deferred to Mentors by [key_name_admin(usr)].", plain_message = "Deferred to Mentors by [usr.username()]", message_type = "system")
-	to_chat(initiator, span_adminhelp("[usr.username()] has deferred your ticket to Mentors."), confidential = TRUE)
-	log_admin_private("Ticket [TicketHref("#[id]")] deferred to mentors by [usr.username()].")
+	AddInteraction("Deferred to Mentors by [key_name_admin(usr)].", plain_message = "Deferred to Mentors by [usr.key]", message_type = "system")
+	to_chat(initiator, span_adminhelp("[usr.key] has deferred your ticket to Mentors."), confidential = TRUE)
+	log_admin_private("Ticket [TicketHref("#[id]")] deferred to mentors by [usr.key].")
 	for(var/client/admin in GLOB.admins)
 		if(is_staff(admin) || is_mentor(admin))
-			to_chat(admin, span_adminnotice("[usr.username()] has deferred [initiator.username()]'s ticket to Mentors."), confidential = TRUE)
-	SSblackbox.LogAhelp(id, "Defer", "Deferred to mentors by [usr.username()]", null, usr.ckey)
+			to_chat(admin, span_adminnotice("[usr.key] has deferred [initiator.key]'s ticket to Mentors."), confidential = TRUE)
+	SSblackbox.LogAhelp(id, "Defer", "Deferred to mentors by [usr.key]", null, usr.ckey)
 	Close(silent = TRUE)
 
 /datum/admin_help/proc/mark_ticket(mob/marking_admin)
@@ -695,20 +695,20 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 
 	var/key_name = key_name_admin(user)
 	AddInteraction("Marked by [key_name].",
-		plain_message = "Marked by [user.username()]", message_type = "system")
+		plain_message = "Marked by [user.key]", message_type = "system")
 	to_chat(initiator, span_adminhelp("An admin is preparing to respond to your ticket."), confidential = TRUE)
 	var/msg = "Ticket [TicketHref("#[id]")] marked by [key_name]."
 	message_admins(msg)
-	SSblackbox.LogAhelp(id, "Marked", "Marked by [user.username()]", sender = user.ckey)
+	SSblackbox.LogAhelp(id, "Marked", "Marked by [user.key]", sender = user.ckey)
 	marked_admin = user.ckey
 
 /datum/admin_help/proc/unmark_ticket()
 	var/key_name = key_name_admin(usr)
 	AddInteraction("Unmarked by [key_name] (previously [marked_admin]).",
-		plain_message = "Unmarked by [usr.username()] (previously [marked_admin])", message_type = "system")
+		plain_message = "Unmarked by [usr.key] (previously [marked_admin])", message_type = "system")
 	var/msg = "Ticket [TicketHref("#[id]")] unmarked by [key_name]."
 	message_admins(msg)
-	SSblackbox.LogAhelp(id, "Unmarked", "Unmarked by [usr.username()] (previously [marked_admin])", sender = usr.ckey)
+	SSblackbox.LogAhelp(id, "Unmarked", "Unmarked by [usr.key] (previously [marked_admin])", sender = usr.ckey)
 	marked_admin = null
 
 /// Resolve ticket with a premade message
@@ -740,8 +740,8 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 	msg = "Ticket [TicketHref("#[id]")] marked as [response.title] by [key_name]"
 	message_admins(msg)
 	AddInteraction("Marked as [response.title] by [key_name]",
-		plain_message = "Marked as [response.title] by [usr.username()]", message_type = "system")
-	SSblackbox.LogAhelp(id, "Autoreply", "Marked as [response.title] by [usr.username()]", null,  usr.ckey)
+		plain_message = "Marked as [response.title] by [usr.key]", message_type = "system")
+	SSblackbox.LogAhelp(id, "Autoreply", "Marked as [response.title] by [usr.key]", null,  usr.ckey)
 	if(response.closer)
 		Resolve(silent = TRUE)
 

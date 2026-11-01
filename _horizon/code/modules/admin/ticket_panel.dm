@@ -1,4 +1,3 @@
-
 /datum/ticket_panel
 	var/selected_tab = ADMIN_TAB
 	var/selected_ticket = null
@@ -202,7 +201,7 @@
 			if(istype(target.current_ticket) && target.current_ticket.state == AHELP_ACTIVE)
 				parent_client.ticket_panel.selected_tab = ADMIN_TAB
 				parent_client.ticket_panel.selected_ticket = target.current_ticket.id
-				to_chat(parent_client, span_notice("Switched to existing admin ticket for [target.username()]"), confidential = TRUE)
+				to_chat(parent_client, span_notice("Switched to existing admin ticket for [target.key]"), confidential = TRUE)
 				return TRUE
 
 			parent_client.cmd_admin_pm(target, null)
@@ -219,7 +218,7 @@
 					continue
 				var/ic_name = target.mob.real_name || target.mob.name || "Unknown"
 				if(is_staff(current_client))
-					possible_targets[target] = "[target.username()]/([ic_name])"
+					possible_targets[target] = "[target.key]/([ic_name])"
 				else
 					possible_targets[target] = "[ic_name]"
 

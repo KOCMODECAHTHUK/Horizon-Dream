@@ -345,7 +345,7 @@ ADMIN_VERB(cmd_admin_pm_panel, R_NONE, "Admin PM", "Show a list of clients to PM
 	// Stores a bit of html with our ckey highlighted as a reply link
 	var/link_to_us = key_name(src, TRUE, FALSE)
 	// Stores a bit of html with outhe ckey of the recipientr highlighted as a reply link
-	var/link_to_their = key_name(recipient, TRUE, FALSE)
+	//var/link_to_their = key_name(recipient, TRUE, FALSE)
 	// Our ckey
 	var/our_ckey = ckey
 	// Recipient ckey
