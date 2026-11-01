@@ -143,6 +143,9 @@
 	///these persist between logins/logouts during the same round.
 	var/datum/persistent_client/persistent_client
 
+	///Set once /client/New hands the connection the link dropped mid-handshake (flaky internet) // [HORIZON-ADD] LOBBY
+	var/connection_handed_off = FALSE
+
 	///Should only be a key-value list of north/south/east/west = atom/movable/screen.
 	var/list/char_render_holders
 
@@ -237,6 +240,9 @@
 
 	/// Whether or not this client has the combo HUD enabled
 	var/combo_hud_enabled = FALSE
+
+	/// Whether New() has started. BYOND can call Del() before client initialization begins.
+	var/new_started = FALSE
 
 	/// If this client has been fully initialized or not
 	var/fully_created = FALSE
