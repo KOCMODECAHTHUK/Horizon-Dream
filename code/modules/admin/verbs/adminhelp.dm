@@ -155,7 +155,7 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 
 	// GLOB.ahelp_tickets.BrowseTickets(current_state)
 	if(usr.client.holder)
-		usr.client.holder.ticket_panel()
+		SSadmin_verbs.dynamic_invoke_verb(usr, /datum/admin_verb/ticket_panel)
 		to_chat(usr, span_notice("Accessing Ticket Panel... (Click <A href='byond://?_src_=admin_holder;[HrefToken()];ahelp_tickets=[current_state]'>here</A> for legacy view)"))
 
 /obj/effect/statclick/ticket_list/proc/Action()
@@ -756,7 +756,7 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 		C.ticket_panel = new /datum/ticket_panel()
 	C.ticket_panel.selected_tab = ADMIN_TAB
 	C.ticket_panel.selected_ticket = id
-	C.holder.ticket_panel()
+	SSadmin_verbs.dynamic_invoke_verb(C, /datum/admin_verb/ticket_panel)
 // [/HORIZON-ADD]
 
 //Show the ticket panel (LEGACY browse view)
@@ -919,7 +919,7 @@ GLOBAL_DATUM_INIT(ahelp_tickets, /datum/admin_help_tickets, new)
 			usr.client.ticket_panel = new /datum/ticket_panel()
 		usr.client.ticket_panel.selected_tab = ADMIN_TAB
 		usr.client.ticket_panel.selected_ticket = ahelp_datum.id
-		usr.client.holder.ticket_panel()
+		SSadmin_verbs.dynamic_invoke_verb(usr, /datum/admin_verb/ticket_panel)
 		to_chat(usr, span_notice("Accessing Ticket Panel... (Click <A href='byond://?_src_=holder;[HrefToken()];ahelp=[REF(ahelp_datum)];ahelp_action=ticket'>here</A> for legacy view)"), confidential = TRUE)
 
 /obj/effect/statclick/ahelp/Destroy()
